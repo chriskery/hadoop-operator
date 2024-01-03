@@ -1,0 +1,12 @@
+apiVersion: kubecluster.org.kubecluster.org/v1alpha1
+kind: hadoopCluster
+metadata:
+  labels:
+    app.kubernetes.io/name: hadoopcluster
+    app.kubernetes.io/instance: hadoopcluster-sample
+    app.kubernetes.io/part-of: hadoop-cluster-operator
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: hadoop-cluster-operator
+  name: hadoopcluster-sample
+spec:
+  # TODO(user): Add fields here

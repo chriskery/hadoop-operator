@@ -1,0 +1,158 @@
+// Generated documentation. Please do not edit.
+:anchor_prefix: k8s-api
+
+[id="{p}-api-reference"]
+= API Reference
+
+.Packages
+- xref:{anchor_prefix}-kubecluster-org-v1alpha1[$$kubecluster.org/v1alpha1$$]
+
+
+[id="{anchor_prefix}-kubecluster-org-v1alpha1"]
+== kubecluster.org/v1alpha1
+
+Package v1alpha1 contains API Schema definitions for the kubecluster.org v1alpha1 API group
+
+.Resource Types
+- xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopcluster[$$HadoopCluster$$]
+- xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopclusterlist[$$HadoopClusterList$$]
+
+
+=== Definitions
+
+[id="{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-datanodespectemplate"]
+==== DataNodeSpecTemplate 
+
+
+
+.Appears In:
+****
+- xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopclusterspec[$$HadoopClusterSpec$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`replicas`* __integer__ | Number of desired pods. This is a pointer to distinguish between explicit zero and not specified. Defaults to 1.
+| *`image`* __string__ | Container image name. More info: https://kubernetes.io/docs/concepts/containers/images This field is optional to allow higher level config management to default or override container images in workload controllers like Deployments and StatefulSets.
+| *`resources`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#resourcerequirements-v1-core[$$ResourceRequirements$$]__ | Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+| *`imagePullPolicy`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#pullpolicy-v1-core[$$PullPolicy$$]__ | Image pull policy. One of Always, Never, IfNotPresent. Defaults to Always if :latest tag is specified, or IfNotPresent otherwise. Cannot be updated. More info: https://kubernetes.io/docs/concepts/containers/images#updating-images
+| *`securityContext`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#podsecuritycontext-v1-core[$$PodSecurityContext$$]__ | SecurityContext defines the security options the container should be run with. If set, the fields of SecurityContext override the equivalent fields of PodSecurityContext. More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+| *`hostNetwork`* __boolean__ | Host networking requested for this pod. Use the host's network namespace. If this option is set, the ports that will be used must be specified. Default to false.
+| *`imagePullSecrets`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#localobjectreference-v1-core[$$LocalObjectReference$$] array__ | 
+| *`volumes`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#volume-v1-core[$$Volume$$] array__ | List of volumes that can be mounted by containers belonging to the pod. More info: https://kubernetes.io/docs/concepts/storage/volumes
+|===
+
+
+[id="{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hdfsspecspectemplate"]
+==== HDFSSpecSpecTemplate 
+
+
+
+.Appears In:
+****
+- xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopclusterspec[$$HadoopClusterSpec$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`replicas`* __integer__ | Number of desired pods. This is a pointer to distinguish between explicit zero and not specified. Defaults to 1.
+| *`image`* __string__ | Container image name. More info: https://kubernetes.io/docs/concepts/containers/images This field is optional to allow higher level config management to default or override container images in workload controllers like Deployments and StatefulSets.
+| *`volumeMounts`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#volumemount-v1-core[$$VolumeMount$$] array__ | Pod volumes to mount into the container's filesystem. Cannot be updated.
+| *`resources`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#resourcerequirements-v1-core[$$ResourceRequirements$$]__ | Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+| *`imagePullPolicy`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#pullpolicy-v1-core[$$PullPolicy$$]__ | Image pull policy. One of Always, Never, IfNotPresent. Defaults to Always if :latest tag is specified, or IfNotPresent otherwise. Cannot be updated. More info: https://kubernetes.io/docs/concepts/containers/images#updating-images
+| *`securityContext`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#podsecuritycontext-v1-core[$$PodSecurityContext$$]__ | SecurityContext defines the security options the container should be run with. If set, the fields of SecurityContext override the equivalent fields of PodSecurityContext. More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+| *`hostNetwork`* __boolean__ | Host networking requested for this pod. Use the host's network namespace. If this option is set, the ports that will be used must be specified. Default to false.
+| *`imagePullSecrets`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#localobjectreference-v1-core[$$LocalObjectReference$$] array__ | 
+| *`volumes`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#volume-v1-core[$$Volume$$] array__ | List of volumes that can be mounted by containers belonging to the pod. More info: https://kubernetes.io/docs/concepts/storage/volumes
+|===
+
+
+[id="{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopcluster"]
+==== HadoopCluster 
+
+HadoopCluster is the Schema for the hadoopclusters API
+
+.Appears In:
+****
+- xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopclusterlist[$$HadoopClusterList$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`apiVersion`* __string__ | `kubecluster.org/v1alpha1`
+| *`kind`* __string__ | `HadoopCluster`
+| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
+
+| *`spec`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopclusterspec[$$HadoopClusterSpec$$]__ | 
+| *`status`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopclusterstatus[$$HadoopClusterStatus$$]__ | 
+|===
+
+
+[id="{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopclusterlist"]
+==== HadoopClusterList 
+
+HadoopClusterList contains a list of HadoopCluster
+
+
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`apiVersion`* __string__ | `kubecluster.org/v1alpha1`
+| *`kind`* __string__ | `HadoopClusterList`
+| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
+
+| *`items`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopcluster[$$HadoopCluster$$] array__ | 
+|===
+
+
+[id="{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopclusterspec"]
+==== HadoopClusterSpec 
+
+HadoopClusterSpec defines the desired state of HadoopCluster NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+
+.Appears In:
+****
+- xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopcluster[$$HadoopCluster$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`hdfs`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hdfsspecspectemplate[$$HDFSSpecSpecTemplate$$]__ | INSERT ADDITIONAL SPEC FIELDS - desired state of cluster Important: Run "make" to regenerate code after modifying this file
+| *`dataNode`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-datanodespectemplate[$$DataNodeSpecTemplate$$]__ | 
+| *`yarn`* __object (keys:YarnReplicaType, values:xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-yarnspectemplate[$$YarnSpecTemplate$$])__ | 
+|===
+
+
+
+
+[id="{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-yarnspectemplate"]
+==== YarnSpecTemplate 
+
+
+
+.Appears In:
+****
+- xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopclusterspec[$$HadoopClusterSpec$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`replicas`* __integer__ | Number of desired pods. This is a pointer to distinguish between explicit zero and not specified. Defaults to 1.
+| *`image`* __string__ | Container image name. More info: https://kubernetes.io/docs/concepts/containers/images This field is optional to allow higher level config management to default or override container images in workload controllers like Deployments and StatefulSets.
+| *`resources`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#resourcerequirements-v1-core[$$ResourceRequirements$$]__ | Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+| *`imagePullPolicy`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#pullpolicy-v1-core[$$PullPolicy$$]__ | Image pull policy. One of Always, Never, IfNotPresent. Defaults to Always if :latest tag is specified, or IfNotPresent otherwise. Cannot be updated. More info: https://kubernetes.io/docs/concepts/containers/images#updating-images
+| *`securityContext`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#podsecuritycontext-v1-core[$$PodSecurityContext$$]__ | SecurityContext defines the security options the container should be run with. If set, the fields of SecurityContext override the equivalent fields of PodSecurityContext. More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+| *`hostNetwork`* __boolean__ | Host networking requested for this pod. Use the host's network namespace. If this option is set, the ports that will be used must be specified. Default to false.
+| *`imagePullSecrets`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#localobjectreference-v1-core[$$LocalObjectReference$$] array__ | 
+| *`volumes`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#volume-v1-core[$$Volume$$] array__ | List of volumes that can be mounted by containers belonging to the pod. More info: https://kubernetes.io/docs/concepts/storage/volumes
+|===
+
+
