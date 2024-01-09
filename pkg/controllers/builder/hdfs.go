@@ -11,7 +11,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	kubeclientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -293,37 +292,6 @@ func (h *HdfsBuilder) buildDataNodeService(cluster *hadoopclusterorgv1alpha1.Had
 		Spec: corev1.ServiceSpec{
 			ClusterIP: "None",
 			Selector:  labels,
-		},
-	}
-
-	ownerRef := util.GenOwnerReference(cluster)
-	if err := h.ServiceControl.CreateServicesWithControllerRef(cluster.GetNamespace(), nameNodeService, cluster, ownerRef); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (h *HdfsBuilder) buildDataNodeNodePortService(cluster *hadoopclusterorgv1alpha1.HadoopCluster, name string, labels map[string]string) error {
-	err := h.Get(context.Background(), client.ObjectKey{Name: name, Namespace: cluster.Namespace}, &corev1.Service{})
-	if err == nil || !errors.IsNotFound(err) {
-		return err
-	}
-
-	nameNodeService := &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: cluster.Namespace,
-			Labels:    labels,
-		},
-		Spec: corev1.ServiceSpec{
-			Type:     corev1.ServiceTypeNodePort,
-			Selector: labels,
-			Ports: []corev1.ServicePort{{
-				Name:       "datanode",
-				Port:       9870,
-				TargetPort: intstr.FromInt(9870),
-				NodePort:   30000 + 9870,
-			}},
 		},
 	}
 
