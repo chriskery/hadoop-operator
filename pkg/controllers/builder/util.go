@@ -1,6 +1,7 @@
 package builder
 
 import (
+	"github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -41,7 +42,7 @@ func appendHadoopConfigMapVolumeMount(volumeMounts []corev1.VolumeMount) []corev
 	return volumeMounts
 }
 
-func setPodEnv(podTemplateSpec *corev1.PodTemplateSpec, replicaType string) {
+func setPodEnv(podTemplateSpec *corev1.PodTemplateSpec, replicaType v1alpha1.ReplicaType) {
 	for i := range podTemplateSpec.Spec.Containers {
 		replicaTypeExist := false
 		for _, envVar := range podTemplateSpec.Spec.Containers[i].Env {
@@ -53,7 +54,7 @@ func setPodEnv(podTemplateSpec *corev1.PodTemplateSpec, replicaType string) {
 		if !replicaTypeExist {
 			podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
 				Name:  EnvHadoopRole,
-				Value: replicaType,
+				Value: string(replicaType),
 			})
 		}
 	}

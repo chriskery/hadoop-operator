@@ -36,6 +36,8 @@ const (
 	ClusterNameLabel = "kubeclusetr.org/clusetr-name"
 
 	ReplicaTypeLabel = "kubeclusetr.org/relica-type"
+
+	DeletionLabel = "kubeclusetr.org/deletion"
 )
 
 type HDFSSpec struct {
@@ -159,19 +161,80 @@ type HadoopClusterSpec struct {
 	Yarn YarnSpec `json:"yarn,omitempty"`
 }
 
+// +k8s:openapi-gen=true
+// +k8s:deepcopy-gen=true
+// ClusterCondition describes current state of a cluster
+type ClusterCondition struct {
+	// Type of job condition.
+	Type ClusterConditionType `json:"type"`
+	// Status of the condition, one of True, False, Unknown.
+	Status corev1.ConditionStatus `json:"status"`
+	// The reason for the condition's last transition.
+	Reason string `json:"reason,omitempty"`
+	// A human readable message indicating details about the transition.
+	Message string `json:"message,omitempty"`
+	// The last time this condition was updated.
+	LastUpdateTime metav1.Time `json:"lastUpdateTime,omitempty"`
+	// Last time the condition transitioned from one status to another.
+	LastTransitionTime metav1.Time `json:"lastTransitionTime,omitempty"`
+}
+
+type ClusterConditionType string
+
+const (
+	// ClusterCreated means the job has been accepted by the system,
+	// but one or more of the pods/services has not been started.
+	// This includes time before pods being scheduled and launched.
+	ClusterCreated ClusterConditionType = "Created"
+
+	// ClusterRunning means all sub-resources (e.g. services/pods) of this job
+	// have been successfully scheduled and launched.
+	// The training is running without error.
+	ClusterRunning ClusterConditionType = "Running"
+
+	// ClusterRestarting means one or more sub-resources (e.g. services/pods) of this job
+	// reached phase failed but maybe restarted according to it's restart policy
+	// which specified by user in v1.PodTemplateSpec.
+	// The training is freezing/pending.
+	ClusterRestarting ClusterConditionType = "Restarting"
+)
+
+// +k8s:openapi-gen=true
+// ReplicaStatus represents the current observed state of the replica.
+type ReplicaStatus struct {
+	// The number of actively running pods.
+	Active int32 `json:"active,omitempty"`
+	// The number of actively running pods.
+	Expect *int32 `json:"expect,omitempty"`
+}
+
+// +k8s:openapi-gen=true
+// +k8s:deepcopy-gen=true
 // HadoopClusterStatus defines the observed state of HadoopCluster
 type HadoopClusterStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+	// Conditions is an array of current observed job conditions.
+	Conditions []ClusterCondition `json:"conditions"`
+
+	// ReplicaStatuses is map of ReplicaType and ReplicaStatus,
+	// specifies the status of each replica.
+	ReplicaStatuses map[ReplicaType]*ReplicaStatus `json:"replicaStatuses"`
+
+	// Represents time when the job was acknowledged by the job controller.
+	// It is not guaranteed to be set in happens-before order across separate operations.
+	// It is represented in RFC3339 form and is in UTC.
+	StartTime *metav1.Time `json:"startTime,omitempty"`
 }
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +resource:path=hadoopclusters
 // +kubebuilder:object:root=true
+// +kubebuilder:printcolumn:JSONPath=`.metadata.creationTimestamp`,name="Age",type=date
+// +kubebuilder:printcolumn:JSONPath=`.status.conditions[-1:].type`,name="State",type=string
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:scope=Namespaced,path=hadoopclusters,shortName={"hdc","hdcs"}
-
 // HadoopCluster is the Schema for the hadoopclusters API
 type HadoopCluster struct {
 	metav1.TypeMeta   `json:",inline"`

@@ -18,30 +18,37 @@ package controllers
 
 import (
 	"context"
+	"fmt"
+	v1alpha1 "github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1"
 	"github.com/chriskery/hadoop-cluster-operator/pkg/controllers/builder"
+	"github.com/chriskery/hadoop-cluster-operator/pkg/util"
 	"github.com/go-logr/logr"
 	appv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/record"
 	"k8s.io/klog/v2"
 	"reflect"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-
-	v1alpha1 "github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
 
 const controllerName = "hadoop-cluster-operator"
 
 func NewReconciler(mgr manager.Manager) *HadoopClusterReconciler {
+	recorder := mgr.GetEventRecorderFor(controllerName)
 	r := &HadoopClusterReconciler{
 		Client:    mgr.GetClient(),
 		Scheme:    mgr.GetScheme(),
 		apiReader: mgr.GetAPIReader(),
-		builders:  builder.ResourceBuilders(mgr, mgr.GetEventRecorderFor(controllerName)),
+		builders:  builder.ResourceBuilders(mgr, recorder),
 		Log:       log.Log,
+		Recorder:  recorder,
 	}
 
 	return r
@@ -53,6 +60,7 @@ type HadoopClusterReconciler struct {
 	Scheme *runtime.Scheme
 
 	apiReader client.Reader
+	Recorder  record.EventRecorder
 	Log       logr.Logger
 
 	builders []builder.Builder
@@ -84,31 +92,124 @@ func (r *HadoopClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	oldStatus := hadoopCluster.Status.DeepCopy()
+	// skip for HadoopCluster that is being deleted
+	if !hadoopCluster.GetDeletionTimestamp().IsZero() {
+		return ctrl.Result{}, r.prepareForDeletion(ctx, hadoopCluster)
+	}
 
+	// Ensure the resource have a deletion marker
+	if err = r.addFinalizerIfNeeded(ctx, hadoopCluster); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	oldStatus := hadoopCluster.Status.DeepCopy()
 	for _, builder := range r.builders {
 		if err = builder.Build(hadoopCluster, oldStatus); err != nil {
 			klog.Warningf("Reconcile Hadoop Cluster error %v", err)
 			return ctrl.Result{}, err
 		}
 	}
+
+	if err = r.UpdateClusterStatus(hadoopCluster, oldStatus); err != nil {
+		return ctrl.Result{}, err
+	}
+
 	// No need to update the cluster status if the status hasn't changed since last time.
 	if !reflect.DeepEqual(hadoopCluster.Status, oldStatus) {
-		if err = r.Status().Update(ctx, hadoopCluster); err != nil {
+		if err = r.UpdateClusterStatusInApiServer(hadoopCluster, oldStatus); err != nil {
 			return ctrl.Result{}, err
 		}
 	}
 	return ctrl.Result{}, nil
 }
 
+// UpdateClusterStatusInApiServer updates the status of the given MXJob.
+func (r *HadoopClusterReconciler) UpdateClusterStatusInApiServer(cluster *v1alpha1.HadoopCluster, status *v1alpha1.HadoopClusterStatus) error {
+	if status.ReplicaStatuses == nil {
+		status.ReplicaStatuses = map[v1alpha1.ReplicaType]*v1alpha1.ReplicaStatus{}
+	}
+
+	clusterCopy := cluster.DeepCopy()
+	clusterCopy.Status = *status.DeepCopy()
+
+	if err := r.Status().Update(context.Background(), clusterCopy); err != nil {
+		klog.Error(err, " failed to update HadoopCluster conditions in the API server")
+		return err
+	}
+
+	return nil
+}
+
 // SetupWithManager sets up the controller with the Manager.
 func (r *HadoopClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
+	c := ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.HadoopCluster{}).
 		Owns(&corev1.Pod{}).
 		Owns(&corev1.Service{}).
 		Owns(&corev1.ConfigMap{}).
-		Owns(&appv1.StatefulSet{}).
-		Owns(&appv1.Deployment{}).
-		Complete(r)
+		Owns(&appv1.StatefulSet{})
+
+	c.WithEventFilter(predicate.Funcs{
+		CreateFunc: r.onOwnerCreateFunc(),
+	})
+
+	if err := c.Complete(r); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *HadoopClusterReconciler) UpdateClusterStatus(cluster *v1alpha1.HadoopCluster, status *v1alpha1.HadoopClusterStatus) error {
+	if status.StartTime == nil {
+		now := metav1.Now()
+		status.StartTime = &now
+	}
+
+	clusetrRunning := true
+	nameNodeStatus, ok := status.ReplicaStatuses[v1alpha1.ReplicaTypeNameNode]
+	if ok && cluster.Spec.HDFS.NameNode.Replicas != nil && nameNodeStatus.Active != *cluster.Spec.HDFS.NameNode.Replicas {
+		clusetrRunning = false
+	}
+	dataNodeStatus, ok := status.ReplicaStatuses[v1alpha1.ReplicaTypeDataNode]
+	if ok && cluster.Spec.HDFS.DataNode.Replicas != nil && dataNodeStatus.Active != *cluster.Spec.HDFS.DataNode.Replicas {
+		clusetrRunning = false
+	}
+	resourcemanagerStatus, ok := status.ReplicaStatuses[v1alpha1.ReplicaTypeResourcemanager]
+	if ok && cluster.Spec.Yarn.ResourceManager.Replicas != nil && resourcemanagerStatus.Active != *cluster.Spec.Yarn.ResourceManager.Replicas {
+		clusetrRunning = false
+	}
+	nodemanagerStatus, ok := status.ReplicaStatuses[v1alpha1.ReplicaTypeNodemanager]
+	if ok && cluster.Spec.Yarn.NodeManager.Replicas != nil && nodemanagerStatus.Active != *cluster.Spec.Yarn.NodeManager.Replicas {
+		clusetrRunning = false
+	}
+
+	if clusetrRunning {
+		msg := fmt.Sprintf("HadoopCluster %s/%s is running.", cluster.Namespace, cluster.Name)
+		err := util.UpdateClusterConditions(status, v1alpha1.ClusterRunning, util.HadoopclusterRunningReason, msg)
+		if err != nil {
+			return err
+		}
+		r.Recorder.Eventf(cluster, corev1.EventTypeNormal, "HadoopClusterRunning", msg)
+	}
+
+	return nil
+}
+
+// onOwnerCreateFunc modify creation condition.
+func (r *HadoopClusterReconciler) onOwnerCreateFunc() func(event.CreateEvent) bool {
+	return func(e event.CreateEvent) bool {
+		hadoopClusetr, ok := e.Object.(*v1alpha1.HadoopCluster)
+		if !ok {
+			return true
+		}
+		msg := fmt.Sprintf("HadoopCluster %s is created.", e.Object.GetName())
+		klog.Info(msg)
+
+		if err := util.UpdateClusterConditions(&hadoopClusetr.Status, v1alpha1.ClusterCreated, util.HadoopclusterCreatedReason, msg); err != nil {
+			klog.Error(msg)
+			return false
+		}
+		return true
+	}
 }

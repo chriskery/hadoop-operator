@@ -208,40 +208,59 @@ func (h *ConfigMapBuilder) SetupWithManager(mgr manager.Manager, recorder record
 }
 
 func (h *ConfigMapBuilder) Build(cluster *hadoopclusterorgv1alpha1.HadoopCluster, status *hadoopclusterorgv1alpha1.HadoopClusterStatus) error {
-	err := h.Get(context.Background(), client.ObjectKey{Name: util.GetConfigMapName(cluster), Namespace: cluster.Namespace}, &corev1.ConfigMap{})
-	if err == nil {
-		return nil
-	}
-
-	if !errors.IsNotFound(err) {
+	err := h.Get(
+		context.Background(),
+		client.ObjectKey{Name: util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeConfigMap), Namespace: cluster.Namespace},
+		&corev1.ConfigMap{},
+	)
+	if err == nil || !errors.IsNotFound(err) {
 		return err
 	}
 
+	configMap, err := h.buildHadoopConfigMap(cluster)
+	if err != nil {
+		return err
+	}
+	ownerRef := util.GenOwnerReference(cluster)
+	return h.ConfigMapControl.CreateConfigMapWithControllerRef(cluster.GetNamespace(), configMap, cluster, ownerRef)
+}
+
+func (h *ConfigMapBuilder) Clean(cluster *hadoopclusterorgv1alpha1.HadoopCluster) error {
+	configMapName := util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeConfigMap)
+	err := h.ConfigMapControl.DeleteConfigMap(cluster.GetNamespace(), configMapName, &corev1.ConfigMap{})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (h *ConfigMapBuilder) buildHadoopConfigMap(cluster *hadoopclusterorgv1alpha1.HadoopCluster) (*corev1.ConfigMap, error) {
 	hadoopConfig := HadoopConfig{
-		NameNodeURI:             util.GetNameNodeName(cluster),
+		NameNodeURI:             util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeNameNode),
 		DataNodeReplicas:        int(*cluster.Spec.HDFS.DataNode.Replicas),
-		ResourceManagerHostname: util.GetResourceManagerName(cluster),
+		ResourceManagerHostname: util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeResourcemanager),
 	}
 	coreSiteXML, err := getConfigMapGenerator(coreSiteTemplate).GetConfigMapBytes(hadoopConfig)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	hdfsSiteXML, err := getConfigMapGenerator(hdfsSiteTemplate).GetConfigMapBytes(hadoopConfig)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	mapredSiteXML, err := getConfigMapGenerator(mapredSiteTemplate).GetConfigMapBytes(hadoopConfig)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	yarnSiteXML, err := getConfigMapGenerator(yarnSiteTemplate).GetConfigMapBytes(hadoopConfig)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	configMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      util.GetConfigMapName(cluster),
+			Name:      util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeConfigMap),
 			Namespace: cluster.Namespace,
 		},
 		Data: map[string]string{
@@ -252,6 +271,5 @@ func (h *ConfigMapBuilder) Build(cluster *hadoopclusterorgv1alpha1.HadoopCluster
 			entrypointKey:    entrypointTemplate,
 		},
 	}
-	ownerRef := util.GenOwnerReference(cluster)
-	return h.ConfigMapControl.CreateConfigMapWithControllerRef(cluster.GetNamespace(), configMap, cluster, ownerRef)
+	return configMap, nil
 }

@@ -9,6 +9,7 @@ import (
 type Builder interface {
 	SetupWithManager(mgr manager.Manager, recorder record.EventRecorder)
 	Build(cluster *v1alpha1.HadoopCluster, status *v1alpha1.HadoopClusterStatus) error
+	Clean(cluster *v1alpha1.HadoopCluster) error
 }
 
 func ResourceBuilders(mgr manager.Manager, recorder record.EventRecorder) []Builder {

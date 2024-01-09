@@ -17,11 +17,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
-const (
-	replicaTypeResourcemanager = "resourcemanager"
-	replicaTypeNodemanager     = "nodemanager"
-)
-
 var _ Builder = &YarnBuilder{}
 
 type YarnBuilder struct {
@@ -48,20 +43,39 @@ func (h *YarnBuilder) SetupWithManager(mgr manager.Manager, recorder record.Even
 }
 
 func (h *YarnBuilder) Build(cluster *hadoopclusterorgv1alpha1.HadoopCluster, status *hadoopclusterorgv1alpha1.HadoopClusterStatus) error {
+	util.InitializeClusterStatuses(status, hadoopclusterorgv1alpha1.ReplicaTypeResourcemanager)
 	if err := h.buildResourceManager(cluster, status); err != nil {
 		return err
 	}
+
+	util.InitializeClusterStatuses(status, hadoopclusterorgv1alpha1.ReplicaTypeNodemanager)
 	if err := h.buildNodeManager(cluster, status); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (h *YarnBuilder) buildResourceManager(cluster *hadoopclusterorgv1alpha1.HadoopCluster, status *hadoopclusterorgv1alpha1.HadoopClusterStatus) error {
-	labels := utillabels.GenLabels(cluster.GetName(), replicaTypeResourcemanager)
+func (h *YarnBuilder) Clean(cluster *hadoopclusterorgv1alpha1.HadoopCluster) error {
+	err := h.cleanResourceManager(cluster)
+	if err != nil {
+		return err
+	}
 
-	podName := util.GetResourceManagerName(cluster)
-	err := h.Get(context.Background(), client.ObjectKey{Name: podName, Namespace: cluster.Namespace}, &corev1.Pod{})
+	err = h.cleanNodeManager(cluster)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (h *YarnBuilder) buildResourceManager(cluster *hadoopclusterorgv1alpha1.HadoopCluster, status *hadoopclusterorgv1alpha1.HadoopClusterStatus) error {
+	labels := utillabels.GenLabels(cluster.GetName(), hadoopclusterorgv1alpha1.ReplicaTypeResourcemanager)
+
+	podName := util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeResourcemanager)
+	resourceManagerPod := &corev1.Pod{}
+	err := h.Get(context.Background(), client.ObjectKey{Name: podName, Namespace: cluster.Namespace}, resourceManagerPod)
+	var resourceManagerActive int32
 	if err != nil {
 		if !errors.IsNotFound(err) {
 			return err
@@ -70,8 +84,13 @@ func (h *YarnBuilder) buildResourceManager(cluster *hadoopclusterorgv1alpha1.Had
 			return err
 		}
 	}
+	if resourceManagerPod.Status.Phase == corev1.PodRunning {
+		resourceManagerActive = 1
+	}
+	status.ReplicaStatuses[hadoopclusterorgv1alpha1.ReplicaTypeResourcemanager].Expect = cluster.Spec.Yarn.ResourceManager.Replicas
+	status.ReplicaStatuses[hadoopclusterorgv1alpha1.ReplicaTypeResourcemanager].Active = resourceManagerActive
 
-	serviceName := util.GetResourceManagerName(cluster)
+	serviceName := util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeResourcemanager)
 	err = h.Get(context.Background(), client.ObjectKey{Name: serviceName, Namespace: cluster.Namespace}, &corev1.Service{})
 	if err != nil {
 		if !errors.IsNotFound(err) {
@@ -132,7 +151,11 @@ func (h *YarnBuilder) buildResourceManagerPod(cluster *hadoopclusterorgv1alpha1.
 }
 
 func (h *YarnBuilder) buildNodeManager(cluster *hadoopclusterorgv1alpha1.HadoopCluster, status *hadoopclusterorgv1alpha1.HadoopClusterStatus) error {
-	err := h.Get(context.Background(), client.ObjectKey{Name: util.GetNodeManagerStatefulSetName(cluster), Namespace: cluster.Namespace}, &appv1.StatefulSet{})
+	err := h.Get(
+		context.Background(),
+		client.ObjectKey{Name: util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeNodemanager), Namespace: cluster.Namespace},
+		&appv1.StatefulSet{},
+	)
 	if err != nil {
 		if !errors.IsNotFound(err) {
 			return err
@@ -140,6 +163,10 @@ func (h *YarnBuilder) buildNodeManager(cluster *hadoopclusterorgv1alpha1.HadoopC
 		if err = h.buildNodeManagerStatefulSet(cluster); err != nil {
 			return err
 		}
+	}
+
+	if err = h.updateNodeManagerStatus(cluster, status); err != nil {
+		return err
 	}
 
 	if err = h.buildNodeManagerServices(cluster); err != nil {
@@ -170,10 +197,10 @@ func (h *YarnBuilder) buildNodeManagerService(cluster *hadoopclusterorgv1alpha1.
 }
 
 func (h *YarnBuilder) buildNodeManagerStatefulSet(cluster *hadoopclusterorgv1alpha1.HadoopCluster) error {
-	labels := utillabels.GenLabels(cluster.GetName(), replicaTypeNodemanager)
-	nameNodeStatefulSet := &appv1.StatefulSet{
+	labels := utillabels.GenLabels(cluster.GetName(), hadoopclusterorgv1alpha1.ReplicaTypeNodemanager)
+	nodeManagerStatefulSet := &appv1.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      util.GetNodeManagerStatefulSetName(cluster),
+			Name:      util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeNodemanager),
 			Namespace: cluster.Namespace,
 			Labels:    labels,
 		},
@@ -182,17 +209,17 @@ func (h *YarnBuilder) buildNodeManagerStatefulSet(cluster *hadoopclusterorgv1alp
 	if err != nil {
 		return nil
 	}
-	nameNodeStatefulSet.Spec = *deploySpec
+	nodeManagerStatefulSet.Spec = *deploySpec
 
 	ownerRef := util.GenOwnerReference(cluster)
-	if err = h.StatefulSetControl.CreateStatefulSetsWithControllerRef(cluster.GetNamespace(), nameNodeStatefulSet, cluster, ownerRef); err != nil {
+	if err = h.StatefulSetControl.CreateStatefulSetsWithControllerRef(cluster.GetNamespace(), nodeManagerStatefulSet, cluster, ownerRef); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (h *YarnBuilder) genResourceManagerDeploySpec(cluster *hadoopclusterorgv1alpha1.HadoopCluster) (*appv1.DeploymentSpec, error) {
-	labels := utillabels.GenLabels(cluster.GetName(), replicaTypeResourcemanager)
+	labels := utillabels.GenLabels(cluster.GetName(), hadoopclusterorgv1alpha1.ReplicaTypeResourcemanager)
 	deploymentSpec := &appv1.DeploymentSpec{
 		Replicas: cluster.Spec.Yarn.ResourceManager.Replicas,
 		Selector: &metav1.LabelSelector{MatchLabels: labels},
@@ -206,7 +233,7 @@ func (h *YarnBuilder) genResourceManagerDeploySpec(cluster *hadoopclusterorgv1al
 }
 
 func (h *YarnBuilder) genNodeManagerStatefulSetSpec(cluster *hadoopclusterorgv1alpha1.HadoopCluster) (*appv1.StatefulSetSpec, error) {
-	labels := utillabels.GenLabels(cluster.GetName(), replicaTypeNodemanager)
+	labels := utillabels.GenLabels(cluster.GetName(), hadoopclusterorgv1alpha1.ReplicaTypeResourcemanager)
 	statefulSetSpec := &appv1.StatefulSetSpec{
 		Replicas: cluster.Spec.Yarn.NodeManager.Replicas,
 		Selector: &metav1.LabelSelector{
@@ -234,14 +261,17 @@ func (h *YarnBuilder) genNodeManagerPodSpec(cluster *hadoopclusterorgv1alpha1.Ha
 		},
 	}
 
-	podTemplateSpec.Spec.Volumes = appendHadoopConfigMapVolume(podTemplateSpec.Spec.Volumes, util.GetConfigMapName(cluster))
+	podTemplateSpec.Spec.Volumes = appendHadoopConfigMapVolume(
+		podTemplateSpec.Spec.Volumes,
+		util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeConfigMap),
+	)
 
 	volumeMounts := cluster.Spec.HDFS.NameNode.VolumeMounts
 	volumeMounts = appendHadoopConfigMapVolumeMount(volumeMounts)
 
 	nodeManagerCmd := []string{"sh", "-c", fmt.Sprintf("cp %s /tmp/entrypoint && chmod +x /tmp/entrypoint && /tmp/entrypoint", entrypointPath)}
 	containers := []corev1.Container{{
-		Name:            replicaTypeNodemanager,
+		Name:            string(hadoopclusterorgv1alpha1.ReplicaTypeResourcemanager),
 		Image:           cluster.Spec.Yarn.ResourceManager.Image,
 		Command:         nodeManagerCmd,
 		Resources:       cluster.Spec.Yarn.ResourceManager.Resources,
@@ -253,7 +283,7 @@ func (h *YarnBuilder) genNodeManagerPodSpec(cluster *hadoopclusterorgv1alpha1.Ha
 	}}
 
 	podTemplateSpec.Spec.Containers = containers
-	setPodEnv(podTemplateSpec, replicaTypeNodemanager)
+	setPodEnv(podTemplateSpec, hadoopclusterorgv1alpha1.ReplicaTypeResourcemanager)
 	return podTemplateSpec, nil
 }
 
@@ -261,7 +291,7 @@ func (h *YarnBuilder) genResourceManagerPodSpec(cluster *hadoopclusterorgv1alpha
 	podTemplateSpec := &corev1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: labels,
-			Name:   util.GetResourceManagerName(cluster),
+			Name:   util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeResourcemanager),
 		},
 		Spec: corev1.PodSpec{
 			Volumes:       cluster.Spec.Yarn.ResourceManager.Volumes,
@@ -278,18 +308,18 @@ func (h *YarnBuilder) genResourceManagerPodSpec(cluster *hadoopclusterorgv1alpha
 		corev1.Volume{
 			Name: configKey,
 			VolumeSource: corev1.VolumeSource{ConfigMap: &corev1.ConfigMapVolumeSource{
-				LocalObjectReference: corev1.LocalObjectReference{Name: util.GetConfigMapName(cluster)}}},
+				LocalObjectReference: corev1.LocalObjectReference{Name: util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeConfigMap)}}},
 		},
 	)
 
-	podTemplateSpec.Spec.Volumes = appendHadoopConfigMapVolume(podTemplateSpec.Spec.Volumes, util.GetConfigMapName(cluster))
+	podTemplateSpec.Spec.Volumes = appendHadoopConfigMapVolume(podTemplateSpec.Spec.Volumes, util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeConfigMap))
 
 	volumeMounts := cluster.Spec.HDFS.NameNode.VolumeMounts
 	volumeMounts = appendHadoopConfigMapVolumeMount(volumeMounts)
 
 	resourceManagerCmd := []string{"sh", "-c", fmt.Sprintf("cp %s /tmp/entrypoint && chmod +x /tmp/entrypoint && /tmp/entrypoint", entrypointPath)}
 	containers := []corev1.Container{{
-		Name:            replicaTypeResourcemanager,
+		Name:            string(hadoopclusterorgv1alpha1.ReplicaTypeResourcemanager),
 		Image:           cluster.Spec.Yarn.ResourceManager.Image,
 		Command:         resourceManagerCmd,
 		Resources:       cluster.Spec.Yarn.ResourceManager.Resources,
@@ -302,7 +332,7 @@ func (h *YarnBuilder) genResourceManagerPodSpec(cluster *hadoopclusterorgv1alpha
 
 	podTemplateSpec.Spec.Containers = containers
 
-	setPodEnv(podTemplateSpec, replicaTypeResourcemanager)
+	setPodEnv(podTemplateSpec, hadoopclusterorgv1alpha1.ReplicaTypeResourcemanager)
 	return podTemplateSpec, nil
 }
 
@@ -312,7 +342,7 @@ func (h *YarnBuilder) buildNodeManagerServices(cluster *hadoopclusterorgv1alpha1
 		return nil
 	}
 
-	labels := utillabels.GenLabels(cluster.GetName(), replicaTypeNodemanager)
+	labels := utillabels.GenLabels(cluster.GetName(), hadoopclusterorgv1alpha1.ReplicaTypeNodemanager)
 	for i := 0; i < int(*replicas); i++ {
 		serviceName := util.GetNodeManagerServiceName(cluster, i)
 		err := h.Get(context.Background(), client.ObjectKey{Name: serviceName, Namespace: cluster.Namespace}, &corev1.Service{})
@@ -359,5 +389,85 @@ func (h *YarnBuilder) buildResourceManageNodePortService(
 		return err
 	}
 
+	return nil
+}
+
+func (h *YarnBuilder) updateNodeManagerStatus(
+	cluster *hadoopclusterorgv1alpha1.HadoopCluster,
+	status *hadoopclusterorgv1alpha1.HadoopClusterStatus,
+) error {
+	// Create selector.
+	selector, err := metav1.LabelSelectorAsSelector(&metav1.LabelSelector{
+		MatchLabels: utillabels.GenLabels(cluster.GetName(), hadoopclusterorgv1alpha1.ReplicaTypeNodemanager),
+	})
+	if err != nil {
+		return err
+	}
+
+	podList := &corev1.PodList{}
+	err = h.List(
+		context.Background(),
+		podList,
+		client.InNamespace(cluster.Namespace),
+		client.MatchingLabelsSelector{Selector: selector},
+	)
+	if err != nil {
+		return err
+	}
+	var filter util.ObjectFilterFunction = func(obj metav1.Object) bool {
+		//TODO(FIX ME)
+		return true
+		//return metav1.IsControlledBy(obj, cluster)
+	}
+	filterPods := util.ConvertPodListWithFilter(podList.Items, filter)
+
+	var active int32
+	for _, pod := range filterPods {
+		if pod.Status.Phase == corev1.PodRunning {
+			active++
+		}
+	}
+	status.ReplicaStatuses[hadoopclusterorgv1alpha1.ReplicaTypeNodemanager].Active = active
+	status.ReplicaStatuses[hadoopclusterorgv1alpha1.ReplicaTypeNodemanager].Expect = cluster.Spec.Yarn.NodeManager.Replicas
+	return nil
+}
+
+func (h *YarnBuilder) cleanResourceManager(cluster *hadoopclusterorgv1alpha1.HadoopCluster) error {
+	podName := util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeResourcemanager)
+	err := h.PodControl.DeletePod(cluster.GetNamespace(), podName, &corev1.Pod{})
+	if err != nil {
+		return err
+	}
+
+	serviceName := util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeResourcemanager)
+	err = h.ServiceControl.DeleteService(cluster.GetNamespace(), serviceName, &corev1.Service{})
+	if err != nil {
+		return err
+	}
+
+	if cluster.Spec.Yarn.ResourceManager.ServiceType == corev1.ServiceTypeNodePort {
+		serviceNodePortName := fmt.Sprintf("%s-nodeport", serviceName)
+		err = h.ServiceControl.DeleteService(cluster.GetNamespace(), serviceNodePortName, &corev1.Service{})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (h *YarnBuilder) cleanNodeManager(cluster *hadoopclusterorgv1alpha1.HadoopCluster) error {
+	nodeManagerName := util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeNodemanager)
+	err := h.StatefulSetControl.DeleteStatefulSet(cluster.GetNamespace(), nodeManagerName, &appv1.StatefulSet{})
+	if err != nil {
+		return err
+	}
+
+	for i := 0; i < int(*cluster.Spec.Yarn.NodeManager.Replicas); i++ {
+		serviceName := util.GetNodeManagerServiceName(cluster, i)
+		err = h.ServiceControl.DeleteService(cluster.GetNamespace(), serviceName, &corev1.Service{})
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
