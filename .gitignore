@@ -26,6 +26,7 @@ Dockerfile.cross
 *~
 
 hack/openapi-gen
+hack/violation_exception.list
 
 vendor
 

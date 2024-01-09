@@ -1,94 +1,43 @@
-# hadoop-cluster-operator
-// TODO(user): Add simple overview of use/purpose
+# HadoopCluster Operator
 
-## Description
-// TODO(user): An in-depth paragraph about your project and overview of use
+[![Go Report](https://goreportcard.com/badge/github.com/chriskery/hadoop-cluster-operator)](https:/goreportcard.com/report/github.com/chriskery/hadoop-cluster-operator) 
+[![Build Status](https://github.com/chriskery/hadoop-cluster-operator/actions/workflows/test-go.yml/badge.svg?branch=master)](https://github.com/chriskery/hadoop-cluster-operator/actions/workflows/test-go.yaml?branch=master)
+[![Coverage Status](https://coveralls.io/repos/github/chriskery/hadoop-cluster-operator/badge.svg?branch=master)](https://coveralls.io/github/chriskery/hadoop-cluster-operator?branch=master)
+[![Version](https://img.shields.io/github/release/chriskery/hadoop-cluster-operator.svg)](https:/github.com/chriskery/hadoop-cluster-operator/releases)
 
-## Getting Started
-You’ll need a Kubernetes cluster to run against. You can use [KIND](https://sigs.k8s.io/kind) to get a local cluster for testing, or run against a remote cluster.
-**Note:** Your controller will automatically use the current context in your kubeconfig file (i.e. whatever cluster `kubectl cluster-info` shows).
+## Overview
 
-### Running on the cluster
-1. Install Instances of Custom Resources:
+[Hadoop](https://hadoop.apache.org/) is a framework that allows for the distributed processing of large data sets across clusters of computers using simple programming models. It is designed to scale up from single servers to thousands of machines, each offering local computation and storage. Rather than rely on hardware to deliver high-availability, the library itself is designed to detect and handle failures at the application layer, providing a highly-available service on top of a cluster of computers, each of which may be prone to failures
 
-```sh
-kubectl apply -f manifests/samples/
+The hadoop-cluster Operator manages hadoop clusters deployed to Kubernetes.
+
+## Install the Operator
+### Cert Manager
+hadoop cluster operator relies on [cert-manager](https://cert-manager.io/docs/installation/), you must have cert-manager installed and configured in your Kubernetes cluster. cert-manager is a Kubernetes add-on that automates the management of certificates and is a requirement for this Operator to function correctly.
+
+Installing cert-manager:
+
+```shell
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.13.3/cert-manager.yaml
 ```
 
-2. Build and push your image to the location specified by `IMG`:
+📖 Read more about [installing cert-manager using kubectl apply and static manifests](https://cert-manager.io/docs/installation/kubectl/).
 
-```sh
-make docker-build docker-push IMG=<some-registry>/hadoop-cluster-operator:tag
+### Master Branch
+```shell
+kubectl apply -k github.com/chriskery/hadoop-cluster-operator/manifests/default
 ```
 
-3. Deploy the controller to the cluster with the image specified by `IMG`:
+## Quick Start
 
-```sh
-make deploy IMG=<some-registry>/hadoop-cluster-operator:tag
-```
+Please refer to the [quick-start.md](docs/quick-start.md)  for more information.
 
-### Uninstall CRDs
-To delete the CRDs from the cluster:
 
-```sh
-make uninstall
-```
+## Features
 
-### Undeploy controller
-UnDeploy the controller from the cluster:
+- [x] [Create and destroy a hadoop-cluster](https://github.com/chriskery/charts/tree/master/charts/hadoop-cluster#deploying-hadoop-cluster)
 
-```sh
-make undeploy
-```
+## Contributing and Community
 
-## Contributing
-// TODO(user): Add detailed information on how you would like others to contribute to this project
-
-### How it works
-This project aims to follow the Kubernetes [Operator pattern](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/).
-
-It uses [Controllers](https://kubernetes.io/docs/concepts/architecture/controller/),
-which provide a reconcile function responsible for synchronizing resources until the desired state is reached on the cluster.
-
-### Test It Out
-1. Install the CRDs into the cluster:
-
-```sh
-make install
-```
-
-2. Run your controller (this will run in the foreground, so switch to a new terminal if you want to leave it running):
-
-```sh
-make run
-```
-
-**NOTE:** You can also run this in one step by running: `make install run`
-
-### Modifying the API definitions
-If you are editing the API definitions, generate the manifests such as CRs or CRDs using:
-
-```sh
-make manifests
-```
-
-**NOTE:** Run `make --help` for more information on all potential `make` targets
-
-More information can be found via the [Kubebuilder Documentation](https://book.kubebuilder.io/introduction.html)
-
-## License
-
-Copyright 2023.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+We thrive to build a welcoming and open community for anyone who wants to use the operator or contribute to it. 
 

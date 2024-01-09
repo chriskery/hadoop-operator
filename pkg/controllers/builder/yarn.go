@@ -292,7 +292,6 @@ func (h *YarnBuilder) genResourceManagerPodSpec(cluster *hadoopclusterorgv1alpha
 		Name:            replicaTypeResourcemanager,
 		Image:           cluster.Spec.Yarn.ResourceManager.Image,
 		Command:         resourceManagerCmd,
-		Ports:           []corev1.ContainerPort{{ContainerPort: 8088}},
 		Resources:       cluster.Spec.Yarn.ResourceManager.Resources,
 		VolumeMounts:    volumeMounts,
 		ReadinessProbe:  nil,
