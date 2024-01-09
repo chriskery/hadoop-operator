@@ -13,8 +13,7 @@ RUN go mod download
 
 # Copy the go source
 COPY main.go main.go
-COPY pkg/api/ api/
-COPY pkg/controllers/ controllers/
+COPY pkg/ pkg/
 
 # Build
 # the GOARCH has not a default value to allow the binary be built according to the host where the command
@@ -25,9 +24,8 @@ RUN CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -a -o ma
 
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
-FROM gcr.io/distroless/static:nonroot
+FROM centos:7
 WORKDIR /
 COPY --from=builder /workspace/manager .
-USER 65532:65532
 
 ENTRYPOINT ["/manager"]

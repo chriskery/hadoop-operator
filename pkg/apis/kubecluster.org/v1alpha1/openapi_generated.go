@@ -24,8 +24,148 @@ package v1alpha1
 
 import (
 	common "k8s.io/kube-openapi/pkg/common"
+	spec "k8s.io/kube-openapi/pkg/validation/spec"
 )
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
-	return map[string]common.OpenAPIDefinition{}
+	return map[string]common.OpenAPIDefinition{
+		"github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1.ClusterCondition":    schema_pkg_apis_kubeclusterorg_v1alpha1_ClusterCondition(ref),
+		"github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1.HadoopClusterStatus": schema_pkg_apis_kubeclusterorg_v1alpha1_HadoopClusterStatus(ref),
+		"github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1.ReplicaStatus":       schema_pkg_apis_kubeclusterorg_v1alpha1_ReplicaStatus(ref),
+	}
+}
+
+func schema_pkg_apis_kubeclusterorg_v1alpha1_ClusterCondition(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "ClusterCondition describes current state of a cluster",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"type": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Type of job condition.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"status": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Status of the condition, one of True, False, Unknown.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"reason": {
+						SchemaProps: spec.SchemaProps{
+							Description: "The reason for the condition's last transition.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"message": {
+						SchemaProps: spec.SchemaProps{
+							Description: "A human readable message indicating details about the transition.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"lastUpdateTime": {
+						SchemaProps: spec.SchemaProps{
+							Description: "The last time this condition was updated.",
+							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
+						},
+					},
+					"lastTransitionTime": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Last time the condition transitioned from one status to another.",
+							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
+						},
+					},
+				},
+				Required: []string{"type", "status"},
+			},
+		},
+		Dependencies: []string{
+			"k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
+	}
+}
+
+func schema_pkg_apis_kubeclusterorg_v1alpha1_HadoopClusterStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "HadoopClusterStatus defines the observed state of HadoopCluster",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"conditions": {
+						SchemaProps: spec.SchemaProps{
+							Description: "INSERT ADDITIONAL STATUS FIELD - define observed state of cluster Important: Run \"make\" to regenerate code after modifying this file Conditions is an array of current observed job conditions.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1.ClusterCondition"),
+									},
+								},
+							},
+						},
+					},
+					"replicaStatuses": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ReplicaStatuses is map of ReplicaType and ReplicaStatus, specifies the status of each replica.",
+							Type:        []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1.ReplicaStatus"),
+									},
+								},
+							},
+						},
+					},
+					"startTime": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Represents time when the job was acknowledged by the job controller. It is not guaranteed to be set in happens-before order across separate operations. It is represented in RFC3339 form and is in UTC.",
+							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
+						},
+					},
+				},
+				Required: []string{"conditions", "replicaStatuses"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1.ClusterCondition", "github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1.ReplicaStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
+	}
+}
+
+func schema_pkg_apis_kubeclusterorg_v1alpha1_ReplicaStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "ReplicaStatus represents the current observed state of the replica.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"active": {
+						SchemaProps: spec.SchemaProps{
+							Description: "The number of actively running pods.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"expect": {
+						SchemaProps: spec.SchemaProps{
+							Description: "The number of actively running pods.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+				},
+			},
+		},
+	}
 }
