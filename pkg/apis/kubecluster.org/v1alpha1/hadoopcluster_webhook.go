@@ -35,7 +35,7 @@ func (r *HadoopCluster) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 // TODO(user): EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 
-//+kubebuilder:webhook:path=/mutate-kubecluster-org-kubecluster-org-v1alpha1-hadoopcluster,mutating=true,failurePolicy=fail,sideEffects=None,groups=kubecluster.org.kubecluster.org,resources=hadoopclusters,verbs=create;update,versions=v1alpha1,name=mhadoopcluster.kb.io,admissionReviewVersions=v1
+//+kubebuilder:webhook:path=/mutate-hadoopcluster-org-hadoopcluster-org-v1alpha1-hadoopcluster,mutating=true,failurePolicy=fail,sideEffects=None,groups=kubecluster.org,resources=hadoopclusters,verbs=create;update,versions=v1alpha1,name=mhadoopcluster.kb.io,admissionReviewVersions=v1
 
 var _ webhook.Defaulter = &HadoopCluster{}
 
@@ -47,7 +47,7 @@ func (r *HadoopCluster) Default() {
 }
 
 // TODO(user): change verbs to "verbs=create;update;delete" if you want to enable deletion validation.
-//+kubebuilder:webhook:path=/validate-kubecluster-org-kubecluster-org-v1alpha1-hadoopcluster,mutating=false,failurePolicy=fail,sideEffects=None,groups=kubecluster.org.kubecluster.org,resources=hadoopclusters,verbs=create;update,versions=v1alpha1,name=vhadoopcluster.kb.io,admissionReviewVersions=v1
+//+kubebuilder:webhook:path=/validate-hadoopcluster-org-hadoopcluster-org-v1alpha1-hadoopcluster,mutating=false,failurePolicy=fail,sideEffects=None,groups=kubecluster.org,resources=hadoopclusters,verbs=create;update,versions=v1alpha1,name=vhadoopcluster.kb.io,admissionReviewVersions=v1
 
 var _ webhook.Validator = &HadoopCluster{}
 

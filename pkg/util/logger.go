@@ -49,6 +49,22 @@ func LoggerForStatefulSet(statefulSet *appv1.StatefulSet, kind string) *log.Entr
 	})
 }
 
+func LoggerForDeploy(deployment *appv1.Deployment, kind string) *log.Entry {
+	cluster := ""
+	if controllerRef := metav1.GetControllerOf(deployment); controllerRef != nil {
+		if controllerRef.Kind == kind {
+			cluster = deployment.Namespace + "." + controllerRef.Name
+		}
+	}
+	return log.WithFields(log.Fields{
+		// We use cluster to match the key used in controller.go
+		// Its more common in K8s to use a period to indicate namespace.name. So that's what we use.
+		"cluster": cluster,
+		"deploy":  deployment.GetNamespace() + "." + deployment.GetName(),
+		"uid":     deployment.GetUID(),
+	})
+}
+
 func LoggerForPod(pod *corev1.Pod, kind string) *log.Entry {
 	cluster := ""
 	if controllerRef := metav1.GetControllerOf(pod); controllerRef != nil {

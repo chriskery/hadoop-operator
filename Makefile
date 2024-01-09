@@ -46,7 +46,8 @@ help: ## Display this help.
 
 .PHONY: manifests
 manifests: controller-gen ## Generate Webhookmanifestsuration, ClusterRole and CustomResourceDefinition objects.
-	$(CONTROLLER_GEN) rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=manifests/crd/bases
+	$(CONTROLLER_GEN) rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=manifests/crd/bases output:rbac:artifacts:config=manifests/rbac output:webhook:artifacts:config=manifests/webhook
+
 
 .PHONY: generate
 generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
@@ -116,7 +117,7 @@ endif
 
 .PHONY: install
 install: manifests kustomize ## Install CRDs into the K8s cluster specified in ~/.kube/manifests.
-	$(KUSTOMIZE) build manifests/crd | $(KUBECTL) apply -f -
+	$(KUSTOMIZE) build manifests/crd | $(KUBECTL) apply --server-side  -f -
 
 .PHONY: uninstall
 uninstall: manifests kustomize ## Uninstall CRDs from the K8s cluster specified in ~/.kube/manifests. Call with ignore-not-found=true to ignore resource not found errors during deletion.

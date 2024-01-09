@@ -1,0 +1,30 @@
+apiVersion: kubecluster.org/v1alpha1
+kind: HadoopCluster
+metadata:
+  labels:
+    app.kubernetes.io/name: hadoopcluster
+    app.kubernetes.io/instance: hadoopcluster-sample
+    app.kubernetes.io/part-of: hadoop-cluster-operator
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: hadoop-cluster-operator
+  name: hadoopcluster-sample
+spec:
+  hdfs:
+    nameNode:
+      image: apache/hadoop:3
+      replicas: 1
+#      serviceType: NodePort
+    dataNode:
+      image: apache/hadoop:3
+      replicas: 1
+#      serviceType: NodePort
+  yarn:
+    resourceManager:
+      image: apache/hadoop:3
+      replicas: 1
+      serviceType: NodePort
+    nodeManager:
+      image: apache/hadoop:3
+      replicas: 1
+#      serviceType: NodePort
+

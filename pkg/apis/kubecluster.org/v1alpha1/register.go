@@ -1,4 +1,4 @@
-// Copyright 2021 The Kubeflow Authors
+// Copyright 2018 The Kubeflow Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,17 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package labels
+package v1alpha1
 
 import (
-	"github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1"
-	"strings"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-func GenLabels(clusterName, replicaType string) map[string]string {
-	replicaType = strings.Replace(replicaType, "/", "-", -1)
-	return map[string]string{
-		v1alpha1.ClusterNameLabel: clusterName,
-		v1alpha1.ReplicaTypeLabel: replicaType,
-	}
+// SchemeGroupVersion is group version used to register these objects.
+var SchemeGroupVersion = GroupVersion
+
+// Resource takes an unqualified resource and returns a Group-qualified GroupResource.
+func Resource(resource string) schema.GroupResource {
+	return GroupVersion.WithResource(resource).GroupResource()
 }

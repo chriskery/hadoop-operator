@@ -13,8 +13,8 @@ resources:
     namespaced: true
   controller: true
   domain: kubecluster.org
-  group: kubecluster.org
-  kind: hadoopCluster
+  group: hadoopcluster
+  kind: HadoopCluster
   path: github.com/chriskery/hadoop-cluster-operator/api/v1alpha1
   version: v1alpha1
   webhooks:

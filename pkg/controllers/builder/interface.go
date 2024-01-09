@@ -12,7 +12,11 @@ type Builder interface {
 }
 
 func ResourceBuilders(mgr manager.Manager, recorder record.EventRecorder) []Builder {
-	var builders = []Builder{&HdfsBuilder{}}
+	var builders = []Builder{
+		&ConfigMapBuilder{},
+		&HdfsBuilder{},
+		&YarnBuilder{},
+	}
 	for _, builder := range builders {
 		builder.SetupWithManager(mgr, recorder)
 	}

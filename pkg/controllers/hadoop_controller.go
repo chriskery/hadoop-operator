@@ -19,12 +19,11 @@ package controllers
 import (
 	"context"
 	"github.com/chriskery/hadoop-cluster-operator/pkg/controllers/builder"
-	"github.com/chriskery/hadoop-cluster-operator/pkg/util"
 	"github.com/go-logr/logr"
-	"github.com/sirupsen/logrus"
+	appv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/tools/record"
-	"k8s.io/client-go/util/workqueue"
+	"k8s.io/klog/v2"
 	"reflect"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -45,7 +44,6 @@ func NewReconciler(mgr manager.Manager) *HadoopClusterReconciler {
 		Log:       log.Log,
 	}
 
-	r.WorkQueue = &util.FakeWorkQueue{}
 	return r
 }
 
@@ -58,17 +56,6 @@ type HadoopClusterReconciler struct {
 	Log       logr.Logger
 
 	builders []builder.Builder
-
-	// WorkQueue is a rate limited work queue. This is used to queue work to be
-	// processed instead of performing it as soon as a change happens. This
-	// means we can ensure we only process a fixed amount of resources at a
-	// time, and makes it easy to ensure we are never processing the same item
-	// simultaneously in two different workers.
-	WorkQueue workqueue.RateLimitingInterface
-
-	// Recorder is an event recorder for recording Event resources to the
-	// Kubernetes API.
-	Recorder record.EventRecorder
 }
 
 // +kubebuilder:rbac:groups="",resources=pods/exec,verbs=create
@@ -78,9 +65,9 @@ type HadoopClusterReconciler struct {
 // +kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list;watch;create;update
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;update
 // +kubebuilder:rbac:groups="",resources=events,verbs=get;create;patch
-// +kubebuilder:rbac:groups=kubecluster.org.kubecluster.org,resources=hadoopclusters,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=kubecluster.org.kubecluster.org,resources=hadoopclusters/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=kubecluster.org.kubecluster.org,resources=hadoopclusters/finalizers,verbs=update
+// +kubebuilder:rbac:groups=kubecluster.org,resources=hadoopclusters,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=kubecluster.org,resources=hadoopclusters/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=kubecluster.org,resources=hadoopclusters/finalizers,verbs=update
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -101,7 +88,7 @@ func (r *HadoopClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 	for _, builder := range r.builders {
 		if err = builder.Build(hadoopCluster, oldStatus); err != nil {
-			logrus.Warnf("Reconcile Hadoop Cluster error %v", err)
+			klog.Warningf("Reconcile Hadoop Cluster error %v", err)
 			return ctrl.Result{}, err
 		}
 	}
@@ -118,5 +105,10 @@ func (r *HadoopClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 func (r *HadoopClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.HadoopCluster{}).
+		Owns(&corev1.Pod{}).
+		Owns(&corev1.Service{}).
+		Owns(&corev1.ConfigMap{}).
+		Owns(&appv1.StatefulSet{}).
+		Owns(&appv1.Deployment{}).
 		Complete(r)
 }

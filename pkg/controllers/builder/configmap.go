@@ -2,75 +2,174 @@ package builder
 
 import (
 	"bytes"
-	kubeclusterorgv1alpha1 "github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1"
+	"context"
+	hadoopclusterorgv1alpha1 "github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1"
 	"github.com/chriskery/hadoop-cluster-operator/pkg/controllers/control"
 	"github.com/chriskery/hadoop-cluster-operator/pkg/util"
-	"html/template"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeclientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/record"
-	"os"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-	"sync"
+	"text/template"
 )
 
-const configMapTemplate = `CORE-SITE.XML_fs.default.name=ConfigMap://{{.NameNodeURI}}
-CORE-SITE.XML_fs.defaultFS=ConfigMap://{{.NameNodeURI}}
-ConfigMap-SITE.XML_dfs.namenode.rpc-address={{.NameNodeURI}}:8020
-ConfigMap-SITE.XML_dfs.replication={{.DataNodeReplicas}}
-MAPRED-SITE.XML_mapreduce.framework.name=yarn
-MAPRED-SITE.XML_yarn.app.mapreduce.am.env=HADOOP_MAPRED_HOME=$HADOOP_HOME
-MAPRED-SITE.XML_mapreduce.map.env=HADOOP_MAPRED_HOME=$HADOOP_HOME
-MAPRED-SITE.XML_mapreduce.reduce.env=HADOOP_MAPRED_HOME=$HADOOP_HOME
-YARN-SITE.XML_yarn.resourcemanager.hostname={{.ResourceManagerHostname}}
-YARN-SITE.XML_yarn.nodemanager.pmem-check-enabled=false
-YARN-SITE.XML_yarn.nodemanager.delete.debug-delay-sec=600
-YARN-SITE.XML_yarn.nodemanager.vmem-check-enabled=false
-YARN-SITE.XML_yarn.nodemanager.aux-services=mapreduce_shuffle
-CAPACITY-SCHEDULER.XML_yarn.scheduler.capacity.maximum-applications=10000
-CAPACITY-SCHEDULER.XML_yarn.scheduler.capacity.maximum-am-resource-percent=0.1
-CAPACITY-SCHEDULER.XML_yarn.scheduler.capacity.resource-calculator=org.apache.hadoop.yarn.util.resource.DefaultResourceCalculator
-CAPACITY-SCHEDULER.XML_yarn.scheduler.capacity.root.queues=default
-CAPACITY-SCHEDULER.XML_yarn.scheduler.capacity.root.default.capacity=100
-CAPACITY-SCHEDULER.XML_yarn.scheduler.capacity.root.default.user-limit-factor=1
-CAPACITY-SCHEDULER.XML_yarn.scheduler.capacity.root.default.maximum-capacity=100
-CAPACITY-SCHEDULER.XML_yarn.scheduler.capacity.root.default.state=RUNNING
-CAPACITY-SCHEDULER.XML_yarn.scheduler.capacity.root.default.acl_submit_applications=*
-CAPACITY-SCHEDULER.XML_yarn.scheduler.capacity.root.default.acl_administer_queue=*
-CAPACITY-SCHEDULER.XML_yarn.scheduler.capacity.node-locality-delay=40
-CAPACITY-SCHEDULER.XML_yarn.scheduler.capacity.queue-mappings=
-CAPACITY-SCHEDULER.XML_yarn.scheduler.capacity.queue-mappings-override.enable=false
+const (
+	coreSiteTemplate = `<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
+
+<configuration>
+    <property>
+      <name>fs.defaultFS</name>
+      <value>hdfs://{{.NameNodeURI}}:9000</value>
+    </property>
+	
+    <property>
+      <name>io.file.buffer.size</name>
+      <value>4096</value>
+    </property>
+</configuration>
 `
 
-var (
-	onceInitContainer sync.Once
-	icGenerator       *configMapGenerator
+	hdfsSiteTemplate = `<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
+<configuration>
+  <property>
+    <name>dfs.replication</name>
+    <value>{{.DataNodeReplicas}}</value>
+  </property>
+  <property>
+    <name>dfs.namenode.rpc-address</name>
+    <value>{{.NameNodeURI}}:9000</value>
+  </property>
+  <property>
+    <name>dfs.namenode.http-address</name>
+    <value>{{.NameNodeURI}}:9870</value>
+  </property>
+</configuration>
+`
+	mapredSiteTemplate = `<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
+<configuration>
+    <property>
+      <name>mapreduce.framework.name</name>
+      <value>yarn</value>
+    </property>
+
+    <property>
+      <name>mapreduce.jobhistory.address</name>
+      <value>0.0.0.0:10020</value>
+    </property>
+    <property>
+      <name>mapreduce.jobhistory.webapp.address</name>
+      <value>0.0.0.0:19888</value>
+    </property>
+</configuration>
+`
+	yarnSiteTemplate = `<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
+
+<configuration>
+    <property>
+      <name>yarn.resourcemanager.recovery.enabled</name>
+      <value>true</value>
+    </property>
+	
+    <property>
+      <name>yarn.resourcemanager.hostname</name>
+      <value>{{.ResourceManagerHostname}}</value>
+    </property>
+
+    <property>
+      <name>yarn.nodemanager.aux-services</name>
+      <value>mapreduce_shuffle</value>
+    </property>
+    <property>
+      <name>yarn.nodemanager.aux-services.mapreduce.shuffle.class</name>
+      <value>org.apache.hadoop.mapred.ShuffleHandler</value>
+    </property>
+	
+    <property>
+      <name>yarn.log-aggregation-enable</name>
+      <value>true</value>
+    </property>
+    <property>
+      <name>yarn.log-aggregation.retain-seconds</name>
+      <value>604800</value>
+    </property>	
+
+    <property>
+       <name>yarn.nodemanager.env-whitelist</name>
+       <value>JAVA_HOME,HADOOP_COMMON_HOME,HADOOP_HDFS_HOME,HADOOP_CONF_DIR,CLASSPATH_PREPEND_DISTCACHE,HADOOP_YARN_HOME,HADOOP_HOME,PATH,LANG,TZ,HADOOP_MAPRED_HOME</value>
+    </property>
+
+</configuration>`
+
+	entrypointTemplate = `#/bin/bash
+HADOOP_CONF_DIR="${HADOOP_CONF_DIR:-/opt/hadoop/etc/hadoop}"
+echo "The value of HADOOP_CONF_DIR is: $HADOOP_CONF_DIR"
+
+HADOOP_OPERATOR_DIR="${HADOOP_OPERATOR_DIR:-/etc/hadoop-operator}"
+if [ -d "$HADOOP_OPERATOR_DIR" ]; then
+    cp $HADOOP_OPERATOR_DIR/hdfs-site.xml $HADOOP_CONF_DIR
+    cp $HADOOP_OPERATOR_DIR/core-site.xml $HADOOP_CONF_DIR
+    cp $HADOOP_OPERATOR_DIR/mapred-site.xml $HADOOP_CONF_DIR
+    cp $HADOOP_OPERATOR_DIR/yarn-site.xml $HADOOP_CONF_DIR
+else
+    echo "Directory does not exist: $HADOOP_OPERATOR_DIR"
+fi
+
+mkdir -p  /tmp/hadoop-hadoop/dfs/name
+
+case "$HADOOP_ROLE" in
+    resourcemanager)
+        echo "Environment variable is set to resourcemanager"
+        yarn resourcemanager
+        ;;
+    nodemanager)
+        echo "Environment variable is set to nodemanager"
+        yarn nodemanager
+        ;;
+    namenode)
+        echo "Environment variable is set to namenode"
+        hdfs namenode -format
+		hdfs namenode
+        ;;
+    datanode)
+        echo "Environment variable is set to datanode"
+        hdfs datanode
+        ;;
+    *)
+        echo "Environment variable is set to an unknown value: $HADOOP_ROLE"
+        exit 1
+        ;;
+esac
+`
+
+	coreSiteXmlKey   = "core-site.xml"
+	hdfsSiteXmlKey   = "hdfs-site.xml"
+	mapredSiteXmlKey = "mapred-site.xml"
+	yarnSiteXmlKey   = "yarn-site.xml"
+	workersKey       = "workers"
+
+	entrypointKey = "entrypoint"
+	configKey     = "config"
 )
 
 type configMapGenerator struct {
 	template string
-	image    string
-	maxTries int
 }
 
-func getConfigMapGenerator() *configMapGenerator {
-	onceInitContainer.Do(func() {
-		icGenerator = &configMapGenerator{
-			template: getConfigMapTemplateOrDefault(""),
-		}
-	})
-	return icGenerator
-}
-
-// getConfigMapTemplateOrDefault returns the init container template file if
-// it exists, or return initContainerTemplate by default.
-func getConfigMapTemplateOrDefault(file string) string {
-	b, err := os.ReadFile(file)
-	if err == nil {
-		return string(b)
+func getConfigMapGenerator(template string) *configMapGenerator {
+	return &configMapGenerator{
+		template: template,
 	}
-	return configMapTemplate
 }
 
 type HadoopConfig struct {
@@ -85,7 +184,7 @@ func (i *configMapGenerator) GetConfigMapBytes(hadoopConfig HadoopConfig) ([]byt
 	if err != nil {
 		return nil, err
 	}
-	if err := tpl.Execute(&buf, hadoopConfig); err != nil {
+	if err = tpl.Execute(&buf, hadoopConfig); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil
@@ -94,8 +193,7 @@ func (i *configMapGenerator) GetConfigMapBytes(hadoopConfig HadoopConfig) ([]byt
 var _ Builder = &ConfigMapBuilder{}
 
 type ConfigMapBuilder struct {
-	// KubeClientSet is a standard kubernetes clientset.
-	KubeClientSet kubeclientset.Interface
+	client.Client
 
 	// ConfigMapControl is used to add or delete services.
 	ConfigMapControl control.ConfigMapControlInterface
@@ -103,20 +201,40 @@ type ConfigMapBuilder struct {
 
 func (h *ConfigMapBuilder) SetupWithManager(mgr manager.Manager, recorder record.EventRecorder) {
 	cfg := mgr.GetConfig()
-
 	kubeClientSet := kubeclientset.NewForConfigOrDie(cfg)
 
-	h.KubeClientSet = kubeClientSet
+	h.Client = mgr.GetClient()
 	h.ConfigMapControl = control.RealConfigMapControl{KubeClient: kubeClientSet, Recorder: recorder}
 }
 
-func (h *ConfigMapBuilder) Build(cluster *kubeclusterorgv1alpha1.HadoopCluster, status *kubeclusterorgv1alpha1.HadoopClusterStatus) error {
+func (h *ConfigMapBuilder) Build(cluster *hadoopclusterorgv1alpha1.HadoopCluster, status *hadoopclusterorgv1alpha1.HadoopClusterStatus) error {
+	err := h.Get(context.Background(), client.ObjectKey{Name: util.GetConfigMapName(cluster), Namespace: cluster.Namespace}, &corev1.ConfigMap{})
+	if err == nil {
+		return nil
+	}
+
+	if !errors.IsNotFound(err) {
+		return err
+	}
+
 	hadoopConfig := HadoopConfig{
 		NameNodeURI:             util.GetNameNodeName(cluster),
 		DataNodeReplicas:        int(*cluster.Spec.HDFS.DataNode.Replicas),
 		ResourceManagerHostname: util.GetResourceManagerName(cluster),
 	}
-	configMapBytes, err := getConfigMapGenerator().GetConfigMapBytes(hadoopConfig)
+	coreSiteXML, err := getConfigMapGenerator(coreSiteTemplate).GetConfigMapBytes(hadoopConfig)
+	if err != nil {
+		return err
+	}
+	hdfsSiteXML, err := getConfigMapGenerator(hdfsSiteTemplate).GetConfigMapBytes(hadoopConfig)
+	if err != nil {
+		return err
+	}
+	mapredSiteXML, err := getConfigMapGenerator(mapredSiteTemplate).GetConfigMapBytes(hadoopConfig)
+	if err != nil {
+		return err
+	}
+	yarnSiteXML, err := getConfigMapGenerator(yarnSiteTemplate).GetConfigMapBytes(hadoopConfig)
 	if err != nil {
 		return err
 	}
@@ -127,7 +245,11 @@ func (h *ConfigMapBuilder) Build(cluster *kubeclusterorgv1alpha1.HadoopCluster, 
 			Namespace: cluster.Namespace,
 		},
 		Data: map[string]string{
-			"config": string(configMapBytes),
+			yarnSiteXmlKey:   string(yarnSiteXML),
+			coreSiteXmlKey:   string(coreSiteXML),
+			hdfsSiteXmlKey:   string(hdfsSiteXML),
+			mapredSiteXmlKey: string(mapredSiteXML),
+			entrypointKey:    entrypointTemplate,
 		},
 	}
 	ownerRef := util.GenOwnerReference(cluster)

@@ -1,0 +1,31 @@
+# permissions for end users to edit hadoopclusters.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: clusterrole
+    app.kubernetes.io/instance: hadoopcluster-editor-role
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: hadoop-cluster-operator
+    app.kubernetes.io/part-of: hadoop-cluster-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: hadoopcluster-editor-role
+rules:
+- apiGroups:
+  - kubecluster.org
+  resources:
+  - hadoopclusters
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - kubecluster.org
+  resources:
+  - hadoopclusters/status
+  verbs:
+  - get

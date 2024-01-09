@@ -34,6 +34,8 @@ const (
 
 	// ClusterNameLabel represents the label key for the cluster name, the value is the cluster name.
 	ClusterNameLabel = "kubeclusetr.org/clusetr-name"
+
+	ReplicaTypeLabel = "kubeclusetr.org/relica-type"
 )
 
 type HDFSSpec struct {
@@ -74,7 +76,7 @@ type HDFSSpecTemplate struct {
 	// If set, the fields of SecurityContext override the equivalent fields of PodSecurityContext.
 	// More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
 	// +optional
-	SecurityContext *corev1.PodSecurityContext `json:"securityContext,omitempty" protobuf:"bytes,15,opt,name=securityContext"`
+	SecurityContext *corev1.SecurityContext `json:"securityContext,omitempty" protobuf:"bytes,15,opt,name=securityContext"`
 	// Host networking requested for this pod. Use the host's network namespace.
 	// If this option is set, the ports that will be used must be specified.
 	// Default to false.
@@ -88,6 +90,8 @@ type HDFSSpecTemplate struct {
 	// +patchMergeKey=name
 	// +patchStrategy=merge,retainKeys
 	Volumes []corev1.Volume `json:"volumes,omitempty" patchStrategy:"merge,retainKeys" patchMergeKey:"name" protobuf:"bytes,1,rep,name=volumes"`
+
+	ServiceType corev1.ServiceType `json:"serviceType,omitempty" protobuf:"bytes,16,opt,name=serviceType,casttype=ServiceType"`
 }
 
 type YarnSpec struct {
@@ -122,7 +126,7 @@ type YarnSpecTemplate struct {
 	// If set, the fields of SecurityContext override the equivalent fields of PodSecurityContext.
 	// More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
 	// +optional
-	SecurityContext *corev1.PodSecurityContext `json:"securityContext,omitempty" protobuf:"bytes,15,opt,name=securityContext"`
+	SecurityContext *corev1.SecurityContext `json:"securityContext,omitempty" protobuf:"bytes,15,opt,name=securityContext"`
 	// Host networking requested for this pod. Use the host's network namespace.
 	// If this option is set, the ports that will be used must be specified.
 	// Default to false.
@@ -136,6 +140,14 @@ type YarnSpecTemplate struct {
 	// +patchMergeKey=name
 	// +patchStrategy=merge,retainKeys
 	Volumes []corev1.Volume `json:"volumes,omitempty" patchStrategy:"merge,retainKeys" patchMergeKey:"name" protobuf:"bytes,1,rep,name=volumes"`
+	// Pod volumes to mount into the container's filesystem.
+	// Cannot be updated.
+	// +optional
+	// +patchMergeKey=mountPath
+	// +patchStrategy=merge
+	VolumeMounts []corev1.VolumeMount `json:"volumeMounts,omitempty" patchStrategy:"merge" patchMergeKey:"mountPath" protobuf:"bytes,9,rep,name=volumeMounts"`
+
+	ServiceType corev1.ServiceType `json:"serviceType,omitempty" protobuf:"bytes,16,opt,name=serviceType,casttype=ServiceType"`
 }
 
 // HadoopClusterSpec defines the desired state of HadoopCluster
@@ -158,7 +170,7 @@ type HadoopClusterStatus struct {
 // +resource:path=hadoopclusters
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// +kubebuilder:resource:scope=Namespaced,path=HadoopClusters,shortName={"hdc","hdcs"}
+// +kubebuilder:resource:scope=Namespaced,path=hadoopclusters,shortName={"hdc","hdcs"}
 
 // HadoopCluster is the Schema for the hadoopclusters API
 type HadoopCluster struct {
@@ -170,6 +182,8 @@ type HadoopCluster struct {
 }
 
 //+kubebuilder:object:root=true
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimzxachinery/pkg/runtime.Object
+// +resource:path=hadoopclusters
 
 // HadoopClusterList contains a list of HadoopCluster
 type HadoopClusterList struct {
