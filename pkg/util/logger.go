@@ -109,3 +109,20 @@ func LoggerForConfigMap(cm *corev1.ConfigMap, kind string) *log.Entry {
 		"uid":       cm.ObjectMeta.UID,
 	})
 }
+
+// LoggerForGenericKind generates log entry for generic Kubernetes resource Kind
+func LoggerForGenericKind(obj metav1.Object, kind string) *log.Entry {
+	job := ""
+	if controllerRef := metav1.GetControllerOf(obj); controllerRef != nil {
+		if controllerRef.Kind == kind {
+			job = obj.GetNamespace() + "." + controllerRef.Name
+		}
+	}
+	return log.WithFields(log.Fields{
+		// We use job to match the key used in controller.go
+		// In controller.go we log the key used with the workqueue.
+		"job": job,
+		kind:  obj.GetNamespace() + "." + obj.GetName(),
+		"uid": obj.GetUID(),
+	})
+}

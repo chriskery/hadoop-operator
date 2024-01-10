@@ -32,10 +32,13 @@ import (
 	"reflect"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
 const controllerName = "hadoop-cluster-operator"
@@ -142,18 +145,70 @@ func (r *HadoopClusterReconciler) UpdateClusterStatusInApiServer(cluster *v1alph
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *HadoopClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	c := ctrl.NewControllerManagedBy(mgr).
-		For(&v1alpha1.HadoopCluster{}).
-		Owns(&corev1.Pod{}).
-		Owns(&corev1.Service{}).
-		Owns(&corev1.ConfigMap{}).
-		Owns(&appv1.StatefulSet{})
-
-	c.WithEventFilter(predicate.Funcs{
-		CreateFunc: r.onOwnerCreateFunc(),
+	c, err := controller.New(controllerName, mgr, controller.Options{
+		Reconciler: r,
 	})
 
-	if err := c.Complete(r); err != nil {
+	if err != nil {
+		return err
+	}
+
+	// using onOwnerCreateFunc is easier to set defaults
+	if err = c.Watch(source.Kind(mgr.GetCache(), &v1alpha1.HadoopCluster{}), &handler.EnqueueRequestForObject{},
+		predicate.Funcs{CreateFunc: r.onOwnerCreateFunc()},
+	); err != nil {
+		return err
+	}
+
+	// inject watching for job related pod
+	if err = c.Watch(
+		source.Kind(mgr.GetCache(), &corev1.Pod{}),
+		handler.EnqueueRequestForOwner(mgr.GetScheme(), mgr.GetRESTMapper(), &v1alpha1.HadoopCluster{}, handler.OnlyControllerOwner()),
+		predicate.Funcs{
+			CreateFunc: util.OnDependentCreateFunc(),
+			UpdateFunc: util.OnDependentUpdateFunc(r.Client),
+			DeleteFunc: util.OnDependentDeleteFunc(),
+		},
+	); err != nil {
+		return err
+	}
+
+	// inject watching for job related service
+	if err = c.Watch(
+		source.Kind(mgr.GetCache(), &corev1.Service{}),
+		handler.EnqueueRequestForOwner(mgr.GetScheme(), mgr.GetRESTMapper(), &v1alpha1.HadoopCluster{}, handler.OnlyControllerOwner()),
+		predicate.Funcs{
+			CreateFunc: util.OnDependentCreateFunc(),
+			UpdateFunc: util.OnDependentUpdateFunc(r.Client),
+			DeleteFunc: util.OnDependentDeleteFunc(),
+		},
+	); err != nil {
+		return err
+	}
+
+	// inject watching for job related service
+	if err = c.Watch(
+		source.Kind(mgr.GetCache(), &corev1.ConfigMap{}),
+		handler.EnqueueRequestForOwner(mgr.GetScheme(), mgr.GetRESTMapper(), &v1alpha1.HadoopCluster{}, handler.OnlyControllerOwner()),
+		predicate.Funcs{
+			CreateFunc: util.OnDependentCreateFunc(),
+			UpdateFunc: util.OnDependentUpdateFunc(r.Client),
+			DeleteFunc: util.OnDependentDeleteFunc(),
+		},
+	); err != nil {
+		return err
+	}
+
+	// inject watching for job related service
+	if err = c.Watch(
+		source.Kind(mgr.GetCache(), &appv1.StatefulSet{}),
+		handler.EnqueueRequestForOwner(mgr.GetScheme(), mgr.GetRESTMapper(), &v1alpha1.HadoopCluster{}, handler.OnlyControllerOwner()),
+		predicate.Funcs{
+			CreateFunc: util.OnDependentCreateFunc(),
+			UpdateFunc: util.OnDependentUpdateFunc(r.Client),
+			DeleteFunc: util.OnDependentDeleteFunc(),
+		},
+	); err != nil {
 		return err
 	}
 
@@ -161,6 +216,13 @@ func (r *HadoopClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 func (r *HadoopClusterReconciler) UpdateClusterStatus(cluster *v1alpha1.HadoopCluster, status *v1alpha1.HadoopClusterStatus) error {
+	if len(status.Conditions) == 0 {
+		msg := fmt.Sprintf("HadoopCluster %s is created.", cluster.GetName())
+		if err := util.UpdateClusterConditions(status, v1alpha1.ClusterCreated, util.HadoopclusterCreatedReason, msg); err != nil {
+			return err
+		}
+	}
+
 	if status.StartTime == nil {
 		now := metav1.Now()
 		status.StartTime = &now
@@ -168,19 +230,19 @@ func (r *HadoopClusterReconciler) UpdateClusterStatus(cluster *v1alpha1.HadoopCl
 
 	clusetrRunning := true
 	nameNodeStatus, ok := status.ReplicaStatuses[v1alpha1.ReplicaTypeNameNode]
-	if ok && cluster.Spec.HDFS.NameNode.Replicas != nil && nameNodeStatus.Active != *cluster.Spec.HDFS.NameNode.Replicas {
+	if ok && util.ReplicaReady(cluster.Spec.HDFS.NameNode.Replicas, 1, nameNodeStatus.Active) {
 		clusetrRunning = false
 	}
 	dataNodeStatus, ok := status.ReplicaStatuses[v1alpha1.ReplicaTypeDataNode]
-	if ok && cluster.Spec.HDFS.DataNode.Replicas != nil && dataNodeStatus.Active != *cluster.Spec.HDFS.DataNode.Replicas {
+	if ok && util.ReplicaReady(cluster.Spec.HDFS.DataNode.Replicas, 1, dataNodeStatus.Active) {
 		clusetrRunning = false
 	}
 	resourcemanagerStatus, ok := status.ReplicaStatuses[v1alpha1.ReplicaTypeResourcemanager]
-	if ok && cluster.Spec.Yarn.ResourceManager.Replicas != nil && resourcemanagerStatus.Active != *cluster.Spec.Yarn.ResourceManager.Replicas {
+	if ok && util.ReplicaReady(cluster.Spec.Yarn.ResourceManager.Replicas, 1, resourcemanagerStatus.Active) {
 		clusetrRunning = false
 	}
 	nodemanagerStatus, ok := status.ReplicaStatuses[v1alpha1.ReplicaTypeNodemanager]
-	if ok && cluster.Spec.Yarn.NodeManager.Replicas != nil && nodemanagerStatus.Active != *cluster.Spec.Yarn.NodeManager.Replicas {
+	if ok && util.ReplicaReady(cluster.Spec.Yarn.NodeManager.Replicas, 1, nodemanagerStatus.Active) {
 		clusetrRunning = false
 	}
 
@@ -191,6 +253,8 @@ func (r *HadoopClusterReconciler) UpdateClusterStatus(cluster *v1alpha1.HadoopCl
 			return err
 		}
 		r.Recorder.Eventf(cluster, corev1.EventTypeNormal, "HadoopClusterRunning", msg)
+	} else {
+
 	}
 
 	return nil

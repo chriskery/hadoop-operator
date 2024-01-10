@@ -27,7 +27,11 @@ func InitializeClusterStatuses(status *v1alpha1.HadoopClusterStatus, replicaType
 func UpdateClusterReplicaStatuses(status *v1alpha1.HadoopClusterStatus, replicaType v1alpha1.ReplicaType, pod *corev1.Pod) {
 	switch pod.Status.Phase {
 	case corev1.PodRunning:
-		status.ReplicaStatuses[replicaType].Active++
+		for _, condition := range pod.Status.Conditions {
+			if condition.Type == corev1.PodReady && condition.Status == corev1.ConditionTrue {
+				status.ReplicaStatuses[replicaType].Active++
+			}
+		}
 	}
 }
 
@@ -97,4 +101,12 @@ func filterOutCondition(conditions []v1alpha1.ClusterCondition, condType v1alpha
 		newConditions = append(newConditions, c)
 	}
 	return newConditions
+}
+
+func ReplicaReady(replicas *int32, defaultReplicas int32, active int32) bool {
+	if replicas == nil {
+		return active >= defaultReplicas
+	} else {
+		return active >= *replicas
+	}
 }

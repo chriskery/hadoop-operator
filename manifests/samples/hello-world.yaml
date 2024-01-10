@@ -1,0 +1,11 @@
+apiVersion: kubecluster.org/v1alpha1
+kind: HadoopCluster
+metadata:
+  name: hadoopcluster-sample
+spec:
+  yarn:
+    resourceManager:
+      serviceType: NodePort
+
+
+

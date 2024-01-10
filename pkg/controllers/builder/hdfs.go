@@ -69,6 +69,8 @@ func (h *HdfsBuilder) Clean(cluster *hadoopclusterorgv1alpha1.HadoopCluster) err
 }
 
 func (h *HdfsBuilder) buildNameNode(cluster *hadoopclusterorgv1alpha1.HadoopCluster, status *hadoopclusterorgv1alpha1.HadoopClusterStatus) error {
+	labels := utillabels.GenLabels(cluster.GetName(), hadoopclusterorgv1alpha1.ReplicaTypeNameNode)
+
 	nameNodePod := &corev1.Pod{}
 	err := h.Get(
 		context.Background(),
@@ -79,7 +81,7 @@ func (h *HdfsBuilder) buildNameNode(cluster *hadoopclusterorgv1alpha1.HadoopClus
 		if !errors.IsNotFound(err) {
 			return err
 		}
-		if err = h.buildNameNodePod(cluster); err != nil {
+		if err = h.buildNameNodePod(cluster, labels); err != nil {
 			return err
 		}
 	} else {
@@ -96,16 +98,14 @@ func (h *HdfsBuilder) buildNameNode(cluster *hadoopclusterorgv1alpha1.HadoopClus
 		if !errors.IsNotFound(err) {
 			return err
 		}
-		err = h.buildNameNodeService(cluster)
-		if err != nil {
+		if err = h.buildNameNodeService(cluster, labels); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (h *HdfsBuilder) buildNameNodeService(cluster *hadoopclusterorgv1alpha1.HadoopCluster) error {
-	labels := utillabels.GenLabels(cluster.GetName(), hadoopclusterorgv1alpha1.ReplicaTypeNameNode)
+func (h *HdfsBuilder) buildNameNodeService(cluster *hadoopclusterorgv1alpha1.HadoopCluster, labels map[string]string) error {
 	nameNodeService := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeNameNode),
@@ -125,8 +125,7 @@ func (h *HdfsBuilder) buildNameNodeService(cluster *hadoopclusterorgv1alpha1.Had
 	return nil
 }
 
-func (h *HdfsBuilder) buildNameNodePod(cluster *hadoopclusterorgv1alpha1.HadoopCluster) error {
-	labels := utillabels.GenLabels(cluster.GetName(), hadoopclusterorgv1alpha1.ReplicaTypeNameNode)
+func (h *HdfsBuilder) buildNameNodePod(cluster *hadoopclusterorgv1alpha1.HadoopCluster, labels map[string]string) error {
 	podSpec, err := h.genNameNodePodSpec(cluster, labels)
 	if err != nil {
 		return err
@@ -140,6 +139,7 @@ func (h *HdfsBuilder) buildNameNodePod(cluster *hadoopclusterorgv1alpha1.HadoopC
 }
 
 func (h *HdfsBuilder) buildDataNode(cluster *hadoopclusterorgv1alpha1.HadoopCluster, status *hadoopclusterorgv1alpha1.HadoopClusterStatus) error {
+	labels := utillabels.GenLabels(cluster.GetName(), hadoopclusterorgv1alpha1.ReplicaTypeDataNode)
 	err := h.Get(
 		context.Background(),
 		client.ObjectKey{Name: util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeDataNode), Namespace: cluster.Namespace},
@@ -149,16 +149,16 @@ func (h *HdfsBuilder) buildDataNode(cluster *hadoopclusterorgv1alpha1.HadoopClus
 		if !errors.IsNotFound(err) {
 			return err
 		}
-		if err = h.buildDataNodeStatefulSet(cluster); err != nil {
+		if err = h.buildDataNodeStatefulSet(cluster, labels); err != nil {
 			return err
 		}
 	}
 
-	if err = h.updateDataNodeStatus(cluster, status); err != nil {
+	if err = h.updateDataNodeStatus(cluster, status, labels); err != nil {
 		return err
 	}
 
-	if err = h.buildDataNodeServices(cluster); err != nil {
+	if err = h.buildDataNodeServices(cluster, labels); err != nil {
 		return err
 	}
 	return nil
@@ -167,10 +167,11 @@ func (h *HdfsBuilder) buildDataNode(cluster *hadoopclusterorgv1alpha1.HadoopClus
 func (h *HdfsBuilder) updateDataNodeStatus(
 	cluster *hadoopclusterorgv1alpha1.HadoopCluster,
 	status *hadoopclusterorgv1alpha1.HadoopClusterStatus,
+	labels map[string]string,
 ) error {
 	// Create selector.
 	selector, err := metav1.LabelSelectorAsSelector(&metav1.LabelSelector{
-		MatchLabels: utillabels.GenLabels(cluster.GetName(), hadoopclusterorgv1alpha1.ReplicaTypeDataNode),
+		MatchLabels: labels,
 	})
 	if err != nil {
 		return err
@@ -199,8 +200,7 @@ func (h *HdfsBuilder) updateDataNodeStatus(
 	return nil
 }
 
-func (h *HdfsBuilder) buildDataNodeStatefulSet(cluster *hadoopclusterorgv1alpha1.HadoopCluster) error {
-	labels := utillabels.GenLabels(cluster.GetName(), hadoopclusterorgv1alpha1.ReplicaTypeDataNode)
+func (h *HdfsBuilder) buildDataNodeStatefulSet(cluster *hadoopclusterorgv1alpha1.HadoopCluster, labels map[string]string) error {
 	dataNodeStatulSet := &appv1.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeDataNode),
@@ -208,7 +208,7 @@ func (h *HdfsBuilder) buildDataNodeStatefulSet(cluster *hadoopclusterorgv1alpha1
 			Labels:    labels,
 		},
 	}
-	statefulSetSpec, err := h.genDataNodeStatefulSetSpec(cluster)
+	statefulSetSpec, err := h.genDataNodeStatefulSetSpec(cluster, labels)
 	if err != nil {
 		return err
 	}
@@ -219,22 +219,6 @@ func (h *HdfsBuilder) buildDataNodeStatefulSet(cluster *hadoopclusterorgv1alpha1
 		return err
 	}
 	return nil
-}
-
-func (h *HdfsBuilder) genNameNodeDeploySpec(cluster *hadoopclusterorgv1alpha1.HadoopCluster) (*appv1.DeploymentSpec, error) {
-	labels := utillabels.GenLabels(cluster.GetName(), hadoopclusterorgv1alpha1.ReplicaTypeNameNode)
-
-	deploymentSpec := &appv1.DeploymentSpec{
-		Replicas: cluster.Spec.HDFS.NameNode.Replicas,
-		Selector: &metav1.LabelSelector{MatchLabels: labels},
-	}
-	podSpec, err := h.genNameNodePodSpec(cluster, labels)
-	if err != nil {
-		return nil, err
-	}
-
-	deploymentSpec.Template = *podSpec
-	return deploymentSpec, nil
 }
 
 func (h *HdfsBuilder) genNameNodePodSpec(cluster *hadoopclusterorgv1alpha1.HadoopCluster, labels map[string]string) (*corev1.PodTemplateSpec, error) {
@@ -273,14 +257,13 @@ func (h *HdfsBuilder) genNameNodePodSpec(cluster *hadoopclusterorgv1alpha1.Hadoo
 	return podTemplateSpec, nil
 }
 
-func (h *HdfsBuilder) genDataNodeStatefulSetSpec(cluster *hadoopclusterorgv1alpha1.HadoopCluster) (*appv1.StatefulSetSpec, error) {
-	labels := utillabels.GenLabels(cluster.GetName(), hadoopclusterorgv1alpha1.ReplicaTypeDataNode)
+func (h *HdfsBuilder) genDataNodeStatefulSetSpec(cluster *hadoopclusterorgv1alpha1.HadoopCluster, labels map[string]string) (*appv1.StatefulSetSpec, error) {
 	statefulSetSpec := &appv1.StatefulSetSpec{
 		Replicas: cluster.Spec.HDFS.NameNode.Replicas,
 		Selector: &metav1.LabelSelector{MatchLabels: labels},
 	}
 
-	podTemplate, err := h.genDataNodePodSpec(cluster)
+	podTemplate, err := h.genDataNodePodSpec(cluster, labels)
 	if err != nil {
 		return nil, err
 	}
@@ -288,9 +271,7 @@ func (h *HdfsBuilder) genDataNodeStatefulSetSpec(cluster *hadoopclusterorgv1alph
 	return statefulSetSpec, nil
 }
 
-func (h *HdfsBuilder) genDataNodePodSpec(cluster *hadoopclusterorgv1alpha1.HadoopCluster) (*corev1.PodTemplateSpec, error) {
-	labels := utillabels.GenLabels(cluster.GetName(), hadoopclusterorgv1alpha1.ReplicaTypeDataNode)
-
+func (h *HdfsBuilder) genDataNodePodSpec(cluster *hadoopclusterorgv1alpha1.HadoopCluster, labels map[string]string) (*corev1.PodTemplateSpec, error) {
 	podTemplateSpec := &corev1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: labels,
@@ -329,13 +310,12 @@ func (h *HdfsBuilder) genDataNodePodSpec(cluster *hadoopclusterorgv1alpha1.Hadoo
 	return podTemplateSpec, nil
 }
 
-func (h *HdfsBuilder) buildDataNodeServices(cluster *hadoopclusterorgv1alpha1.HadoopCluster) error {
+func (h *HdfsBuilder) buildDataNodeServices(cluster *hadoopclusterorgv1alpha1.HadoopCluster, labels map[string]string) error {
 	replicas := cluster.Spec.HDFS.DataNode.Replicas
 	if replicas == nil {
 		return nil
 	}
 
-	labels := utillabels.GenLabels(cluster.GetName(), hadoopclusterorgv1alpha1.ReplicaTypeDataNode)
 	for i := 0; i < int(*replicas); i++ {
 		serviceName := util.GetDataNodeServiceName(cluster, i)
 		if err := h.buildDataNodeService(cluster, serviceName, labels); err != nil {
