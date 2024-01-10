@@ -18,8 +18,6 @@ package v1alpha1
 
 import (
 	"fmt"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -78,18 +76,6 @@ func setDefaultsYarnNodeManager(yarnSpec *YarnNodeManagerSpecTemplate) {
 	}
 	if yarnSpec.ImagePullPolicy == "" {
 		yarnSpec.ImagePullPolicy = "IfNotPresent"
-	}
-	if len(yarnSpec.Resources.Limits) == 0 && len(yarnSpec.Resources.Requests) == 0 {
-		yarnSpec.Resources = corev1.ResourceRequirements{
-			Limits: corev1.ResourceList{
-				corev1.ResourceCPU:    resource.MustParse("1"),
-				corev1.ResourceMemory: resource.MustParse("1Gi"),
-			},
-			Requests: corev1.ResourceList{
-				corev1.ResourceCPU:    resource.MustParse("1"),
-				corev1.ResourceMemory: resource.MustParse("1Gi"),
-			},
-		}
 	}
 }
 
