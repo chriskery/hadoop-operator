@@ -126,7 +126,7 @@ uninstall: manifests kustomize ## Uninstall CRDs from the K8s cluster specified 
 .PHONY: deploy
 deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/manifests.
 	cd manifests/manager && $(KUSTOMIZE) edit set image controller=${IMG}
-	$(KUSTOMIZE) build manifests/default | $(KUBECTL) apply -f -
+	$(KUSTOMIZE) build manifests/default | $(KUBECTL) apply --server-side -f -
 
 .PHONY: undeploy
 undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/manifests. Call with ignore-not-found=true to ignore resource not found errors during deletion.

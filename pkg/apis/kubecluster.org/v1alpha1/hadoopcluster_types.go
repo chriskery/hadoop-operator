@@ -95,13 +95,19 @@ type HDFSSpec struct {
 }
 
 type HDFSNameNodeSpecTemplate struct {
-	HadoopNodeSpec
+	HadoopNodeSpec `json:"nodeSpec,omitempty"`
 
 	ServiceType corev1.ServiceType `json:"serviceType,omitempty" protobuf:"bytes,16,opt,name=serviceType,casttype=ServiceType"`
+
+	// This argument tells the namenode to format its namespace, which includes deleting the current contents of the namenode's metadata
+	// and starting fresh. This operation is typically performed the first time the namenode is started to ensure
+	// that the metadata directories are properly initialized. After this operation, any existing data in HDFS would be lost.
+	// +optional
+	Format bool `json:"format,omitempty" protobuf:"varint,11,opt,name=format"`
 }
 
 type HDFSDataNodeSpecTemplate struct {
-	HadoopNodeSpec
+	HadoopNodeSpec `json:"nodeSpec,omitempty"`
 }
 
 type YarnSpec struct {
@@ -110,13 +116,13 @@ type YarnSpec struct {
 }
 
 type YarnNodeManagerSpecTemplate struct {
-	HadoopNodeSpec
+	HadoopNodeSpec `json:"nodeSpec,omitempty"`
 
 	ServiceType corev1.ServiceType `json:"serviceType,omitempty" protobuf:"bytes,16,opt,name=serviceType,casttype=ServiceType"`
 }
 
 type YarnResourceManagerSpecTemplate struct {
-	HadoopNodeSpec
+	HadoopNodeSpec `json:"nodeSpec,omitempty"`
 
 	ServiceType corev1.ServiceType `json:"serviceType,omitempty" protobuf:"bytes,16,opt,name=serviceType,casttype=ServiceType"`
 }

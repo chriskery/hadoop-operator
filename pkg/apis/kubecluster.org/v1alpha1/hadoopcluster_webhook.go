@@ -41,7 +41,7 @@ func (r *HadoopCluster) SetupWebhookWithManager(mgr ctrl.Manager) error {
 		Complete()
 }
 
-//+kubebuilder:webhook:path=/mutate-hadoopcluster-org-hadoopcluster-org-v1alpha1-hadoopcluster,mutating=true,failurePolicy=fail,sideEffects=None,groups=kubecluster.org,resources=hadoopclusters,verbs=create;update,versions=v1alpha1,name=mhadoopcluster.kb.io,admissionReviewVersions=v1
+//+kubebuilder:webhook:path=/mutate-hadoopcluster-org-v1alpha1-hadoopcluster,mutating=true,failurePolicy=fail,sideEffects=None,groups=kubecluster.org,resources=hadoopclusters,verbs=create;update,versions=v1alpha1,name=mhadoopcluster.kb.io,admissionReviewVersions=v1
 
 var _ webhook.Defaulter = &HadoopCluster{}
 
@@ -57,7 +57,7 @@ func setDefaultsYarn(r *YarnSpec) {
 	setDefaultsYarnResourceManager(&r.ResourceManager)
 }
 
-func setDefaultsYarnResourceManager(yarnSpecTemplate *YarnNodeManagerSpecTemplate) {
+func setDefaultsYarnResourceManager(yarnSpecTemplate *YarnResourceManagerSpecTemplate) {
 	if yarnSpecTemplate.Replicas == nil {
 		yarnSpecTemplate.Replicas = pointer.Int32(1)
 	}
@@ -110,7 +110,7 @@ func setDefaultsYarnNameNode(hdfsSpec *HDFSNameNodeSpecTemplate) {
 	}
 }
 
-func setDefaultsYarnDataNode(hdfsSpec *HDFSNameNodeSpecTemplate) {
+func setDefaultsYarnDataNode(hdfsSpec *HDFSDataNodeSpecTemplate) {
 	if hdfsSpec.Replicas == nil {
 		hdfsSpec.Replicas = pointer.Int32(1)
 	}
@@ -122,7 +122,7 @@ func setDefaultsYarnDataNode(hdfsSpec *HDFSNameNodeSpecTemplate) {
 	}
 }
 
-//+kubebuilder:webhook:path=/validate-hadoopcluster-org-hadoopcluster-org-v1alpha1-hadoopcluster,mutating=false,failurePolicy=fail,sideEffects=None,groups=kubecluster.org,resources=hadoopclusters,verbs=create;update,versions=v1alpha1,name=vhadoopcluster.kb.io,admissionReviewVersions=v1
+//+kubebuilder:webhook:path=/validate-hadoopcluster-org-v1alpha1-hadoopcluster,mutating=false,failurePolicy=fail,sideEffects=None,groups=kubecluster.org,resources=hadoopclusters,verbs=create;update,versions=v1alpha1,name=vhadoopcluster.kb.io,admissionReviewVersions=v1
 
 var _ webhook.Validator = &HadoopCluster{}
 

@@ -75,7 +75,7 @@ func (r *HadoopClusterReconciler) addHadoopClusterDeletionLabel(ctx context.Cont
 	)
 	for i := 0; i < len(podList.Items); i++ {
 		pod := &podList.Items[i]
-		pod.Labels[v1alpha1.ReplicaTypeLabel] = "true"
+		pod.Labels[v1alpha1.DeletionLabel] = "true"
 		if err = r.Client.Update(ctx, pod); client.IgnoreNotFound(err) != nil {
 			return fmt.Errorf("cannot Update Pod %s in Namespace %s: %w", pod.Name, pod.Namespace, err)
 		}
