@@ -253,8 +253,6 @@ func (r *HadoopClusterReconciler) UpdateClusterStatus(cluster *v1alpha1.HadoopCl
 			return err
 		}
 		r.Recorder.Eventf(cluster, corev1.EventTypeNormal, "HadoopClusterRunning", msg)
-	} else {
-
 	}
 
 	return nil

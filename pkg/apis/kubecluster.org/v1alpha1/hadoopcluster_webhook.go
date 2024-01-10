@@ -19,7 +19,7 @@ package v1alpha1
 import (
 	"fmt"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
@@ -57,7 +57,7 @@ func setDefaultsYarn(r *YarnSpec) {
 
 func setDefaultsYarnResourceManager(yarnSpecTemplate *YarnResourceManagerSpecTemplate) {
 	if yarnSpecTemplate.Replicas == nil {
-		yarnSpecTemplate.Replicas = pointer.Int32(1)
+		yarnSpecTemplate.Replicas = ptr.To(int32(1))
 	}
 	if yarnSpecTemplate.Image == "" {
 		yarnSpecTemplate.Image = DefaultImage
@@ -69,7 +69,7 @@ func setDefaultsYarnResourceManager(yarnSpecTemplate *YarnResourceManagerSpecTem
 
 func setDefaultsYarnNodeManager(yarnSpec *YarnNodeManagerSpecTemplate) {
 	if yarnSpec.Replicas == nil {
-		yarnSpec.Replicas = pointer.Int32(1)
+		yarnSpec.Replicas = ptr.To(int32(1))
 	}
 	if yarnSpec.Image == "" {
 		yarnSpec.Image = DefaultImage
@@ -86,7 +86,7 @@ func setDefaultsHDFS(r *HDFSSpec) {
 
 func setDefaultsYarnNameNode(hdfsSpec *HDFSNameNodeSpecTemplate) {
 	if hdfsSpec.Replicas == nil {
-		hdfsSpec.Replicas = pointer.Int32(1)
+		hdfsSpec.Replicas = ptr.To(int32(1))
 	}
 	if hdfsSpec.Image == "" {
 		hdfsSpec.Image = DefaultImage
@@ -98,7 +98,7 @@ func setDefaultsYarnNameNode(hdfsSpec *HDFSNameNodeSpecTemplate) {
 
 func setDefaultsYarnDataNode(hdfsSpec *HDFSDataNodeSpecTemplate) {
 	if hdfsSpec.Replicas == nil {
-		hdfsSpec.Replicas = pointer.Int32(1)
+		hdfsSpec.Replicas = ptr.To(int32(1))
 	}
 	if hdfsSpec.Image == "" {
 		hdfsSpec.Image = DefaultImage

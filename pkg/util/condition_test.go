@@ -91,7 +91,10 @@ func TestUpdateClusterReplicaStatuses(t *testing.T) {
 		{"test-running", args{
 			status:      &hadoopCluster.Status,
 			replicaType: replicaType,
-			pod:         &corev1.Pod{Status: corev1.PodStatus{Phase: corev1.PodRunning}},
+			pod: &corev1.Pod{Status: corev1.PodStatus{
+				Phase:      corev1.PodRunning,
+				Conditions: []corev1.PodCondition{{Type: corev1.PodReady, Status: corev1.ConditionTrue}},
+			}},
 		}, 1},
 	}
 	for _, tt := range tests {

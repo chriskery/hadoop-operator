@@ -73,6 +73,10 @@ func (r *HadoopClusterReconciler) addHadoopClusterDeletionLabel(ctx context.Cont
 		client.InNamespace(hadoopCluster.Namespace),
 		client.MatchingLabelsSelector{Selector: selector},
 	)
+	if err != nil {
+		return err
+	}
+
 	for i := 0; i < len(podList.Items); i++ {
 		pod := &podList.Items[i]
 		pod.Labels[v1alpha1.DeletionLabel] = "true"

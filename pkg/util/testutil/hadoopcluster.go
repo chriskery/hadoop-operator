@@ -7,7 +7,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"testing"
 )
 
@@ -81,7 +81,7 @@ func NewBaseStatefulSet(name string, testJob *v1alpha1.HadoopCluster, labels map
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(testJob, v1alpha1.GroupVersion.WithKind(v1alpha1.HadoopClusterKind))},
 		},
 		Spec: appv1.StatefulSetSpec{
-			Replicas: pointer.Int32(1),
+			Replicas: ptr.To(int32(1)),
 			Selector: &metav1.LabelSelector{MatchLabels: labels},
 			Template: podTemplate,
 		},
