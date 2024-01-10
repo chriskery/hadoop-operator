@@ -184,7 +184,6 @@ func (h *YarnBuilder) buildNodeManagerService(cluster *hadoopclusterorgv1alpha1.
 		},
 		Spec: corev1.ServiceSpec{
 			ClusterIP: "None",
-			Type:      cluster.Spec.HDFS.DataNode.ServiceType,
 			Selector:  labels,
 		},
 	}
@@ -458,6 +457,9 @@ func (h *YarnBuilder) cleanNodeManager(cluster *hadoopclusterorgv1alpha1.HadoopC
 		return err
 	}
 
+	if cluster.Spec.Yarn.NodeManager.Replicas == nil {
+		return nil
+	}
 	for i := 0; i < int(*cluster.Spec.Yarn.NodeManager.Replicas); i++ {
 		serviceName := util.GetNodeManagerServiceName(cluster, i)
 		err = h.ServiceControl.DeleteService(cluster.GetNamespace(), serviceName, &corev1.Service{})

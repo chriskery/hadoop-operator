@@ -393,6 +393,10 @@ func (h *HdfsBuilder) cleanDataNode(cluster *hadoopclusterorgv1alpha1.HadoopClus
 		return err
 	}
 
+	if cluster.Spec.HDFS.DataNode.Replicas == nil {
+		return nil
+	}
+
 	for i := 0; i < int(*cluster.Spec.HDFS.DataNode.Replicas); i++ {
 		serviceName := util.GetDataNodeServiceName(cluster, i)
 		err = h.ServiceControl.DeleteService(cluster.GetNamespace(), serviceName, &corev1.Service{})
