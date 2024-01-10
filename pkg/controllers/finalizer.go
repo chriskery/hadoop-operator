@@ -12,12 +12,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-const deletionFinalizer = "deletion.finalizers.hadoopclusters.kubeclusetr.org"
+const DeletionFinalizer = "deletion.finalizers.hadoopclusters.kubeclusetr.org"
 
-// addFinalizerIfNeeded adds a deletion finalizer if the RabbitmqCluster does not have one yet and is not marked for deletion
+// addFinalizerIfNeeded adds a deletion finalizer if the HadoopCluster does not have one yet and is not marked for deletion
 func (r *HadoopClusterReconciler) addFinalizerIfNeeded(ctx context.Context, hadoopCluster *v1alpha1.HadoopCluster) error {
-	if hadoopCluster.ObjectMeta.DeletionTimestamp.IsZero() && !controllerutil.ContainsFinalizer(hadoopCluster, deletionFinalizer) {
-		controllerutil.AddFinalizer(hadoopCluster, deletionFinalizer)
+	if hadoopCluster.ObjectMeta.DeletionTimestamp.IsZero() && !controllerutil.ContainsFinalizer(hadoopCluster, DeletionFinalizer) {
+		controllerutil.AddFinalizer(hadoopCluster, DeletionFinalizer)
 		if err := r.Client.Update(ctx, hadoopCluster); err != nil {
 			return err
 		}
@@ -26,18 +26,18 @@ func (r *HadoopClusterReconciler) addFinalizerIfNeeded(ctx context.Context, hado
 }
 
 func (r *HadoopClusterReconciler) removeFinalizer(ctx context.Context, hadoopCluster *v1alpha1.HadoopCluster) error {
-	controllerutil.RemoveFinalizer(hadoopCluster, deletionFinalizer)
+	controllerutil.RemoveFinalizer(hadoopCluster, DeletionFinalizer)
 	return r.Client.Update(ctx, hadoopCluster)
 }
 
 func (r *HadoopClusterReconciler) prepareForDeletion(ctx context.Context, hadoopCluster *v1alpha1.HadoopCluster) error {
-	if !controllerutil.ContainsFinalizer(hadoopCluster, deletionFinalizer) {
+	if !controllerutil.ContainsFinalizer(hadoopCluster, DeletionFinalizer) {
 		return nil
 	}
 	if err := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 		// Add label on all Pods to be picked up in pre-stop hook via Downward API
 		if err := r.addHadoopClusterDeletionLabel(ctx, hadoopCluster); err != nil {
-			return fmt.Errorf("failed to add deletion markers to RabbitmqCluster Pods: %w", err)
+			return fmt.Errorf("failed to add deletion markers to HadoopCluster Pods: %w", err)
 		}
 		for _, builder := range r.builders {
 			if err := builder.Clean(hadoopCluster); err != nil {
@@ -47,7 +47,7 @@ func (r *HadoopClusterReconciler) prepareForDeletion(ctx context.Context, hadoop
 
 		return nil
 	}); err != nil {
-		ctrl.LoggerFrom(ctx).Error(err, "RabbitmqCluster deletion")
+		ctrl.LoggerFrom(ctx).Error(err, "HadoopCluster deletion")
 	}
 
 	if err := r.removeFinalizer(ctx, hadoopCluster); err != nil {
@@ -75,8 +75,8 @@ func (r *HadoopClusterReconciler) addHadoopClusterDeletionLabel(ctx context.Cont
 	)
 	for i := 0; i < len(podList.Items); i++ {
 		pod := &podList.Items[i]
-		pod.Labels[v1alpha1.ReplicaTypeLabel] = "true"
-		if err := r.Client.Update(ctx, pod); client.IgnoreNotFound(err) != nil {
+		pod.Labels[v1alpha1.DeletionLabel] = "true"
+		if err = r.Client.Update(ctx, pod); client.IgnoreNotFound(err) != nil {
 			return fmt.Errorf("cannot Update Pod %s in Namespace %s: %w", pod.Name, pod.Namespace, err)
 		}
 	}

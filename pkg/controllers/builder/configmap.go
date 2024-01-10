@@ -138,7 +138,9 @@ case "$HADOOP_ROLE" in
         ;;
     namenode)
         echo "Environment variable is set to namenode"
-        hdfs namenode -format
+		if [ "$NAME_NODE_FORMAT" = "true" ]; then
+	        hdfs namenode -format
+		fi
 		hdfs namenode
         ;;
     datanode)

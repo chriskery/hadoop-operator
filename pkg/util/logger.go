@@ -15,13 +15,10 @@
 package util
 
 import (
-	appv1 "k8s.io/api/apps/v1"
-	"strings"
-
 	log "github.com/sirupsen/logrus"
+	appv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	metav1unstructured "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 func LoggerForCluster(cluster metav1.Object) *log.Entry {
@@ -110,26 +107,5 @@ func LoggerForConfigMap(cm *corev1.ConfigMap, kind string) *log.Entry {
 		"kcluster":  kcluster,
 		"configMap": cm.Namespace + "." + cm.Name,
 		"uid":       cm.ObjectMeta.UID,
-	})
-}
-
-func LoggerForKey(key string) *log.Entry {
-	return log.WithFields(log.Fields{
-		// The key used by the workQueue should be namespace + "/" + name.
-		// Its more common in K8s to use a period to indicate namespace.name. So that's what we use.
-		"cluster": strings.Replace(key, "/", ".", -1),
-	})
-}
-
-func LoggerForUnstructured(obj *metav1unstructured.Unstructured, kind string) *log.Entry {
-	cluster := ""
-	if obj.GetKind() == kind {
-		cluster = obj.GetNamespace() + "." + obj.GetName()
-	}
-	return log.WithFields(log.Fields{
-		// We use cluster to match the key used in controller.go
-		// In controller.go we log the key used with the workqueue.
-		"cluster": cluster,
-		"uid":     obj.GetUID(),
 	})
 }

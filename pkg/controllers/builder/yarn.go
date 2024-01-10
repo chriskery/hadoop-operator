@@ -69,13 +69,15 @@ func (h *YarnBuilder) Clean(cluster *hadoopclusterorgv1alpha1.HadoopCluster) err
 	return nil
 }
 
-func (h *YarnBuilder) buildResourceManager(cluster *hadoopclusterorgv1alpha1.HadoopCluster, status *hadoopclusterorgv1alpha1.HadoopClusterStatus) error {
+func (h *YarnBuilder) buildResourceManager(
+	cluster *hadoopclusterorgv1alpha1.HadoopCluster,
+	status *hadoopclusterorgv1alpha1.HadoopClusterStatus,
+) error {
 	labels := utillabels.GenLabels(cluster.GetName(), hadoopclusterorgv1alpha1.ReplicaTypeResourcemanager)
 
 	podName := util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeResourcemanager)
 	resourceManagerPod := &corev1.Pod{}
 	err := h.Get(context.Background(), client.ObjectKey{Name: podName, Namespace: cluster.Namespace}, resourceManagerPod)
-	var resourceManagerActive int32
 	if err != nil {
 		if !errors.IsNotFound(err) {
 			return err
@@ -83,12 +85,10 @@ func (h *YarnBuilder) buildResourceManager(cluster *hadoopclusterorgv1alpha1.Had
 		if err = h.buildResourceManagerPod(cluster, labels); err != nil {
 			return err
 		}
-	}
-	if resourceManagerPod.Status.Phase == corev1.PodRunning {
-		resourceManagerActive = 1
+	} else {
+		util.UpdateClusterReplicaStatuses(status, hadoopclusterorgv1alpha1.ReplicaTypeResourcemanager, resourceManagerPod)
 	}
 	status.ReplicaStatuses[hadoopclusterorgv1alpha1.ReplicaTypeResourcemanager].Expect = cluster.Spec.Yarn.ResourceManager.Replicas
-	status.ReplicaStatuses[hadoopclusterorgv1alpha1.ReplicaTypeResourcemanager].Active = resourceManagerActive
 
 	serviceName := util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeResourcemanager)
 	err = h.Get(context.Background(), client.ObjectKey{Name: serviceName, Namespace: cluster.Namespace}, &corev1.Service{})
@@ -184,7 +184,6 @@ func (h *YarnBuilder) buildNodeManagerService(cluster *hadoopclusterorgv1alpha1.
 		},
 		Spec: corev1.ServiceSpec{
 			ClusterIP: "None",
-			Type:      cluster.Spec.HDFS.DataNode.ServiceType,
 			Selector:  labels,
 		},
 	}
@@ -421,13 +420,9 @@ func (h *YarnBuilder) updateNodeManagerStatus(
 	}
 	filterPods := util.ConvertPodListWithFilter(podList.Items, filter)
 
-	var active int32
 	for _, pod := range filterPods {
-		if pod.Status.Phase == corev1.PodRunning {
-			active++
-		}
+		util.UpdateClusterReplicaStatuses(status, hadoopclusterorgv1alpha1.ReplicaTypeNodemanager, pod)
 	}
-	status.ReplicaStatuses[hadoopclusterorgv1alpha1.ReplicaTypeNodemanager].Active = active
 	status.ReplicaStatuses[hadoopclusterorgv1alpha1.ReplicaTypeNodemanager].Expect = cluster.Spec.Yarn.NodeManager.Replicas
 	return nil
 }
@@ -462,6 +457,9 @@ func (h *YarnBuilder) cleanNodeManager(cluster *hadoopclusterorgv1alpha1.HadoopC
 		return err
 	}
 
+	if cluster.Spec.Yarn.NodeManager.Replicas == nil {
+		return nil
+	}
 	for i := 0; i < int(*cluster.Spec.Yarn.NodeManager.Replicas); i++ {
 		serviceName := util.GetNodeManagerServiceName(cluster, i)
 		err = h.ServiceControl.DeleteService(cluster.GetNamespace(), serviceName, &corev1.Service{})

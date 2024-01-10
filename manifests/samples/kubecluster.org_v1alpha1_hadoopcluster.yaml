@@ -9,22 +9,8 @@ metadata:
     app.kubernetes.io/created-by: hadoop-cluster-operator
   name: hadoopcluster-sample
 spec:
-  hdfs:
-    nameNode:
-      image: apache/hadoop:3
-      replicas: 1
-#      serviceType: NodePort
-    dataNode:
-      image: apache/hadoop:3
-      replicas: 1
-#      serviceType: NodePort
   yarn:
-    resourceManager:
-      image: apache/hadoop:3
-      replicas: 1
-      serviceType: NodePort
-    nodeManager:
-      image: apache/hadoop:3
-      replicas: 1
-#      serviceType: NodePort
+    serviceType: NodePort
+
+
 

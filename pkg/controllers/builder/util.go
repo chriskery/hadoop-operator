@@ -11,7 +11,8 @@ const (
 
 	entrypointPath = DefaultHadoopOperatorConfPath + "/entrypoint"
 
-	EnvHadoopRole = "HADOOP_ROLE"
+	EnvHadoopRole     = "HADOOP_ROLE"
+	EnvNameNodeFormat = "NAME_NODE_FORMAT"
 )
 
 func appendHadoopConfigMapVolume(volumes []corev1.Volume, configMapName string) []corev1.Volume {
@@ -57,5 +58,13 @@ func setPodEnv(podTemplateSpec *corev1.PodTemplateSpec, replicaType v1alpha1.Rep
 				Value: string(replicaType),
 			})
 		}
+
+		if replicaType == v1alpha1.ReplicaTypeNameNode {
+			podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
+				Name:  EnvNameNodeFormat,
+				Value: "true",
+			})
+		}
+
 	}
 }
