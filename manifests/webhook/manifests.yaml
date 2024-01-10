@@ -10,7 +10,7 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /mutate-hadoopcluster-org-v1alpha1-hadoopcluster
+      path: /mutate-kubecluster-org-v1alpha1-hadoopcluster
   failurePolicy: Fail
   name: mhadoopcluster.kb.io
   rules:
@@ -36,7 +36,7 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-hadoopcluster-org-v1alpha1-hadoopcluster
+      path: /validate-kubecluster-org-v1alpha1-hadoopcluster
   failurePolicy: Fail
   name: vhadoopcluster.kb.io
   rules:

@@ -67,7 +67,7 @@ type HadoopClusterReconciler struct {
 }
 
 // +kubebuilder:rbac:groups="",resources=pods/exec,verbs=create
-// +kubebuilder:rbac:groups="",resources=pods,verbs=update;get;list;watch
+// +kubebuilder:rbac:groups="",resources=pods,verbs=update;get;list;watch;create
 // +kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;update
 // +kubebuilder:rbac:groups=apps,resources=statefulsets,verbs=get;list;watch;create;update;delete
 // +kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list;watch;create;update
