@@ -75,7 +75,6 @@ func (h *HdfsBuilder) buildNameNode(cluster *hadoopclusterorgv1alpha1.HadoopClus
 		client.ObjectKey{Name: util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeNameNode), Namespace: cluster.Namespace},
 		nameNodePod,
 	)
-	var nameNodeActive int32
 	if err != nil {
 		if !errors.IsNotFound(err) {
 			return err
@@ -83,11 +82,9 @@ func (h *HdfsBuilder) buildNameNode(cluster *hadoopclusterorgv1alpha1.HadoopClus
 		if err = h.buildNameNodePod(cluster); err != nil {
 			return err
 		}
+	} else {
+		util.UpdateClusterReplicaStatuses(status, hadoopclusterorgv1alpha1.ReplicaTypeNameNode, nameNodePod)
 	}
-	if nameNodePod.Status.Phase == corev1.PodRunning {
-		nameNodeActive = 1
-	}
-	status.ReplicaStatuses[hadoopclusterorgv1alpha1.ReplicaTypeNameNode].Active = nameNodeActive
 	status.ReplicaStatuses[hadoopclusterorgv1alpha1.ReplicaTypeNameNode].Expect = cluster.Spec.HDFS.NameNode.Replicas
 
 	err = h.Get(
@@ -195,13 +192,9 @@ func (h *HdfsBuilder) updateDataNodeStatus(
 	}
 	filterPods := util.ConvertPodListWithFilter(podList.Items, filter)
 
-	var active int32
 	for _, pod := range filterPods {
-		if pod.Status.Phase == corev1.PodRunning {
-			active++
-		}
+		util.UpdateClusterReplicaStatuses(status, hadoopclusterorgv1alpha1.ReplicaTypeDataNode, pod)
 	}
-	status.ReplicaStatuses[hadoopclusterorgv1alpha1.ReplicaTypeDataNode].Active = active
 	status.ReplicaStatuses[hadoopclusterorgv1alpha1.ReplicaTypeDataNode].Expect = cluster.Spec.HDFS.DataNode.Replicas
 	return nil
 }

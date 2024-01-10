@@ -22,6 +22,15 @@ func InitializeClusterStatuses(status *v1alpha1.HadoopClusterStatus, replicaType
 	status.ReplicaStatuses[replicaType] = &v1alpha1.ReplicaStatus{}
 }
 
+// UpdateClusterReplicaStatuses updates the JobReplicaStatuses according to the pod.
+// originally from pkg/controller.v1/tensorflow/status.go (deleted)
+func UpdateClusterReplicaStatuses(status *v1alpha1.HadoopClusterStatus, replicaType v1alpha1.ReplicaType, pod *corev1.Pod) {
+	switch pod.Status.Phase {
+	case corev1.PodRunning:
+		status.ReplicaStatuses[replicaType].Active++
+	}
+}
+
 // UpdateClusterConditions updates the conditions of the given Hadoopcluster.
 func UpdateClusterConditions(status *v1alpha1.HadoopClusterStatus, conditionType v1alpha1.ClusterConditionType, reason, message string) error {
 	condition := newCondition(conditionType, reason, message)

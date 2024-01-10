@@ -40,12 +40,7 @@ const (
 	DeletionLabel = "kubeclusetr.org/deletion"
 )
 
-type HDFSSpec struct {
-	NameNode HDFSSpecTemplate `json:"nameNode,omitempty"`
-	DataNode HDFSSpecTemplate `json:"dataNode,omitempty"`
-}
-
-type HDFSSpecTemplate struct {
+type HadoopNodeSpec struct {
 	// Number of desired pods. This is a pointer to distinguish between explicit
 	// zero and not specified. Defaults to 1.
 	// +optional
@@ -92,62 +87,36 @@ type HDFSSpecTemplate struct {
 	// +patchMergeKey=name
 	// +patchStrategy=merge,retainKeys
 	Volumes []corev1.Volume `json:"volumes,omitempty" patchStrategy:"merge,retainKeys" patchMergeKey:"name" protobuf:"bytes,1,rep,name=volumes"`
+}
+
+type HDFSSpec struct {
+	NameNode HDFSNameNodeSpecTemplate `json:"nameNode,omitempty"`
+	DataNode HDFSDataNodeSpecTemplate `json:"dataNode,omitempty"`
+}
+
+type HDFSNameNodeSpecTemplate struct {
+	HadoopNodeSpec
 
 	ServiceType corev1.ServiceType `json:"serviceType,omitempty" protobuf:"bytes,16,opt,name=serviceType,casttype=ServiceType"`
 }
 
-type YarnSpec struct {
-	NodeManager     YarnSpecTemplate `json:"nodeManager,omitempty"`
-	ResourceManager YarnSpecTemplate `json:"resourceManager,omitempty"`
+type HDFSDataNodeSpecTemplate struct {
+	HadoopNodeSpec
 }
 
-type YarnSpecTemplate struct {
-	// Number of desired pods. This is a pointer to distinguish between explicit
-	// zero and not specified. Defaults to 1.
-	// +optional
-	Replicas *int32 `json:"replicas,omitempty" protobuf:"varint,1,opt,name=replicas"`
-	// Container image name.
-	// More info: https://kubernetes.io/docs/concepts/containers/images
-	// This field is optional to allow higher level config management to default or override
-	// container images in workload controllers like Deployments and StatefulSets.
-	// +optional
-	Image string `json:"image,omitempty" protobuf:"bytes,2,opt,name=image"`
-	// Compute Resources required by this container.
-	// Cannot be updated.
-	// More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
-	// +optional
-	Resources corev1.ResourceRequirements `json:"resources,omitempty" protobuf:"bytes,8,opt,name=resources"`
-	// Image pull policy.
-	// One of Always, Never, IfNotPresent.
-	// Defaults to Always if :latest tag is specified, or IfNotPresent otherwise.
-	// Cannot be updated.
-	// More info: https://kubernetes.io/docs/concepts/containers/images#updating-images
-	// +optional
-	ImagePullPolicy corev1.PullPolicy `json:"imagePullPolicy,omitempty" protobuf:"bytes,14,opt,name=imagePullPolicy,casttype=PullPolicy"`
-	// SecurityContext defines the security options the container should be run with.
-	// If set, the fields of SecurityContext override the equivalent fields of PodSecurityContext.
-	// More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
-	// +optional
-	SecurityContext *corev1.SecurityContext `json:"securityContext,omitempty" protobuf:"bytes,15,opt,name=securityContext"`
-	// Host networking requested for this pod. Use the host's network namespace.
-	// If this option is set, the ports that will be used must be specified.
-	// Default to false.
-	// +k8s:conversion-gen=false
-	// +optional
-	HostNetwork      bool                          `json:"hostNetwork,omitempty" protobuf:"varint,11,opt,name=hostNetwork"`
-	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,15,rep,name=imagePullSecrets"`
-	// List of volumes that can be mounted by containers belonging to the pod.
-	// More info: https://kubernetes.io/docs/concepts/storage/volumes
-	// +optional
-	// +patchMergeKey=name
-	// +patchStrategy=merge,retainKeys
-	Volumes []corev1.Volume `json:"volumes,omitempty" patchStrategy:"merge,retainKeys" patchMergeKey:"name" protobuf:"bytes,1,rep,name=volumes"`
-	// Pod volumes to mount into the container's filesystem.
-	// Cannot be updated.
-	// +optional
-	// +patchMergeKey=mountPath
-	// +patchStrategy=merge
-	VolumeMounts []corev1.VolumeMount `json:"volumeMounts,omitempty" patchStrategy:"merge" patchMergeKey:"mountPath" protobuf:"bytes,9,rep,name=volumeMounts"`
+type YarnSpec struct {
+	NodeManager     YarnNodeManagerSpecTemplate     `json:"nodeManager,omitempty"`
+	ResourceManager YarnResourceManagerSpecTemplate `json:"resourceManager,omitempty"`
+}
+
+type YarnNodeManagerSpecTemplate struct {
+	HadoopNodeSpec
+
+	ServiceType corev1.ServiceType `json:"serviceType,omitempty" protobuf:"bytes,16,opt,name=serviceType,casttype=ServiceType"`
+}
+
+type YarnResourceManagerSpecTemplate struct {
+	HadoopNodeSpec
 
 	ServiceType corev1.ServiceType `json:"serviceType,omitempty" protobuf:"bytes,16,opt,name=serviceType,casttype=ServiceType"`
 }

@@ -57,7 +57,7 @@ func setDefaultsYarn(r *YarnSpec) {
 	setDefaultsYarnResourceManager(&r.ResourceManager)
 }
 
-func setDefaultsYarnResourceManager(yarnSpecTemplate *YarnSpecTemplate) {
+func setDefaultsYarnResourceManager(yarnSpecTemplate *YarnNodeManagerSpecTemplate) {
 	if yarnSpecTemplate.Replicas == nil {
 		yarnSpecTemplate.Replicas = pointer.Int32(1)
 	}
@@ -69,7 +69,7 @@ func setDefaultsYarnResourceManager(yarnSpecTemplate *YarnSpecTemplate) {
 	}
 }
 
-func setDefaultsYarnNodeManager(yarnSpec *YarnSpecTemplate) {
+func setDefaultsYarnNodeManager(yarnSpec *YarnNodeManagerSpecTemplate) {
 	if yarnSpec.Replicas == nil {
 		yarnSpec.Replicas = pointer.Int32(1)
 	}
@@ -98,7 +98,7 @@ func setDefaultsHDFS(r *HDFSSpec) {
 	setDefaultsYarnNameNode(&r.NameNode)
 }
 
-func setDefaultsYarnNameNode(hdfsSpec *HDFSSpecTemplate) {
+func setDefaultsYarnNameNode(hdfsSpec *HDFSNameNodeSpecTemplate) {
 	if hdfsSpec.Replicas == nil {
 		hdfsSpec.Replicas = pointer.Int32(1)
 	}
@@ -110,7 +110,7 @@ func setDefaultsYarnNameNode(hdfsSpec *HDFSSpecTemplate) {
 	}
 }
 
-func setDefaultsYarnDataNode(hdfsSpec *HDFSSpecTemplate) {
+func setDefaultsYarnDataNode(hdfsSpec *HDFSNameNodeSpecTemplate) {
 	if hdfsSpec.Replicas == nil {
 		hdfsSpec.Replicas = pointer.Int32(1)
 	}
