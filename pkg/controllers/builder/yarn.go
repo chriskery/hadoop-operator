@@ -3,6 +3,7 @@ package builder
 import (
 	"context"
 	"fmt"
+
 	hadoopclusterorgv1alpha1 "github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1"
 	"github.com/chriskery/hadoop-cluster-operator/pkg/controllers/control"
 	"github.com/chriskery/hadoop-cluster-operator/pkg/util"
@@ -139,7 +140,7 @@ func (h *YarnBuilder) buildResourceManagerService(cluster *hadoopclusterorgv1alp
 }
 
 func (h *YarnBuilder) buildResourceManagerPod(cluster *hadoopclusterorgv1alpha1.HadoopCluster, labels map[string]string) error {
-	podTemplate, err := h.genResourceManagerPodSpec(cluster, labels)
+	podTemplate, err := h.genResourceManagerPodSpec(cluster, &cluster.Spec.Yarn.ResourceManager, labels)
 	if err != nil {
 		return err
 	}
@@ -229,7 +230,7 @@ func (h *YarnBuilder) genNodeManagerStatefulSetSpec(
 	cluster *hadoopclusterorgv1alpha1.HadoopCluster,
 	labels map[string]string,
 ) (*appv1.StatefulSetSpec, error) {
-	podTemplate, err := h.genNodeManagerPodSpec(cluster, labels)
+	podTemplate, err := h.genNodeManagerPodSpec(cluster, &cluster.Spec.Yarn.NodeManager, labels)
 	if err != nil {
 		return nil, err
 	}
@@ -244,16 +245,13 @@ func (h *YarnBuilder) genNodeManagerStatefulSetSpec(
 	return statefulSetSpec, nil
 }
 
-func (h *YarnBuilder) genNodeManagerPodSpec(
-	cluster *hadoopclusterorgv1alpha1.HadoopCluster,
-	labels map[string]string,
-) (*corev1.PodTemplateSpec, error) {
+func (h *YarnBuilder) genNodeManagerPodSpec(cluster *hadoopclusterorgv1alpha1.HadoopCluster, nodeManagerSpec *hadoopclusterorgv1alpha1.YarnNodeManagerSpecTemplate, labels map[string]string) (*corev1.PodTemplateSpec, error) {
 	podTemplateSpec := &corev1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: labels,
 		},
 		Spec: corev1.PodSpec{
-			Volumes:       cluster.Spec.Yarn.ResourceManager.Volumes,
+			Volumes:       nodeManagerSpec.Volumes,
 			RestartPolicy: corev1.RestartPolicyAlways,
 			DNSPolicy:     corev1.DNSClusterFirstWithHostNet,
 		},
@@ -270,14 +268,14 @@ func (h *YarnBuilder) genNodeManagerPodSpec(
 	nodeManagerCmd := []string{"sh", "-c", fmt.Sprintf("cp %s /tmp/entrypoint && chmod +x /tmp/entrypoint && /tmp/entrypoint", entrypointPath)}
 	containers := []corev1.Container{{
 		Name:            string(hadoopclusterorgv1alpha1.ReplicaTypeResourcemanager),
-		Image:           cluster.Spec.Yarn.ResourceManager.Image,
+		Image:           nodeManagerSpec.Image,
 		Command:         nodeManagerCmd,
-		Resources:       cluster.Spec.Yarn.ResourceManager.Resources,
+		Resources:       nodeManagerSpec.Resources,
 		VolumeMounts:    volumeMounts,
 		ReadinessProbe:  nil,
 		StartupProbe:    nil,
-		ImagePullPolicy: cluster.Spec.Yarn.ResourceManager.ImagePullPolicy,
-		SecurityContext: cluster.Spec.Yarn.ResourceManager.SecurityContext,
+		ImagePullPolicy: nodeManagerSpec.ImagePullPolicy,
+		SecurityContext: nodeManagerSpec.SecurityContext,
 	}}
 
 	podTemplateSpec.Spec.Containers = containers
@@ -289,14 +287,18 @@ func (h *YarnBuilder) genNodeManagerPodSpec(
 	return podTemplateSpec, nil
 }
 
-func (h *YarnBuilder) genResourceManagerPodSpec(cluster *hadoopclusterorgv1alpha1.HadoopCluster, labels map[string]string) (*corev1.PodTemplateSpec, error) {
+func (h *YarnBuilder) genResourceManagerPodSpec(
+	cluster *hadoopclusterorgv1alpha1.HadoopCluster,
+	resourceManagerSpec *hadoopclusterorgv1alpha1.YarnResourceManagerSpecTemplate,
+	labels map[string]string,
+) (*corev1.PodTemplateSpec, error) {
 	podTemplateSpec := &corev1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: labels,
 			Name:   util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeResourcemanager),
 		},
 		Spec: corev1.PodSpec{
-			Volumes:       cluster.Spec.Yarn.ResourceManager.Volumes,
+			Volumes:       resourceManagerSpec.Volumes,
 			RestartPolicy: corev1.RestartPolicyAlways,
 			DNSPolicy:     corev1.DNSClusterFirstWithHostNet,
 		},
@@ -322,14 +324,14 @@ func (h *YarnBuilder) genResourceManagerPodSpec(cluster *hadoopclusterorgv1alpha
 	resourceManagerCmd := []string{"sh", "-c", fmt.Sprintf("cp %s /tmp/entrypoint && chmod +x /tmp/entrypoint && /tmp/entrypoint", entrypointPath)}
 	containers := []corev1.Container{{
 		Name:            string(hadoopclusterorgv1alpha1.ReplicaTypeResourcemanager),
-		Image:           cluster.Spec.Yarn.ResourceManager.Image,
+		Image:           resourceManagerSpec.Image,
 		Command:         resourceManagerCmd,
-		Resources:       cluster.Spec.Yarn.ResourceManager.Resources,
+		Resources:       resourceManagerSpec.Resources,
 		VolumeMounts:    volumeMounts,
 		ReadinessProbe:  nil,
 		StartupProbe:    nil,
-		ImagePullPolicy: cluster.Spec.Yarn.ResourceManager.ImagePullPolicy,
-		SecurityContext: cluster.Spec.Yarn.ResourceManager.SecurityContext,
+		ImagePullPolicy: resourceManagerSpec.ImagePullPolicy,
+		SecurityContext: resourceManagerSpec.SecurityContext,
 	}}
 
 	podTemplateSpec.Spec.Containers = containers

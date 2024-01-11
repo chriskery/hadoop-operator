@@ -8,6 +8,7 @@ spec:
       nodeSpec:
         image: apache/hadoop:3
         replicas: 1
+      format: true
     dataNode:
       nodeSpec:
         image: apache/hadoop:3

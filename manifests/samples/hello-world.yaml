@@ -6,6 +6,9 @@ spec:
   yarn:
     resourceManager:
       serviceType: NodePort
+  hdfs:
+    nameNode:
+      format: true
 
 
 

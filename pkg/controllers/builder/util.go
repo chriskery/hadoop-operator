@@ -61,14 +61,6 @@ func setPodEnv(podTemplateSpec *corev1.PodTemplateSpec, replicaType v1alpha1.Rep
 				Value: string(replicaType),
 			})
 		}
-
-		if replicaType == v1alpha1.ReplicaTypeNameNode {
-			podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
-				Name:  EnvNameNodeFormat,
-				Value: "true",
-			})
-		}
-
 	}
 }
 
