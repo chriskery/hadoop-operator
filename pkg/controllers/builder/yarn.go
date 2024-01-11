@@ -166,11 +166,11 @@ func (h *YarnBuilder) buildNodeManager(cluster *hadoopclusterorgv1alpha1.HadoopC
 		if err = h.buildNodeManagerStatefulSet(cluster, labels); err != nil {
 			return err
 		}
-	}
-
-	if cluster.Spec.Yarn.NodeManager.Replicas != nil && (cluster.Spec.Yarn.NodeManager.Replicas != nodeManagerStatefulSet.Spec.Replicas) {
-		if err = h.reconcileNodeManagerHPA(cluster, nodeManagerStatefulSet); err != nil {
-			return err
+	} else {
+		if cluster.Spec.Yarn.NodeManager.Replicas != nil && (cluster.Spec.Yarn.NodeManager.Replicas != nodeManagerStatefulSet.Spec.Replicas) {
+			if err = h.reconcileNodeManagerHPA(cluster, nodeManagerStatefulSet); err != nil {
+				return err
+			}
 		}
 	}
 
