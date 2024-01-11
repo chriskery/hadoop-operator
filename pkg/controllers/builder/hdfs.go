@@ -13,6 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeclientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
@@ -140,16 +141,23 @@ func (h *HdfsBuilder) buildNameNodePod(cluster *hadoopclusterorgv1alpha1.HadoopC
 
 func (h *HdfsBuilder) buildDataNode(cluster *hadoopclusterorgv1alpha1.HadoopCluster, status *hadoopclusterorgv1alpha1.HadoopClusterStatus) error {
 	labels := utillabels.GenLabels(cluster.GetName(), hadoopclusterorgv1alpha1.ReplicaTypeDataNode)
+	dataNodeStatefulSet := &appv1.StatefulSet{}
 	err := h.Get(
 		context.Background(),
 		client.ObjectKey{Name: util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeDataNode), Namespace: cluster.Namespace},
-		&appv1.StatefulSet{},
+		dataNodeStatefulSet,
 	)
 	if err != nil {
 		if !errors.IsNotFound(err) {
 			return err
 		}
 		if err = h.buildDataNodeStatefulSet(cluster, labels); err != nil {
+			return err
+		}
+	}
+
+	if cluster.Spec.HDFS.DataNode.Replicas != nil && (*dataNodeStatefulSet.Spec.Replicas != *cluster.Spec.HDFS.DataNode.Replicas) {
+		if err = h.reconcileDataNodeHPA(cluster, dataNodeStatefulSet); err != nil {
 			return err
 		}
 	}
@@ -257,21 +265,27 @@ func (h *HdfsBuilder) genNameNodePodSpec(cluster *hadoopclusterorgv1alpha1.Hadoo
 	return podTemplateSpec, nil
 }
 
-func (h *HdfsBuilder) genDataNodeStatefulSetSpec(cluster *hadoopclusterorgv1alpha1.HadoopCluster, labels map[string]string) (*appv1.StatefulSetSpec, error) {
-	statefulSetSpec := &appv1.StatefulSetSpec{
-		Replicas: cluster.Spec.HDFS.NameNode.Replicas,
-		Selector: &metav1.LabelSelector{MatchLabels: labels},
-	}
-
+func (h *HdfsBuilder) genDataNodeStatefulSetSpec(
+	cluster *hadoopclusterorgv1alpha1.HadoopCluster,
+	labels map[string]string,
+) (*appv1.StatefulSetSpec, error) {
 	podTemplate, err := h.genDataNodePodSpec(cluster, labels)
 	if err != nil {
 		return nil, err
 	}
-	statefulSetSpec.Template = *podTemplate
+
+	statefulSetSpec := &appv1.StatefulSetSpec{
+		Replicas: cluster.Spec.HDFS.NameNode.Replicas,
+		Selector: &metav1.LabelSelector{MatchLabels: labels},
+		Template: *podTemplate,
+	}
 	return statefulSetSpec, nil
 }
 
-func (h *HdfsBuilder) genDataNodePodSpec(cluster *hadoopclusterorgv1alpha1.HadoopCluster, labels map[string]string) (*corev1.PodTemplateSpec, error) {
+func (h *HdfsBuilder) genDataNodePodSpec(
+	cluster *hadoopclusterorgv1alpha1.HadoopCluster,
+	labels map[string]string,
+) (*corev1.PodTemplateSpec, error) {
 	podTemplateSpec := &corev1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: labels,
@@ -307,6 +321,9 @@ func (h *HdfsBuilder) genDataNodePodSpec(cluster *hadoopclusterorgv1alpha1.Hadoo
 
 	podTemplateSpec.Spec.Containers = containers
 	setPodEnv(podTemplateSpec, hadoopclusterorgv1alpha1.ReplicaTypeDataNode)
+	if err := setInitContainer(cluster, hadoopclusterorgv1alpha1.ReplicaTypeDataNode, podTemplateSpec); err != nil {
+		return nil, err
+	}
 	return podTemplateSpec, nil
 }
 
@@ -344,7 +361,7 @@ func (h *HdfsBuilder) buildDataNodeService(cluster *hadoopclusterorgv1alpha1.Had
 	}
 
 	ownerRef := util.GenOwnerReference(cluster)
-	if err := h.ServiceControl.CreateServicesWithControllerRef(cluster.GetNamespace(), nameNodeService, cluster, ownerRef); err != nil {
+	if err = h.ServiceControl.CreateServicesWithControllerRef(cluster.GetNamespace(), nameNodeService, cluster, ownerRef); err != nil {
 		return err
 	}
 	return nil
@@ -385,4 +402,13 @@ func (h *HdfsBuilder) cleanDataNode(cluster *hadoopclusterorgv1alpha1.HadoopClus
 		}
 	}
 	return nil
+}
+
+func (h *HdfsBuilder) reconcileDataNodeHPA(cluster *hadoopclusterorgv1alpha1.HadoopCluster, statefulSet *appv1.StatefulSet) error {
+	statefulSet.Spec.Replicas = cluster.Spec.HDFS.DataNode.Replicas
+	if statefulSet.Spec.Replicas == nil {
+		statefulSet.Spec.Replicas = ptr.To(int32(1))
+	}
+
+	return reconcileStatefulSetHPA(h.StatefulSetControl, statefulSet, *statefulSet.Spec.Replicas)
 }
