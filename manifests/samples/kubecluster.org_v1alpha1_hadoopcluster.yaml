@@ -9,6 +9,8 @@ spec:
         image: apache/hadoop:3
         replicas: 1
       format: true
+      nameDir: /tmp/hadoop
+      serviceType: NodePort
     dataNode:
       nodeSpec:
         image: apache/hadoop:3
@@ -23,6 +25,13 @@ spec:
       nodeSpec:
         image: apache/hadoop:3
         replicas: 1
+        resources:
+          requests:
+            cpu: 1
+            memory: 1Gi
+          limits:
+            cpu: 1
+            memory: 2Gi
 
 
 

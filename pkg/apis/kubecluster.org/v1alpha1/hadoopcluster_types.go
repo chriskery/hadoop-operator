@@ -104,10 +104,26 @@ type HDFSNameNodeSpecTemplate struct {
 	// that the metadata directories are properly initialized. After this operation, any existing data in HDFS would be lost.
 	// +optional
 	Format bool `json:"format,omitempty" protobuf:"varint,11,opt,name=format"`
+
+	// NameDir refers to the directory where the NameNode stores crucial metadata for the Hadoop Distributed File System (HDFS).
+	// In the context of Hadoop, the NameNode is a vital component responsible for managing the namespace and storing metadata information for files.
+	NameDir string `json:"nameDir,omitempty" protobuf:"bytes,12,opt,name=nameDir"`
+
+	// LogAggregationEnable refers to whether log aggregation is enabled.
+	LogAggregationEnable bool `json:"logAggregationEnable,omitempty" protobuf:"varint,11,opt,name=logAggregationEnable"`
+
+	// LogAggregationRetainSeconds refers to the number of seconds to retain logs.
+	LogAggregationRetainSeconds int32 `json:"logAggregationRetainSeconds,omitempty" protobuf:"varint,11,opt,name=logAggregationRetainSeconds"`
+
+	// BlockSize refers to the default block size for new files.
+	BlockSize int32 `json:"blockSize,omitempty" protobuf:"varint,11,opt,name=blockSize"`
 }
 
 type HDFSDataNodeSpecTemplate struct {
 	HadoopNodeSpec `json:"nodeSpec,omitempty"`
+
+	// DataDir refers to the directory where the DataNode stores the HDFS blocks.
+	DataDir string `json:"dataDir,omitempty" protobuf:"bytes,12,opt,name=dataDir"`
 }
 
 type YarnSpec struct {

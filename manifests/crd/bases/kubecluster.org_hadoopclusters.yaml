@@ -2276,6 +2276,21 @@ spec:
                           After this operation, any existing data in HDFS would be
                           lost.
                         type: boolean
+                      logAggregationEnable:
+                        description: LogAggregationEnable refers to whether log aggregation
+                          is enabled.
+                        type: boolean
+                      logAggregationRetainSeconds:
+                        description: LogAggregationRetainSeconds refers to the number
+                          of seconds to retain logs.
+                        type: integer
+                      nameDir:
+                        description: NameDir refers to the directory where the NameNode
+                          stores crucial metadata for the Hadoop Distributed File
+                          System (HDFS). In the context of Hadoop, the NameNode is
+                          a vital component responsible for managing the namespace
+                          and storing metadata information for files.
+                        type: string
                       nodeSpec:
                         properties:
                           hostNetwork:
