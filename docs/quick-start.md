@@ -20,6 +20,7 @@ Next, apply the **hello-world.yaml** by running:
 
 ```bash
 kubectl apply -f hello-world.yaml
+## or 
 ```
 
 Now that we have created a Hadoop Cluster, run the following command to view it:

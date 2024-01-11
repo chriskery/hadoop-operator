@@ -18,6 +18,7 @@ package main
 
 import (
 	"flag"
+	"github.com/chriskery/hadoop-cluster-operator/pkg/config"
 	"os"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
@@ -61,6 +62,11 @@ func main() {
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
+	flag.StringVar(&config.Config.HadoopInitContainerImage, "hadoop-init-container-image",
+		config.HadoopInitContainerImageDefault, "The image for hadoop init container")
+	flag.StringVar(&config.Config.HadoopInitContainerTemplateFile, "hadoop-init-container-template-file",
+		config.HadoopInitContainerTemplateFileDefault, "The template file for hadoop init container")
+
 	opts := zap.Options{
 		Development: true,
 	}
