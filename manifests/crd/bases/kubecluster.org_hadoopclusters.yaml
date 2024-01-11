@@ -52,6 +52,10 @@ spec:
                 properties:
                   dataNode:
                     properties:
+                      dataDir:
+                        description: DataDir refers to the directory where the DataNode
+                          stores the HDFS blocks.
+                        type: string
                       nodeSpec:
                         properties:
                           hostNetwork:
@@ -2267,6 +2271,11 @@ spec:
                     type: object
                   nameNode:
                     properties:
+                      blockSize:
+                        description: BlockSize refers to the default block size for
+                          new files.
+                        format: int32
+                        type: integer
                       format:
                         description: This argument tells the namenode to format its
                           namespace, which includes deleting the current contents
@@ -2283,6 +2292,7 @@ spec:
                       logAggregationRetainSeconds:
                         description: LogAggregationRetainSeconds refers to the number
                           of seconds to retain logs.
+                        format: int32
                         type: integer
                       nameDir:
                         description: NameDir refers to the directory where the NameNode
