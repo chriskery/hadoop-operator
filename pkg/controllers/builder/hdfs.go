@@ -154,11 +154,11 @@ func (h *HdfsBuilder) buildDataNode(cluster *hadoopclusterorgv1alpha1.HadoopClus
 		if err = h.buildDataNodeStatefulSet(cluster, labels); err != nil {
 			return err
 		}
-	}
-
-	if cluster.Spec.HDFS.DataNode.Replicas != nil && (*dataNodeStatefulSet.Spec.Replicas != *cluster.Spec.HDFS.DataNode.Replicas) {
-		if err = h.reconcileDataNodeHPA(cluster, dataNodeStatefulSet); err != nil {
-			return err
+	} else {
+		if cluster.Spec.HDFS.DataNode.Replicas != nil && (*dataNodeStatefulSet.Spec.Replicas != *cluster.Spec.HDFS.DataNode.Replicas) {
+			if err = h.reconcileDataNodeHPA(cluster, dataNodeStatefulSet); err != nil {
+				return err
+			}
 		}
 	}
 
