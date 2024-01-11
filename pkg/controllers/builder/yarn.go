@@ -268,7 +268,7 @@ func (h *YarnBuilder) genNodeManagerPodSpec(cluster *hadoopclusterorgv1alpha1.Ha
 	}}
 
 	podTemplateSpec.Spec.Containers = containers
-	setPodEnv(podTemplateSpec, hadoopclusterorgv1alpha1.ReplicaTypeResourcemanager)
+	setPodEnv(podTemplateSpec, hadoopclusterorgv1alpha1.ReplicaTypeNodemanager)
 	return podTemplateSpec, nil
 }
 
