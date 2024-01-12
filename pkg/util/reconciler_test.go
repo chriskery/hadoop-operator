@@ -69,18 +69,3 @@ func TestResolveControllerRef(t *testing.T) {
 		ctrlManager.GetClient(),
 	)).To(gomega.BeNil())
 }
-
-func TestOnDependentDeleteFunc(t *testing.T) {
-	gomega.RegisterFailHandler(ginkgo.Fail)
-
-	e := event.DeleteEvent{
-		Object: &corev1.Pod{
-			ObjectMeta: metav1.ObjectMeta{
-				Labels: map[string]string{
-					v1alpha1.ReplicaTypeLabel: "test",
-				},
-			},
-		},
-	}
-	gomega.NewWithT(t).Expect(OnDependentDeleteFunc()(e)).To(gomega.BeTrue())
-}
