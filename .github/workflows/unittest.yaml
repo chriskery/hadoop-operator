@@ -33,6 +33,7 @@ jobs:
       - name: Run Go test
         run: |
           make test ENVTEST_K8S_VERSION=${{ matrix.kubernetes-version }}
+          
       - name: Setup Debug Session
         uses: mxschmitt/action-tmate@v3
         timeout-minutes: 15

@@ -25,7 +25,8 @@ func TestOnDependentCreateFunc(t *testing.T) {
 }
 
 func TestOnDependentUpdateFunc(t *testing.T) {
-	ctrlManager := testutil.NewCtrlManager()
+	ctrlManager, envTest := testutil.NewCtrlManager(t)
+	defer envTest.Stop()
 	e := event.UpdateEvent{
 		ObjectNew: &corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
