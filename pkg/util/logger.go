@@ -21,6 +21,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+func getClusterName(controllerRef *metav1.OwnerReference, namespace string, kind string) string {
+	if controllerRef.Kind == kind {
+		return namespace + "." + controllerRef.Name
+	}
+	return ""
+}
+
 func LoggerForCluster(cluster metav1.Object) *log.Entry {
 	return log.WithFields(log.Fields{
 		// We use cluster to match the key used in controller.go
@@ -34,7 +41,7 @@ func LoggerForStatefulSet(statefulSet *appv1.StatefulSet, kind string) *log.Entr
 	cluster := ""
 	if controllerRef := metav1.GetControllerOf(statefulSet); controllerRef != nil {
 		if controllerRef.Kind == kind {
-			cluster = statefulSet.Namespace + "." + controllerRef.Name
+			cluster = getClusterName(controllerRef, statefulSet.GetNamespace(), kind)
 		}
 	}
 	return log.WithFields(log.Fields{
@@ -50,7 +57,7 @@ func LoggerForDeploy(deployment *appv1.Deployment, kind string) *log.Entry {
 	cluster := ""
 	if controllerRef := metav1.GetControllerOf(deployment); controllerRef != nil {
 		if controllerRef.Kind == kind {
-			cluster = deployment.Namespace + "." + controllerRef.Name
+			cluster = getClusterName(controllerRef, deployment.GetNamespace(), kind)
 		}
 	}
 	return log.WithFields(log.Fields{
@@ -66,7 +73,7 @@ func LoggerForPod(pod *corev1.Pod, kind string) *log.Entry {
 	cluster := ""
 	if controllerRef := metav1.GetControllerOf(pod); controllerRef != nil {
 		if controllerRef.Kind == kind {
-			cluster = pod.Namespace + "." + controllerRef.Name
+			cluster = getClusterName(controllerRef, pod.GetNamespace(), kind)
 		}
 	}
 	return log.WithFields(log.Fields{
@@ -82,7 +89,7 @@ func LoggerForService(svc *corev1.Service, kind string) *log.Entry {
 	cluster := ""
 	if controllerRef := metav1.GetControllerOf(svc); controllerRef != nil {
 		if controllerRef.Kind == kind {
-			cluster = svc.Namespace + "." + controllerRef.Name
+			cluster = getClusterName(controllerRef, svc.GetNamespace(), kind)
 		}
 	}
 	return log.WithFields(log.Fields{
@@ -95,16 +102,16 @@ func LoggerForService(svc *corev1.Service, kind string) *log.Entry {
 }
 
 func LoggerForConfigMap(cm *corev1.ConfigMap, kind string) *log.Entry {
-	kcluster := ""
+	cluster := ""
 	if controllerRef := metav1.GetControllerOf(cm); controllerRef != nil {
 		if controllerRef.Kind == kind {
-			kcluster = cm.Namespace + "." + controllerRef.Name
+			cluster = getClusterName(controllerRef, cm.GetNamespace(), kind)
 		}
 	}
 	return log.WithFields(log.Fields{
 		// We use cluster to match the key used in controller.go
 		// In controller.go we log the key used with the workqueue.
-		"kcluster":  kcluster,
+		"kcluster":  cluster,
 		"configMap": cm.Namespace + "." + cm.Name,
 		"uid":       cm.ObjectMeta.UID,
 	})
@@ -112,17 +119,17 @@ func LoggerForConfigMap(cm *corev1.ConfigMap, kind string) *log.Entry {
 
 // LoggerForGenericKind generates log entry for generic Kubernetes resource Kind
 func LoggerForGenericKind(obj metav1.Object, kind string) *log.Entry {
-	job := ""
+	cluster := ""
 	if controllerRef := metav1.GetControllerOf(obj); controllerRef != nil {
 		if controllerRef.Kind == kind {
-			job = obj.GetNamespace() + "." + controllerRef.Name
+			cluster = getClusterName(controllerRef, obj.GetNamespace(), kind)
 		}
 	}
 	return log.WithFields(log.Fields{
 		// We use job to match the key used in controller.go
 		// In controller.go we log the key used with the workqueue.
-		"job": job,
-		kind:  obj.GetNamespace() + "." + obj.GetName(),
-		"uid": obj.GetUID(),
+		"cluster": cluster,
+		kind:      obj.GetNamespace() + "." + obj.GetName(),
+		"uid":     obj.GetUID(),
 	})
 }

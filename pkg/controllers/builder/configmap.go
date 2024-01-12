@@ -3,7 +3,7 @@ package builder
 import (
 	"bytes"
 	"context"
-	"fmt"
+	"encoding/xml"
 	hadoopclusterorgv1alpha1 "github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1"
 	"github.com/chriskery/hadoop-cluster-operator/pkg/controllers/control"
 	"github.com/chriskery/hadoop-cluster-operator/pkg/util"
@@ -21,9 +21,7 @@ import (
 const (
 	templatePrefix = `<?xml version="1.0" encoding="UTF-8"?>
 <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
-<configuration>
 `
-	templateSuffix = `</configuration>`
 
 	entrypointTemplate = `#/bin/bash
 HADOOP_CONF_DIR="${HADOOP_CONF_DIR:-/opt/hadoop/etc/hadoop}"
@@ -77,13 +75,18 @@ esac
 	configKey     = "config"
 )
 
+type HadoopConfiguration struct {
+	XMLName    xml.Name   `xml:"configuration"`
+	Properties []Property `xml:"property"`
+}
+
 type Property struct {
-	Name  string
-	Value string
+	Name  string `xml:"name"`
+	Value string `xml:"value"`
 }
 
 type XMLTemplateGetter interface {
-	GetXMLTemplate(cluster *hadoopclusterorgv1alpha1.HadoopCluster) string
+	GetXMLTemplate(cluster *hadoopclusterorgv1alpha1.HadoopCluster) []Property
 	GetKey() string
 	Default()
 }
@@ -100,8 +103,8 @@ func (c *coreSiteXMLTemplateGetter) Default() {
 	}
 }
 
-func (c *coreSiteXMLTemplateGetter) GetXMLTemplate(cluster *hadoopclusterorgv1alpha1.HadoopCluster) string {
-	return genXmlTemplate(c.defaultProperties)
+func (c *coreSiteXMLTemplateGetter) GetXMLTemplate(cluster *hadoopclusterorgv1alpha1.HadoopCluster) []Property {
+	return c.defaultProperties
 }
 
 func (c *coreSiteXMLTemplateGetter) GetKey() string {
@@ -122,7 +125,7 @@ func (h *hdfsSiteXMLTemplateGetter) Default() {
 	}
 }
 
-func (h *hdfsSiteXMLTemplateGetter) GetXMLTemplate(cluster *hadoopclusterorgv1alpha1.HadoopCluster) string {
+func (h *hdfsSiteXMLTemplateGetter) GetXMLTemplate(cluster *hadoopclusterorgv1alpha1.HadoopCluster) []Property {
 	hdfsSiteProperties := h.defaultProperties
 	if cluster.Spec.HDFS.NameNode.LogAggregationEnable {
 		hdfsSiteProperties = append(hdfsSiteProperties,
@@ -136,9 +139,9 @@ func (h *hdfsSiteXMLTemplateGetter) GetXMLTemplate(cluster *hadoopclusterorgv1al
 		hdfsSiteProperties = append(hdfsSiteProperties, Property{"dfs.blocksize", strconv.Itoa(int(cluster.Spec.HDFS.NameNode.BlockSize))})
 	}
 	if cluster.Spec.HDFS.DataNode.DataDir != "" {
-		hdfsSiteProperties = append(hdfsSiteProperties, Property{"dfs.datanode.data.dir", cluster.Spec.HDFS.NameNode.NameDir})
+		hdfsSiteProperties = append(hdfsSiteProperties, Property{"dfs.datanode.data.dir", cluster.Spec.HDFS.DataNode.DataDir})
 	}
-	return genXmlTemplate(hdfsSiteProperties)
+	return hdfsSiteProperties
 }
 
 func (h *hdfsSiteXMLTemplateGetter) GetKey() string {
@@ -158,8 +161,8 @@ func (m *mapredSiteXMLTemplateGetter) Default() {
 	}
 }
 
-func (m *mapredSiteXMLTemplateGetter) GetXMLTemplate(_ *hadoopclusterorgv1alpha1.HadoopCluster) string {
-	return genXmlTemplate(m.defaultProperties)
+func (m *mapredSiteXMLTemplateGetter) GetXMLTemplate(_ *hadoopclusterorgv1alpha1.HadoopCluster) []Property {
+	return m.defaultProperties
 }
 
 func (m *mapredSiteXMLTemplateGetter) GetKey() string {
@@ -189,13 +192,14 @@ const (
 	MByte = KByte * 1000
 )
 
-func (y *yarnSiteXMLTemplateGetter) GetXMLTemplate(cluster *hadoopclusterorgv1alpha1.HadoopCluster) string {
+func (y *yarnSiteXMLTemplateGetter) GetXMLTemplate(cluster *hadoopclusterorgv1alpha1.HadoopCluster) []Property {
+	yarnProperties := y.defaultProperties
 	requests := cluster.Spec.Yarn.NodeManager.Resources.Requests
 	cpuQuantity := requests.Cpu()
 	if cpuQuantity != nil {
 		vcores, ok := cpuQuantity.AsInt64()
 		if ok && vcores > 0 {
-			y.defaultProperties = append(y.defaultProperties, Property{"yarn.nodemanager.resource.cpu-vcores",
+			yarnProperties = append(yarnProperties, Property{"yarn.nodemanager.resource.cpu-vcores",
 				strconv.Itoa(int(vcores))})
 		}
 	}
@@ -204,32 +208,16 @@ func (y *yarnSiteXMLTemplateGetter) GetXMLTemplate(cluster *hadoopclusterorgv1al
 	if memoryQuantity != nil {
 		memory, ok := memoryQuantity.AsInt64()
 		if ok && memory > 0 {
-			y.defaultProperties = append(y.defaultProperties, Property{"yarn.nodemanager.resource.memory-mb",
+			yarnProperties = append(yarnProperties, Property{"yarn.nodemanager.resource.memory-mb",
 				strconv.Itoa(int(memory / MByte))})
 		}
 	}
 
-	return genXmlTemplate(y.defaultProperties)
+	return yarnProperties
 }
 
 func (y *yarnSiteXMLTemplateGetter) GetKey() string {
 	return yarnSiteXmlKey
-}
-
-func generalXmlProperty(property Property) string {
-	return "\t<property>\n\t\t<name>" + property.Name + "</name>\n\t\t<value>" + property.Value + "</value>\n\t</property>\n"
-}
-
-func generalXmlProperties(properties []Property) string {
-	var buf bytes.Buffer
-	for _, property := range properties {
-		buf.WriteString(generalXmlProperty(property))
-	}
-	return buf.String()
-}
-
-func genXmlTemplate(properties []Property) string {
-	return fmt.Sprintf("%s\n%s\n%s", templatePrefix, generalXmlProperties(properties), templateSuffix)
 }
 
 type configMapGenerator struct {
@@ -318,16 +306,27 @@ func (h *ConfigMapBuilder) Clean(cluster *hadoopclusterorgv1alpha1.HadoopCluster
 }
 
 func (h *ConfigMapBuilder) buildHadoopConfigMap(cluster *hadoopclusterorgv1alpha1.HadoopCluster) (*corev1.ConfigMap, error) {
+	dataNodeReplicas := 1
+	if cluster.Spec.HDFS.DataNode.Replicas != nil {
+		dataNodeReplicas = int(*cluster.Spec.HDFS.DataNode.Replicas)
+	}
+
 	hadoopConfig := HadoopConfig{
 		NameNodeURI:             util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeNameNode),
-		DataNodeReplicas:        int(*cluster.Spec.HDFS.DataNode.Replicas),
+		DataNodeReplicas:        dataNodeReplicas,
 		ResourceManagerHostname: util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeResourcemanager),
 	}
 
 	configMapData := map[string]string{entrypointKey: entrypointTemplate}
 	for _, xmlGetter := range h.XmlGetters {
 		xmlTemplate := xmlGetter.GetXMLTemplate(cluster)
-		configMapBytes, err := getConfigMapGenerator(xmlTemplate).GetConfigMapBytes(hadoopConfig)
+		hadoopConfiguration := HadoopConfiguration{Properties: xmlTemplate}
+		marshal, err := xml.MarshalIndent(hadoopConfiguration, "", "  ")
+		if err != nil {
+			return nil, err
+		}
+		templateStr := templatePrefix + string(marshal)
+		configMapBytes, err := getConfigMapGenerator(templateStr).GetConfigMapBytes(hadoopConfig)
 		if err != nil {
 			return nil, err
 		}
