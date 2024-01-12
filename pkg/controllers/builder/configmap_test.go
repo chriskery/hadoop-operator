@@ -14,7 +14,9 @@ import (
 )
 
 func TestBuildHadoopConfigMap(t *testing.T) {
-	mgr := testutil.NewCtrlManager()
+	mgr, envTest := testutil.NewCtrlManager(t)
+	defer envTest.Stop()
+
 	builder := &ConfigMapBuilder{}
 	builder.SetupWithManager(mgr, mgr.GetEventRecorderFor("test"))
 
@@ -66,3 +68,4 @@ func TestBuildHadoopConfigMap(t *testing.T) {
 	assert.Greater(t, len(yarnSite.Properties), 0)
 	assert.Contains(t, yarnSite.Properties, Property{Name: "yarn.nodemanager.resource.cpu-vcores", Value: "1"})
 }
+
