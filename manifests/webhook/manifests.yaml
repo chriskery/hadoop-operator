@@ -24,6 +24,26 @@ webhooks:
     resources:
     - hadoopclusters
   sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /mutate-kubecluster-org-v1alpha1-hadoopjob
+  failurePolicy: Fail
+  name: mhadoopjob.kb.io
+  rules:
+  - apiGroups:
+    - kubecluster.org
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - hadoopjobs
+  sideEffects: None
 ---
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
@@ -49,4 +69,24 @@ webhooks:
     - UPDATE
     resources:
     - hadoopclusters
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-kubecluster-org-v1alpha1-hadoopjob
+  failurePolicy: Fail
+  name: vhadoopjob.kb.io
+  rules:
+  - apiGroups:
+    - kubecluster.org
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - hadoopjobs
   sideEffects: None

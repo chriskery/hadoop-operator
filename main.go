@@ -18,8 +18,10 @@ package main
 
 import (
 	"flag"
-	"github.com/chriskery/hadoop-cluster-operator/pkg/config"
+	"fmt"
 	"os"
+
+	"github.com/chriskery/hadoop-cluster-operator/pkg/config"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
@@ -55,6 +57,7 @@ func main() {
 	var enableLeaderElection bool
 	var probeAddr string
 	var certDir string
+	var enabledSchemes controllers.EnabledSchemes
 
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
@@ -66,6 +69,8 @@ func main() {
 		config.HadoopInitContainerImageDefault, "The image for hadoop init container")
 	flag.StringVar(&config.Config.HadoopInitContainerTemplateFile, "hadoop-init-container-template-file",
 		config.HadoopInitContainerTemplateFileDefault, "The template file for hadoop init container")
+	flag.Var(&enabledSchemes, "enable-scheme", "Enable scheme(s) as --enable-scheme=tfjob --enable-scheme=pytorchjob, case insensitive."+
+		" Now supporting TFJob, PyTorchJob, MXNetJob, XGBoostJob, PaddleJob. By default, all supported schemes will be enabled.")
 
 	opts := zap.Options{
 		Development: true,
@@ -99,13 +104,22 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = controllers.NewReconciler(mgr).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "hadoopCluster")
-		os.Exit(1)
+	// TODO: We need a general manager. all rest reconciler addsToManager
+	// Based on the user configuration, we start different controllers
+	if enabledSchemes.Empty() {
+		enabledSchemes.FillAll()
 	}
-	if err = (&hadoopclusterorgv1alpha1.HadoopCluster{}).SetupWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "hadoopCluster")
-		os.Exit(1)
+	for _, s := range enabledSchemes {
+		setupFunc, supported := controllers.SupportedSchemeReconciler[s]
+		if !supported {
+			setupLog.Error(fmt.Errorf("cannot find %s in supportedSchemeReconciler", s),
+				"scheme not supported", "scheme", s)
+			os.Exit(1)
+		}
+		if err = setupFunc(mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", s)
+			os.Exit(1)
+		}
 	}
 	//+kubebuilder:scaffold:builder
 

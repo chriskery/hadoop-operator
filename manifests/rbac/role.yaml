@@ -95,3 +95,29 @@ rules:
   - get
   - patch
   - update
+- apiGroups:
+  - kubecluster.org
+  resources:
+  - hadoopjobs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - kubecluster.org
+  resources:
+  - hadoopjobs/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - kubecluster.org
+  resources:
+  - hadoopjobs/status
+  verbs:
+  - get
+  - patch
+  - update

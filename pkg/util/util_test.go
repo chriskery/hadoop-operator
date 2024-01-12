@@ -2,12 +2,11 @@ package util
 
 import (
 	"fmt"
-	"testing"
-
 	"github.com/chriskery/hadoop-cluster-operator/pkg/util/testutil"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"testing"
 )
 
 func TestGenOwnerReference(t *testing.T) {

@@ -8,7 +8,7 @@ import (
 	"strconv"
 )
 
-func GetReplicaName(hadoopCluster *hadoopclusterorgv1alpha1.HadoopCluster, replicaType hadoopclusterorgv1alpha1.ReplicaType) string {
+func GetReplicaName(hadoopCluster metav1.Object, replicaType hadoopclusterorgv1alpha1.ReplicaType) string {
 	return hadoopCluster.GetName() + "-" + string(replicaType)
 }
 

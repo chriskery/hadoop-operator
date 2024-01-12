@@ -1,0 +1,28 @@
+apiVersion: kubecluster.org/v1alpha1
+kind: HadoopJob
+metadata:
+  name: hadoopjob-sample
+spec:
+#  // MainFile is the path to a bundled JAR, Python, or R file of the application.
+#  MainApplicationFile string `json:"mainApplicationFile"`
+#
+#  // Arguments is a list of arguments to be passed to the application.
+#  // +optional
+#  Arguments []string `json:"arguments,omitempty"`
+#
+#  ExecutorSpec HadoopNodeSpec `json:"executorSpec,omitempty"`
+  mainApplicationFile: /opt/hadoop/share/hadoop/mapreduce/hadoop-mapreduce-examples-3.3.1.jar
+  arguments: ["pi","10","1000"]
+  executorSpec:
+      image: apache/hadoop:3
+      replicas: 1
+      resources:
+        requests:
+            cpu: 1
+            memory: 4Gi
+        limits:
+            cpu: 1
+            memory: 4Gi
+
+
+
