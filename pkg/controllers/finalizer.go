@@ -48,6 +48,7 @@ func (r *HadoopClusterReconciler) prepareForDeletion(ctx context.Context, hadoop
 		return nil
 	}); err != nil {
 		ctrl.LoggerFrom(ctx).Error(err, "HadoopCluster deletion")
+		return err
 	}
 
 	if err := r.removeFinalizer(ctx, hadoopCluster); err != nil {

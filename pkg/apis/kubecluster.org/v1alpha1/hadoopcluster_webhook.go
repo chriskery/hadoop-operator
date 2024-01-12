@@ -27,7 +27,8 @@ import (
 )
 
 const (
-	DefaultImage = "apache/hadoop:3"
+	DefaultImage                       = "apache/hadoop:3"
+	DefaultLogAggregationRetainSeconds = 604800
 )
 
 // log is for logging in this package.
@@ -93,6 +94,9 @@ func setDefaultsYarnNameNode(hdfsSpec *HDFSNameNodeSpecTemplate) {
 	}
 	if hdfsSpec.ImagePullPolicy == "" {
 		hdfsSpec.ImagePullPolicy = "IfNotPresent"
+	}
+	if hdfsSpec.LogAggregationEnable && hdfsSpec.LogAggregationRetainSeconds <= 0 {
+		hdfsSpec.LogAggregationRetainSeconds = DefaultLogAggregationRetainSeconds
 	}
 }
 

@@ -3,6 +3,7 @@ package builder
 import (
 	"bytes"
 	"context"
+	"encoding/xml"
 	hadoopclusterorgv1alpha1 "github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1"
 	"github.com/chriskery/hadoop-cluster-operator/pkg/controllers/control"
 	"github.com/chriskery/hadoop-cluster-operator/pkg/util"
@@ -13,103 +14,14 @@ import (
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"strconv"
 	"text/template"
 )
 
 const (
-	coreSiteTemplate = `<?xml version="1.0" encoding="UTF-8"?>
+	templatePrefix = `<?xml version="1.0" encoding="UTF-8"?>
 <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
-
-
-<configuration>
-    <property>
-      <name>fs.defaultFS</name>
-      <value>hdfs://{{.NameNodeURI}}:9000</value>
-    </property>
-	
-    <property>
-      <name>io.file.buffer.size</name>
-      <value>4096</value>
-    </property>
-</configuration>
 `
-
-	hdfsSiteTemplate = `<?xml version="1.0" encoding="UTF-8"?>
-<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
-
-<configuration>
-  <property>
-    <name>dfs.replication</name>
-    <value>{{.DataNodeReplicas}}</value>
-  </property>
-  <property>
-    <name>dfs.namenode.rpc-address</name>
-    <value>{{.NameNodeURI}}:9000</value>
-  </property>
-  <property>
-    <name>dfs.namenode.http-address</name>
-    <value>{{.NameNodeURI}}:9870</value>
-  </property>
-</configuration>
-`
-	mapredSiteTemplate = `<?xml version="1.0" encoding="UTF-8"?>
-<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
-
-<configuration>
-    <property>
-      <name>mapreduce.framework.name</name>
-      <value>yarn</value>
-    </property>
-
-    <property>
-      <name>mapreduce.jobhistory.address</name>
-      <value>0.0.0.0:10020</value>
-    </property>
-    <property>
-      <name>mapreduce.jobhistory.webapp.address</name>
-      <value>0.0.0.0:19888</value>
-    </property>
-</configuration>
-`
-	yarnSiteTemplate = `<?xml version="1.0" encoding="UTF-8"?>
-<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
-
-
-<configuration>
-    <property>
-      <name>yarn.resourcemanager.recovery.enabled</name>
-      <value>true</value>
-    </property>
-	
-    <property>
-      <name>yarn.resourcemanager.hostname</name>
-      <value>{{.ResourceManagerHostname}}</value>
-    </property>
-
-    <property>
-      <name>yarn.nodemanager.aux-services</name>
-      <value>mapreduce_shuffle</value>
-    </property>
-    <property>
-      <name>yarn.nodemanager.aux-services.mapreduce.shuffle.class</name>
-      <value>org.apache.hadoop.mapred.ShuffleHandler</value>
-    </property>
-	
-    <property>
-      <name>yarn.log-aggregation-enable</name>
-      <value>true</value>
-    </property>
-    <property>
-      <name>yarn.log-aggregation.retain-seconds</name>
-      <value>604800</value>
-    </property>	
-
-    <property>
-       <name>yarn.nodemanager.env-whitelist</name>
-       <value>JAVA_HOME,HADOOP_COMMON_HOME,HADOOP_HDFS_HOME,HADOOP_CONF_DIR,CLASSPATH_PREPEND_DISTCACHE,HADOOP_YARN_HOME,HADOOP_HOME,PATH,LANG,TZ,HADOOP_MAPRED_HOME</value>
-    </property>
-
-</configuration>`
 
 	entrypointTemplate = `#/bin/bash
 HADOOP_CONF_DIR="${HADOOP_CONF_DIR:-/opt/hadoop/etc/hadoop}"
@@ -158,11 +70,155 @@ esac
 	hdfsSiteXmlKey   = "hdfs-site.xml"
 	mapredSiteXmlKey = "mapred-site.xml"
 	yarnSiteXmlKey   = "yarn-site.xml"
-	workersKey       = "workers"
 
 	entrypointKey = "entrypoint"
 	configKey     = "config"
 )
+
+type HadoopConfiguration struct {
+	XMLName    xml.Name   `xml:"configuration"`
+	Properties []Property `xml:"property"`
+}
+
+type Property struct {
+	Name  string `xml:"name"`
+	Value string `xml:"value"`
+}
+
+type XMLTemplateGetter interface {
+	GetXMLTemplate(cluster *hadoopclusterorgv1alpha1.HadoopCluster) []Property
+	GetKey() string
+	Default()
+}
+
+var _ XMLTemplateGetter = &coreSiteXMLTemplateGetter{}
+
+type coreSiteXMLTemplateGetter struct {
+	defaultProperties []Property
+}
+
+func (c *coreSiteXMLTemplateGetter) Default() {
+	c.defaultProperties = []Property{
+		{"fs.defaultFS", "hdfs://{{.NameNodeURI}}:9000"},
+	}
+}
+
+func (c *coreSiteXMLTemplateGetter) GetXMLTemplate(cluster *hadoopclusterorgv1alpha1.HadoopCluster) []Property {
+	return c.defaultProperties
+}
+
+func (c *coreSiteXMLTemplateGetter) GetKey() string {
+	return coreSiteXmlKey
+}
+
+var _ XMLTemplateGetter = &hdfsSiteXMLTemplateGetter{}
+
+type hdfsSiteXMLTemplateGetter struct {
+	defaultProperties []Property
+}
+
+func (h *hdfsSiteXMLTemplateGetter) Default() {
+	h.defaultProperties = []Property{
+		{"dfs.replication", "{{.DataNodeReplicas}}"},
+		{"dfs.namenode.rpc-address", "{{.NameNodeURI}}:9000"},
+		{"dfs.namenode.http-address", "{{.NameNodeURI}}:9870"},
+	}
+}
+
+func (h *hdfsSiteXMLTemplateGetter) GetXMLTemplate(cluster *hadoopclusterorgv1alpha1.HadoopCluster) []Property {
+	hdfsSiteProperties := h.defaultProperties
+	if cluster.Spec.HDFS.NameNode.LogAggregationEnable {
+		hdfsSiteProperties = append(hdfsSiteProperties,
+			Property{"dfs.namenode.log-aggregation.enable", "true"},
+			Property{"dfs.namenode.log-aggregation.retain-seconds", strconv.Itoa(int(cluster.Spec.HDFS.NameNode.LogAggregationRetainSeconds))})
+	}
+	if cluster.Spec.HDFS.NameNode.NameDir != "" {
+		hdfsSiteProperties = append(hdfsSiteProperties, Property{"dfs.namenode.name.dir", cluster.Spec.HDFS.NameNode.NameDir})
+	}
+	if cluster.Spec.HDFS.NameNode.BlockSize > 0 {
+		hdfsSiteProperties = append(hdfsSiteProperties, Property{"dfs.blocksize", strconv.Itoa(int(cluster.Spec.HDFS.NameNode.BlockSize))})
+	}
+	if cluster.Spec.HDFS.DataNode.DataDir != "" {
+		hdfsSiteProperties = append(hdfsSiteProperties, Property{"dfs.datanode.data.dir", cluster.Spec.HDFS.DataNode.DataDir})
+	}
+	return hdfsSiteProperties
+}
+
+func (h *hdfsSiteXMLTemplateGetter) GetKey() string {
+	return hdfsSiteXmlKey
+}
+
+var _ XMLTemplateGetter = &mapredSiteXMLTemplateGetter{}
+
+type mapredSiteXMLTemplateGetter struct {
+	defaultProperties []Property
+}
+
+func (m *mapredSiteXMLTemplateGetter) Default() {
+	m.defaultProperties = []Property{
+		{"mapreduce.framework.name", "yarn"},
+		{"mapreduce.jobhistory.address", "{{.ResourceManagerHostname}}:10020"},
+	}
+}
+
+func (m *mapredSiteXMLTemplateGetter) GetXMLTemplate(_ *hadoopclusterorgv1alpha1.HadoopCluster) []Property {
+	return m.defaultProperties
+}
+
+func (m *mapredSiteXMLTemplateGetter) GetKey() string {
+	return mapredSiteXmlKey
+}
+
+var _ XMLTemplateGetter = &yarnSiteXMLTemplateGetter{}
+
+type yarnSiteXMLTemplateGetter struct {
+	defaultProperties []Property
+}
+
+func (y *yarnSiteXMLTemplateGetter) Default() {
+	y.defaultProperties = []Property{
+		{"yarn.resourcemanager.hostname", "{{.ResourceManagerHostname}}"},
+		{"yarn.nodemanager.aux-services", "mapreduce_shuffle"},
+		{"yarn.resourcemanager.recovery.enabled", "true"},
+		{"yarn.nodemanager.aux-services.mapreduce.shuffle.class", "org.apache.hadoop.mapred.ShuffleHandler"},
+		{"yarn.nodemanager.env-whitelist", "JAVA_HOME,HADOOP_COMMON_HOME,HADOOP_HDFS_HOME,HADOOP_CONF_DIR,CLASSPATH_PREPEND_DISTCACHE,HADOOP_YARN_HOME,HADOOP_HOME,PATH,LANG,TZ,HADOOP_MAPRED_HOME"},
+	}
+}
+
+// SI Sizes.
+const (
+	IByte = 1
+	KByte = IByte * 1000
+	MByte = KByte * 1000
+)
+
+func (y *yarnSiteXMLTemplateGetter) GetXMLTemplate(cluster *hadoopclusterorgv1alpha1.HadoopCluster) []Property {
+	yarnProperties := y.defaultProperties
+	requests := cluster.Spec.Yarn.NodeManager.Resources.Requests
+	cpuQuantity := requests.Cpu()
+	if cpuQuantity != nil {
+		vcores, ok := cpuQuantity.AsInt64()
+		if ok && vcores > 0 {
+			yarnProperties = append(yarnProperties, Property{"yarn.nodemanager.resource.cpu-vcores",
+				strconv.Itoa(int(vcores))})
+		}
+	}
+
+	memoryQuantity := requests.Memory()
+	if memoryQuantity != nil {
+		memory, ok := memoryQuantity.AsInt64()
+		if ok && memory > 0 {
+			yarnProperties = append(yarnProperties, Property{"yarn.nodemanager.resource.memory-mb",
+				strconv.Itoa(int(memory / MByte))})
+		}
+	}
+
+	return yarnProperties
+}
+
+func (y *yarnSiteXMLTemplateGetter) GetKey() string {
+	return yarnSiteXmlKey
+}
 
 type configMapGenerator struct {
 	template string
@@ -199,6 +255,8 @@ type ConfigMapBuilder struct {
 
 	// ConfigMapControl is used to add or delete services.
 	ConfigMapControl control.ConfigMapControlInterface
+
+	XmlGetters []XMLTemplateGetter
 }
 
 func (h *ConfigMapBuilder) SetupWithManager(mgr manager.Manager, recorder record.EventRecorder) {
@@ -207,6 +265,16 @@ func (h *ConfigMapBuilder) SetupWithManager(mgr manager.Manager, recorder record
 
 	h.Client = mgr.GetClient()
 	h.ConfigMapControl = control.RealConfigMapControl{KubeClient: kubeClientSet, Recorder: recorder}
+
+	h.XmlGetters = []XMLTemplateGetter{
+		&coreSiteXMLTemplateGetter{},
+		&hdfsSiteXMLTemplateGetter{},
+		&mapredSiteXMLTemplateGetter{},
+		&yarnSiteXMLTemplateGetter{},
+	}
+	for _, xmlGetter := range h.XmlGetters {
+		xmlGetter.Default()
+	}
 }
 
 func (h *ConfigMapBuilder) Build(cluster *hadoopclusterorgv1alpha1.HadoopCluster, status *hadoopclusterorgv1alpha1.HadoopClusterStatus) error {
@@ -238,26 +306,31 @@ func (h *ConfigMapBuilder) Clean(cluster *hadoopclusterorgv1alpha1.HadoopCluster
 }
 
 func (h *ConfigMapBuilder) buildHadoopConfigMap(cluster *hadoopclusterorgv1alpha1.HadoopCluster) (*corev1.ConfigMap, error) {
+	dataNodeReplicas := 1
+	if cluster.Spec.HDFS.DataNode.Replicas != nil {
+		dataNodeReplicas = int(*cluster.Spec.HDFS.DataNode.Replicas)
+	}
+
 	hadoopConfig := HadoopConfig{
 		NameNodeURI:             util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeNameNode),
-		DataNodeReplicas:        int(*cluster.Spec.HDFS.DataNode.Replicas),
+		DataNodeReplicas:        dataNodeReplicas,
 		ResourceManagerHostname: util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeResourcemanager),
 	}
-	coreSiteXML, err := getConfigMapGenerator(coreSiteTemplate).GetConfigMapBytes(hadoopConfig)
-	if err != nil {
-		return nil, err
-	}
-	hdfsSiteXML, err := getConfigMapGenerator(hdfsSiteTemplate).GetConfigMapBytes(hadoopConfig)
-	if err != nil {
-		return nil, err
-	}
-	mapredSiteXML, err := getConfigMapGenerator(mapredSiteTemplate).GetConfigMapBytes(hadoopConfig)
-	if err != nil {
-		return nil, err
-	}
-	yarnSiteXML, err := getConfigMapGenerator(yarnSiteTemplate).GetConfigMapBytes(hadoopConfig)
-	if err != nil {
-		return nil, err
+
+	configMapData := map[string]string{entrypointKey: entrypointTemplate}
+	for _, xmlGetter := range h.XmlGetters {
+		xmlTemplate := xmlGetter.GetXMLTemplate(cluster)
+		hadoopConfiguration := HadoopConfiguration{Properties: xmlTemplate}
+		marshal, err := xml.MarshalIndent(hadoopConfiguration, "", "  ")
+		if err != nil {
+			return nil, err
+		}
+		templateStr := templatePrefix + string(marshal)
+		configMapBytes, err := getConfigMapGenerator(templateStr).GetConfigMapBytes(hadoopConfig)
+		if err != nil {
+			return nil, err
+		}
+		configMapData[xmlGetter.GetKey()] = string(configMapBytes)
 	}
 
 	configMap := &corev1.ConfigMap{
@@ -265,13 +338,7 @@ func (h *ConfigMapBuilder) buildHadoopConfigMap(cluster *hadoopclusterorgv1alpha
 			Name:      util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeConfigMap),
 			Namespace: cluster.Namespace,
 		},
-		Data: map[string]string{
-			yarnSiteXmlKey:   string(yarnSiteXML),
-			coreSiteXmlKey:   string(coreSiteXML),
-			hdfsSiteXmlKey:   string(hdfsSiteXML),
-			mapredSiteXmlKey: string(mapredSiteXML),
-			entrypointKey:    entrypointTemplate,
-		},
+		Data: configMapData,
 	}
 	return configMap, nil
 }

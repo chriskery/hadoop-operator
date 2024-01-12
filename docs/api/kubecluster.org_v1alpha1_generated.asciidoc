@@ -68,6 +68,7 @@ ClusterCondition describes current state of a cluster
 |===
 | Field | Description
 | *`nodeSpec`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopnodespec[$$HadoopNodeSpec$$]__ | 
+| *`dataDir`* __string__ | DataDir refers to the directory where the DataNode stores the HDFS blocks.
 |===
 
 
@@ -87,6 +88,10 @@ ClusterCondition describes current state of a cluster
 | *`nodeSpec`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopnodespec[$$HadoopNodeSpec$$]__ | 
 | *`serviceType`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#servicetype-v1-core[$$ServiceType$$]__ | 
 | *`format`* __boolean__ | This argument tells the namenode to format its namespace, which includes deleting the current contents of the namenode's metadata and starting fresh. This operation is typically performed the first time the namenode is started to ensure that the metadata directories are properly initialized. After this operation, any existing data in HDFS would be lost.
+| *`nameDir`* __string__ | NameDir refers to the directory where the NameNode stores crucial metadata for the Hadoop Distributed File System (HDFS). In the context of Hadoop, the NameNode is a vital component responsible for managing the namespace and storing metadata information for files.
+| *`logAggregationEnable`* __boolean__ | LogAggregationEnable refers to whether log aggregation is enabled.
+| *`logAggregationRetainSeconds`* __integer__ | LogAggregationRetainSeconds refers to the number of seconds to retain logs.
+| *`blockSize`* __integer__ | BlockSize refers to the default block size for new files.
 |===
 
 
