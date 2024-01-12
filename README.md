@@ -36,8 +36,9 @@ Please refer to the [quick-start.md](docs/quick-start.md)  for more information.
 ## Features
 
 - [x] [Create and destroy a hadoop-cluster](https://github.com/chriskery/charts/tree/master/charts/hadoop-cluster#deploying-hadoop-cluster)
-- [x] [Hdfs dataNode HPA](https://github.com/chriskery/charts/tree/master/charts/hadoop-cluster#deploying-hadoop-cluster)
-- [x] [Yarn nodeManager HPA](https://github.com/chriskery/charts/tree/master/charts/hadoop-cluster#deploying-hadoop-cluster)
+- [x] [Hdfs DataNode HPA](https://github.com/chriskery/charts/tree/master/charts/hadoop-cluster#deploying-hadoop-cluster)
+- [x] [Yarn NodeManager HPA](https://github.com/chriskery/charts/tree/master/charts/hadoop-cluster#deploying-hadoop-cluster)
+- [x] [Submit Hadoop Job](https://github.com/chriskery/charts/tree/master/charts/hadoop-cluster#deploying-hadoop-cluster)
 
 ## Contributing and Community
 

@@ -291,7 +291,7 @@ func (h *ConfigMapBuilder) Build(obj interface{}, _ interface{}) error {
 	if err != nil {
 		return err
 	}
-	ownerRef := util.GenOwnerReference(cluster)
+	ownerRef := util.GenOwnerReference(cluster, hadoopclusterorgv1alpha1.GroupVersion.WithKind(hadoopclusterorgv1alpha1.HadoopClusterKind).Kind)
 	return h.ConfigMapControl.CreateConfigMapWithControllerRef(cluster.GetNamespace(), configMap, cluster, ownerRef)
 }
 

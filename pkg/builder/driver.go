@@ -44,7 +44,7 @@ func (h *DriverBuilder) Build(obj interface{}, objStatus interface{}) error {
 	}
 
 	podTemplateSpec := h.genDriverPodSpec(job, driverPodName)
-	ownerRef := util.GenOwnerReference(job)
+	ownerRef := util.GenOwnerReference(job, v1alpha1.GroupVersion.WithKind(v1alpha1.HadoopJobKind).Kind)
 	if err = h.PodControl.CreatePodsWithControllerRef(job.GetNamespace(), podTemplateSpec, job, ownerRef); err != nil {
 		return err
 	}
@@ -64,12 +64,15 @@ func (h *DriverBuilder) genDriverPodSpec(job *v1alpha1.HadoopJob, driverPodName 
 	driverPodSpec := job.Spec.ExecutorSpec
 	podTemplateSpec := &corev1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
-			Labels: map[string]string{v1alpha1.JobNameLabel: job.GetName()},
-			Name:   driverPodName,
+			Labels: map[string]string{
+				v1alpha1.JobNameLabel:     job.GetName(),
+				v1alpha1.ReplicaTypeLabel: string(v1alpha1.ReplicaTypeDriver),
+			},
+			Name: driverPodName,
 		},
 		Spec: corev1.PodSpec{
 			Volumes:       driverPodSpec.Volumes,
-			RestartPolicy: corev1.RestartPolicyAlways,
+			RestartPolicy: corev1.RestartPolicyNever,
 			DNSPolicy:     corev1.DNSClusterFirstWithHostNet,
 		},
 	}

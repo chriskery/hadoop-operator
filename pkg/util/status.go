@@ -19,3 +19,15 @@ func IsClusterRunning(cluster *v1alpha1.HadoopCluster) bool {
 
 	return false
 }
+
+func IsJobFinished(job *v1alpha1.HadoopJob) bool {
+	for _, condition := range job.Status.Conditions {
+		if condition.Type == v1alpha1.JobFailed && condition.Status == corev1.ConditionTrue {
+			return true
+		}
+		if condition.Type == v1alpha1.JobSucceeded && condition.Status == corev1.ConditionTrue {
+			return true
+		}
+	}
+	return false
+}

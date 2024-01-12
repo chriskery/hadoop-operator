@@ -20,10 +20,10 @@ func GetNodeManagerServiceName(hadoopCluster *hadoopclusterorgv1alpha1.HadoopClu
 	return GetReplicaName(hadoopCluster, hadoopclusterorgv1alpha1.ReplicaTypeNodemanager) + "-" + strconv.Itoa(replica)
 }
 
-func GenOwnerReference(obj metav1.Object) *metav1.OwnerReference {
+func GenOwnerReference(obj metav1.Object, kind string) *metav1.OwnerReference {
 	controllerRef := &metav1.OwnerReference{
 		APIVersion:         hadoopclusterorgv1alpha1.GroupVersion.String(),
-		Kind:               hadoopclusterorgv1alpha1.GroupVersion.WithKind(hadoopclusterorgv1alpha1.HadoopClusterKind).Kind,
+		Kind:               kind,
 		Name:               obj.GetName(),
 		UID:                obj.GetUID(),
 		BlockOwnerDeletion: ptr.To(true),

@@ -197,10 +197,20 @@ func (r *HadoopJobReconciler) ReconcileJobs(job *v1alpha1.HadoopJob, status *v1a
 		return err
 	}
 
-	err = r.ReconcileHadoopCluster(job, status, hadoopCluster)
-	if err != nil {
-		klog.Warningf("ReconcilePods error %v", err)
-		return err
+	if hadoopCluster != nil && util.IsJobFinished(job) {
+		// If the Job is succeed or failed, delete all pods and services.
+		if err = r.DeleteHadoopCluster(job, hadoopCluster); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	if hadoopCluster == nil {
+		err = r.CreateHadoopCluster(job, status, hadoopCluster)
+		if err != nil {
+			klog.Warningf("ReconcilePods error %v", err)
+			return err
+		}
 	}
 
 	err = r.ReconcileDriver(job, status, hadoopCluster)
@@ -222,7 +232,7 @@ func (r *HadoopJobReconciler) GetHadoopClusterForJob(job *v1alpha1.HadoopJob) (*
 	}
 }
 
-func (r *HadoopJobReconciler) ReconcileHadoopCluster(job *v1alpha1.HadoopJob, status *v1alpha1.HadoopJobStatus, cluster *v1alpha1.HadoopCluster) error {
+func (r *HadoopJobReconciler) CreateHadoopCluster(job *v1alpha1.HadoopJob, _ *v1alpha1.HadoopJobStatus, cluster *v1alpha1.HadoopCluster) error {
 	if cluster != nil {
 		return nil
 	}
@@ -309,5 +319,14 @@ func (r *HadoopJobReconciler) ReconcileDriver(job *v1alpha1.HadoopJob, status *v
 		}
 	}
 
+	return nil
+}
+
+func (r *HadoopJobReconciler) DeleteHadoopCluster(job *v1alpha1.HadoopJob, cluster *v1alpha1.HadoopCluster) error {
+	err := r.Delete(context.Background(), cluster)
+	if err != nil {
+		return err
+	}
+	r.Recorder.Event(job, corev1.EventTypeNormal, "CleanHadoopCluster", "Deletet po HadoopCluster because job finished")
 	return nil
 }

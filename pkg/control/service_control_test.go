@@ -116,7 +116,7 @@ func TestCreateServicesWithControllerRef(t *testing.T) {
 	service.SetOwnerReferences([]metav1.OwnerReference{})
 	service.Labels = labels
 
-	ownerRef := util.GenOwnerReference(testCluster)
+	ownerRef := util.GenOwnerReference(testCluster, v1alpha1.GroupVersion.WithKind(v1alpha1.HadoopClusterKind).Kind)
 
 	// Make sure createReplica sends a POST to the apiserver with a pod from the controllers pod template
 	err := serviceControl.CreateServicesWithControllerRef(ns, service, testCluster, ownerRef)

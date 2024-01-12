@@ -135,7 +135,7 @@ func (h *YarnBuilder) buildResourceManagerService(cluster *hadoopclusterorgv1alp
 		},
 	}
 
-	ownerRef := util.GenOwnerReference(cluster)
+	ownerRef := util.GenOwnerReference(cluster, hadoopclusterorgv1alpha1.GroupVersion.WithKind(hadoopclusterorgv1alpha1.HadoopClusterKind).Kind)
 	if err := h.ServiceControl.CreateServicesWithControllerRef(cluster.GetNamespace(), resourceManagerService, cluster, ownerRef); err != nil {
 		return err
 	}
@@ -149,7 +149,7 @@ func (h *YarnBuilder) buildResourceManagerPod(cluster *hadoopclusterorgv1alpha1.
 		return err
 	}
 
-	ownerRef := util.GenOwnerReference(cluster)
+	ownerRef := util.GenOwnerReference(cluster, hadoopclusterorgv1alpha1.GroupVersion.WithKind(hadoopclusterorgv1alpha1.HadoopClusterKind).Kind)
 	if err = h.PodControl.CreatePodsWithControllerRef(cluster.GetNamespace(), podTemplate, cluster, ownerRef); err != nil {
 		return err
 	}
@@ -202,7 +202,7 @@ func (h *YarnBuilder) buildNodeManagerService(cluster *hadoopclusterorgv1alpha1.
 		},
 	}
 
-	ownerRef := util.GenOwnerReference(cluster)
+	ownerRef := util.GenOwnerReference(cluster, hadoopclusterorgv1alpha1.GroupVersion.WithKind(hadoopclusterorgv1alpha1.HadoopClusterKind).Kind)
 	if err := h.ServiceControl.CreateServicesWithControllerRef(cluster.GetNamespace(), resourceManagerService, cluster, ownerRef); err != nil {
 		return err
 	}
@@ -223,7 +223,7 @@ func (h *YarnBuilder) buildNodeManagerStatefulSet(cluster *hadoopclusterorgv1alp
 	}
 	nodeManagerStatefulSet.Spec = *deploySpec
 
-	ownerRef := util.GenOwnerReference(cluster)
+	ownerRef := util.GenOwnerReference(cluster, hadoopclusterorgv1alpha1.GroupVersion.WithKind(hadoopclusterorgv1alpha1.HadoopClusterKind).Kind)
 	if err = h.StatefulSetControl.CreateStatefulSetsWithControllerRef(cluster.GetNamespace(), nodeManagerStatefulSet, cluster, ownerRef); err != nil {
 		return err
 	}
@@ -387,7 +387,7 @@ func (h *YarnBuilder) buildResourceManageNodePortService(
 		},
 	}
 
-	ownerRef := util.GenOwnerReference(cluster)
+	ownerRef := util.GenOwnerReference(cluster, hadoopclusterorgv1alpha1.GroupVersion.WithKind(hadoopclusterorgv1alpha1.HadoopClusterKind).Kind)
 	if err := h.ServiceControl.CreateServicesWithControllerRef(cluster.GetNamespace(), resourceManagerService, cluster, ownerRef); err != nil {
 		return err
 	}
