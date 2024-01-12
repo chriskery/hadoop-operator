@@ -12,18 +12,18 @@ jobs:
       GOPATH: ${{ github.workspace }}/go
     defaults:
       run:
-        working-directory: ${{ env.GOPATH }}/src/github.com/chriskery/kubecluster
+        working-directory: ${{ env.GOPATH }}/src/github.com/chriskery/hadoop-cluster-operator
 
     steps:
       - name: Check out code
         uses: actions/checkout@v3
         with:
-          path: ${{ env.GOPATH }}/src/github.com/chriskery/kubecluster
+          path: ${{ env.GOPATH }}/src/github.com/chriskery/hadoop-cluster-operator
 
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
-          go-version-file: ${{ env.GOPATH }}/src/github.com/chriskery/kubecluster/go.mod
+          go-version-file: ${{ env.GOPATH }}/src/github.com/chriskery/hadoop-cluster-operator/go.mod
 
       - name: Check Go modules
         run: |
