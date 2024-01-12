@@ -3,9 +3,8 @@ package builder
 import (
 	"context"
 	"fmt"
-
 	hadoopclusterorgv1alpha1 "github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1"
-	"github.com/chriskery/hadoop-cluster-operator/pkg/controllers/control"
+	"github.com/chriskery/hadoop-cluster-operator/pkg/control"
 	"github.com/chriskery/hadoop-cluster-operator/pkg/util"
 	utillabels "github.com/chriskery/hadoop-cluster-operator/pkg/util/labels"
 	appv1 "k8s.io/api/apps/v1"
@@ -43,7 +42,10 @@ func (h *HdfsBuilder) SetupWithManager(mgr manager.Manager, recorder record.Even
 	h.PodControl = control.RealPodControl{KubeClient: kubeClientSet, Recorder: recorder}
 }
 
-func (h *HdfsBuilder) Build(cluster *hadoopclusterorgv1alpha1.HadoopCluster, status *hadoopclusterorgv1alpha1.HadoopClusterStatus) error {
+func (h *HdfsBuilder) Build(obj interface{}, objStatus interface{}) error {
+	cluster := obj.(*hadoopclusterorgv1alpha1.HadoopCluster)
+	status := objStatus.(*hadoopclusterorgv1alpha1.HadoopClusterStatus)
+
 	util.InitializeClusterStatuses(status, hadoopclusterorgv1alpha1.ReplicaTypeNameNode)
 	if err := h.buildNameNode(cluster, status); err != nil {
 		return err
@@ -56,7 +58,9 @@ func (h *HdfsBuilder) Build(cluster *hadoopclusterorgv1alpha1.HadoopCluster, sta
 	return nil
 }
 
-func (h *HdfsBuilder) Clean(cluster *hadoopclusterorgv1alpha1.HadoopCluster) error {
+func (h *HdfsBuilder) Clean(obj interface{}) error {
+	cluster := obj.(*hadoopclusterorgv1alpha1.HadoopCluster)
+
 	err := h.cleanNameNode(cluster)
 	if err != nil {
 		return err
@@ -134,7 +138,7 @@ func (h *HdfsBuilder) buildNameNodeService(cluster *hadoopclusterorgv1alpha1.Had
 		},
 	}
 
-	ownerRef := util.GenOwnerReference(cluster)
+	ownerRef := util.GenOwnerReference(cluster, hadoopclusterorgv1alpha1.GroupVersion.WithKind(hadoopclusterorgv1alpha1.HadoopClusterKind).Kind)
 	if err := h.ServiceControl.CreateServicesWithControllerRef(cluster.GetNamespace(), nameNodeService, cluster, ownerRef); err != nil {
 		return err
 	}
@@ -147,7 +151,7 @@ func (h *HdfsBuilder) buildNameNodePod(cluster *hadoopclusterorgv1alpha1.HadoopC
 		return err
 	}
 
-	ownerRef := util.GenOwnerReference(cluster)
+	ownerRef := util.GenOwnerReference(cluster, hadoopclusterorgv1alpha1.GroupVersion.WithKind(hadoopclusterorgv1alpha1.HadoopClusterKind).Kind)
 	if err = h.PodControl.CreatePodsWithControllerRef(cluster.GetNamespace(), podSpec, cluster, ownerRef); err != nil {
 		return err
 	}
@@ -237,7 +241,7 @@ func (h *HdfsBuilder) buildDataNodeStatefulSet(cluster *hadoopclusterorgv1alpha1
 	}
 	dataNodeStatulSet.Spec = *statefulSetSpec
 
-	ownerRef := util.GenOwnerReference(cluster)
+	ownerRef := util.GenOwnerReference(cluster, hadoopclusterorgv1alpha1.GroupVersion.WithKind(hadoopclusterorgv1alpha1.HadoopClusterKind).Kind)
 	if err = h.StatefulSetControl.CreateStatefulSetsWithControllerRef(cluster.GetNamespace(), dataNodeStatulSet, cluster, ownerRef); err != nil {
 		return err
 	}
@@ -266,7 +270,7 @@ func (h *HdfsBuilder) genNameNodePodSpec(
 	volumeMounts := nameNodeSpec.VolumeMounts
 	volumeMounts = appendHadoopConfigMapVolumeMount(volumeMounts)
 
-	nameNodeCmd := []string{"sh", "-c", fmt.Sprintf("cp %s /tmp/entrypoint && chmod +x /tmp/entrypoint && /tmp/entrypoint", entrypointPath)}
+	nameNodeCmd := []string{"sh", "-c", entrypointCmd}
 	containers := []corev1.Container{{
 		Name:            string(hadoopclusterorgv1alpha1.ReplicaTypeNameNode),
 		Image:           nameNodeSpec.Image,
@@ -333,7 +337,7 @@ func (h *HdfsBuilder) genDataNodePodSpec(
 	volumeMounts := cluster.Spec.HDFS.NameNode.VolumeMounts
 	volumeMounts = appendHadoopConfigMapVolumeMount(volumeMounts)
 
-	nameNodeCmd := []string{"sh", "-c", fmt.Sprintf("cp %s /tmp/entrypoint && chmod +x /tmp/entrypoint && /tmp/entrypoint", entrypointPath)}
+	nameNodeCmd := []string{"sh", "-c", entrypointCmd}
 
 	containers := []corev1.Container{{
 		Name:            string(hadoopclusterorgv1alpha1.ReplicaTypeDataNode),
@@ -388,7 +392,7 @@ func (h *HdfsBuilder) buildDataNodeService(cluster *hadoopclusterorgv1alpha1.Had
 		},
 	}
 
-	ownerRef := util.GenOwnerReference(cluster)
+	ownerRef := util.GenOwnerReference(cluster, hadoopclusterorgv1alpha1.GroupVersion.WithKind(hadoopclusterorgv1alpha1.HadoopClusterKind).Kind)
 	if err = h.ServiceControl.CreateServicesWithControllerRef(cluster.GetNamespace(), nameNodeService, cluster, ownerRef); err != nil {
 		return err
 	}
@@ -471,7 +475,7 @@ func (h *HdfsBuilder) buildNameNodeNodePortService(
 		},
 	}
 
-	ownerRef := util.GenOwnerReference(cluster)
+	ownerRef := util.GenOwnerReference(cluster, hadoopclusterorgv1alpha1.GroupVersion.WithKind(hadoopclusterorgv1alpha1.HadoopClusterKind).Kind)
 	if err := h.ServiceControl.CreateServicesWithControllerRef(cluster.GetNamespace(), resourceManagerService, cluster, ownerRef); err != nil {
 		return err
 	}

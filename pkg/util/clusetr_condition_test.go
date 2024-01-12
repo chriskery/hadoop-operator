@@ -60,11 +60,11 @@ func TestUpdateClusterConditions(t *testing.T) {
 			err := UpdateClusterConditions(tt.args.status, tt.args.conditionType, tt.args.reason, tt.args.message)
 			assert.Equal(t, err != nil, tt.wantErr, "UpdateClusterConditions() error = %v, wantErr %v", err, tt.wantErr)
 
-			condition := getCondition(*tt.args.status, tt.args.conditionType)
-			assert.NotNilf(t, condition, "getCondition() = %v, want %v", condition, tt.args.conditionType)
-			assert.Equal(t, condition.Reason, tt.args.reason, "getCondition() = %v, want %v", condition.Reason, tt.args.reason)
-			assert.Equal(t, condition.Message, tt.args.message, "getCondition() = %v, want %v", condition.Message, tt.args.message)
-			assert.Equal(t, condition.Status, corev1.ConditionTrue, "getCondition() = %v, want %v", condition.Status, corev1.ConditionTrue)
+			condition := getCLusterCondition(*tt.args.status, tt.args.conditionType)
+			assert.NotNilf(t, condition, "getCLusterCondition() = %v, want %v", condition, tt.args.conditionType)
+			assert.Equal(t, condition.Reason, tt.args.reason, "getCLusterCondition() = %v, want %v", condition.Reason, tt.args.reason)
+			assert.Equal(t, condition.Message, tt.args.message, "getCLusterCondition() = %v, want %v", condition.Message, tt.args.message)
+			assert.Equal(t, condition.Status, corev1.ConditionTrue, "getCLusterCondition() = %v, want %v", condition.Status, corev1.ConditionTrue)
 		})
 	}
 }
@@ -168,8 +168,8 @@ func Test_filterOutCondition(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := filterOutCondition(tt.args.conditions, tt.args.condType)
-			assert.Equal(t, tt.want, got, "filterOutCondition() = %v, want %v", got, tt.want)
+			got := filterOutClusterCondition(tt.args.conditions, tt.args.condType)
+			assert.Equal(t, tt.want, got, "filterOutClusterCondition() = %v, want %v", got, tt.want)
 		})
 	}
 }

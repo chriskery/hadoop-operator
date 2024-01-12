@@ -14,13 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controllers
+package hadoopcluster
 
 import (
 	"context"
 	"fmt"
 	v1alpha1 "github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1"
-	"github.com/chriskery/hadoop-cluster-operator/pkg/controllers/builder"
+	"github.com/chriskery/hadoop-cluster-operator/pkg/builder"
 	"github.com/chriskery/hadoop-cluster-operator/pkg/util"
 	"github.com/go-logr/logr"
 	appv1 "k8s.io/api/apps/v1"
@@ -230,19 +230,19 @@ func (r *HadoopClusterReconciler) UpdateClusterStatus(cluster *v1alpha1.HadoopCl
 
 	clusetrRunning := true
 	nameNodeStatus, ok := status.ReplicaStatuses[v1alpha1.ReplicaTypeNameNode]
-	if ok && util.ReplicaReady(cluster.Spec.HDFS.NameNode.Replicas, 1, nameNodeStatus.Active) {
+	if ok && !util.ReplicaReady(cluster.Spec.HDFS.NameNode.Replicas, 1, nameNodeStatus.Active) {
 		clusetrRunning = false
 	}
 	dataNodeStatus, ok := status.ReplicaStatuses[v1alpha1.ReplicaTypeDataNode]
-	if ok && util.ReplicaReady(cluster.Spec.HDFS.DataNode.Replicas, 1, dataNodeStatus.Active) {
+	if ok && !util.ReplicaReady(cluster.Spec.HDFS.DataNode.Replicas, 1, dataNodeStatus.Active) {
 		clusetrRunning = false
 	}
 	resourcemanagerStatus, ok := status.ReplicaStatuses[v1alpha1.ReplicaTypeResourcemanager]
-	if ok && util.ReplicaReady(cluster.Spec.Yarn.ResourceManager.Replicas, 1, resourcemanagerStatus.Active) {
+	if ok && !util.ReplicaReady(cluster.Spec.Yarn.ResourceManager.Replicas, 1, resourcemanagerStatus.Active) {
 		clusetrRunning = false
 	}
 	nodemanagerStatus, ok := status.ReplicaStatuses[v1alpha1.ReplicaTypeNodemanager]
-	if ok && util.ReplicaReady(cluster.Spec.Yarn.NodeManager.Replicas, 1, nodemanagerStatus.Active) {
+	if ok && !util.ReplicaReady(cluster.Spec.Yarn.NodeManager.Replicas, 1, nodemanagerStatus.Active) {
 		clusetrRunning = false
 	}
 

@@ -31,6 +31,8 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 	return map[string]common.OpenAPIDefinition{
 		"github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1.ClusterCondition":    schema_pkg_apis_kubeclusterorg_v1alpha1_ClusterCondition(ref),
 		"github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1.HadoopClusterStatus": schema_pkg_apis_kubeclusterorg_v1alpha1_HadoopClusterStatus(ref),
+		"github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1.HadoopJobStatus":     schema_pkg_apis_kubeclusterorg_v1alpha1_HadoopJobStatus(ref),
+		"github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1.JobCondition":        schema_pkg_apis_kubeclusterorg_v1alpha1_JobCondition(ref),
 		"github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1.ReplicaStatus":       schema_pkg_apis_kubeclusterorg_v1alpha1_ReplicaStatus(ref),
 	}
 }
@@ -140,6 +142,106 @@ func schema_pkg_apis_kubeclusterorg_v1alpha1_HadoopClusterStatus(ref common.Refe
 		},
 		Dependencies: []string{
 			"github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1.ClusterCondition", "github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1.ReplicaStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
+	}
+}
+
+func schema_pkg_apis_kubeclusterorg_v1alpha1_HadoopJobStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "HadoopJobStatus defines the observed state of HadoopJob",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"conditions": {
+						SchemaProps: spec.SchemaProps{
+							Description: "INSERT ADDITIONAL STATUS FIELD - define observed state of cluster Important: Run \"make\" to regenerate code after modifying this file Conditions is an array of current observed job conditions.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1.JobCondition"),
+									},
+								},
+							},
+						},
+					},
+					"startTime": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Represents time when the job was acknowledged by the job controller. It is not guaranteed to be set in happens-before order across separate operations. It is represented in RFC3339 form and is in UTC.",
+							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
+						},
+					},
+					"completionTime": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Represents time when the job was completed. It is not guaranteed to be set in happens-before order across separate operations. It is represented in RFC3339 form and is in UTC.",
+							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
+						},
+					},
+				},
+				Required: []string{"conditions"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1.JobCondition", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
+	}
+}
+
+func schema_pkg_apis_kubeclusterorg_v1alpha1_JobCondition(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "JobCondition describes current state of a cluster",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"type": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Type of job condition.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"status": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Status of the condition, one of True, False, Unknown.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"reason": {
+						SchemaProps: spec.SchemaProps{
+							Description: "The reason for the condition's last transition.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"message": {
+						SchemaProps: spec.SchemaProps{
+							Description: "A human readable message indicating details about the transition.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"lastUpdateTime": {
+						SchemaProps: spec.SchemaProps{
+							Description: "The last time this condition was updated.",
+							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
+						},
+					},
+					"lastTransitionTime": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Last time the condition transitioned from one status to another.",
+							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
+						},
+					},
+				},
+				Required: []string{"type", "status"},
+			},
+		},
+		Dependencies: []string{
+			"k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
 	}
 }
 

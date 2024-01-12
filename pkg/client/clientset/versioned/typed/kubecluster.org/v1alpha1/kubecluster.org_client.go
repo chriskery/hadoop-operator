@@ -28,6 +28,7 @@ import (
 type KubeclusterV1alpha1Interface interface {
 	RESTClient() rest.Interface
 	HadoopClustersGetter
+	HadoopJobsGetter
 }
 
 // KubeclusterV1alpha1Client is used to interact with features provided by the kubecluster.org group.
@@ -37,6 +38,10 @@ type KubeclusterV1alpha1Client struct {
 
 func (c *KubeclusterV1alpha1Client) HadoopClusters(namespace string) HadoopClusterInterface {
 	return newHadoopClusters(c, namespace)
+}
+
+func (c *KubeclusterV1alpha1Client) HadoopJobs(namespace string) HadoopJobInterface {
+	return newHadoopJobs(c, namespace)
 }
 
 // NewForConfig creates a new KubeclusterV1alpha1Client for the given config.

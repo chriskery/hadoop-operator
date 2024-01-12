@@ -31,6 +31,10 @@ func (c *FakeKubeclusterV1alpha1) HadoopClusters(namespace string) v1alpha1.Hado
 	return &FakeHadoopClusters{c, namespace}
 }
 
+func (c *FakeKubeclusterV1alpha1) HadoopJobs(namespace string) v1alpha1.HadoopJobInterface {
+	return &FakeHadoopJobs{c, namespace}
+}
+
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
 func (c *FakeKubeclusterV1alpha1) RESTClient() rest.Interface {

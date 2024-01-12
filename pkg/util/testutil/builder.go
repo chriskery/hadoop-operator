@@ -45,4 +45,3 @@ func NewCtrlManager(t *testing.T) (manager.Manager, *envtest.Environment) {
 	}
 	return mgr, envTest
 }
-

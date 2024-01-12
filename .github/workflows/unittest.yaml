@@ -40,7 +40,6 @@ jobs:
         if: failure()
         with:
           detached: false
-
       - name: Coveralls report
         uses: shogo82148/actions-goveralls@v1
         with:

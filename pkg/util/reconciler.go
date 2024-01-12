@@ -3,6 +3,7 @@ package util
 import (
 	"context"
 	"github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1"
+	log "github.com/sirupsen/logrus"
 	appv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"reflect"
@@ -45,19 +46,19 @@ func OnDependentUpdateFunc(client client.Client) func(updateEvent event.UpdateEv
 			return false
 		}
 
-		kind := v1alpha1.GroupVersion.WithKind(v1alpha1.HadoopClusterKind).Kind
-		var logger = LoggerForGenericKind(newObj, kind)
-
-		switch obj := newObj.(type) {
-		case *corev1.Pod, *corev1.Service, *corev1.ConfigMap, *appv1.StatefulSet:
-			logger = LoggerForGenericKind(obj, obj.GetObjectKind().GroupVersionKind().Kind)
-		default:
-			return false
-		}
+		var logger *log.Entry
 
 		newControllerRef := metav1.GetControllerOf(newObj)
 		oldControllerRef := metav1.GetControllerOf(oldObj)
 		controllerRefChanged := !reflect.DeepEqual(newControllerRef, oldControllerRef)
+
+		kind := newControllerRef.Kind
+		switch obj := newObj.(type) {
+		case *corev1.Pod, *corev1.Service, *corev1.ConfigMap, *appv1.StatefulSet, *v1alpha1.HadoopCluster:
+			logger = LoggerForGenericKind(obj, obj.GetObjectKind().GroupVersionKind().Kind)
+		default:
+			return false
+		}
 
 		if controllerRefChanged && oldControllerRef != nil {
 			// The ControllerRef was changed. Sync the old controller, if any.
@@ -89,19 +90,36 @@ func resolveControllerRef(controllerKind string, namespace string, controllerRef
 	if controllerRef.Kind != controllerKind {
 		return nil
 	}
-	hadoopCLuster := &v1alpha1.HadoopCluster{}
-	err := client.Get(context.Background(), types.NamespacedName{
-		Namespace: namespace, Name: controllerRef.Name,
-	}, hadoopCLuster)
-	if err != nil {
+
+	var object metav1.Object
+	if controllerRef.Kind == v1alpha1.HadoopClusterKind {
+		hadoopCLuster := &v1alpha1.HadoopCluster{}
+		err := client.Get(context.Background(), types.NamespacedName{
+			Namespace: namespace, Name: controllerRef.Name,
+		}, hadoopCLuster)
+		if err != nil {
+			return nil
+		}
+		object = hadoopCLuster
+	} else if controllerRef.Kind == v1alpha1.HadoopJobKind {
+		hadoopJob := &v1alpha1.HadoopJob{}
+		err := client.Get(context.Background(), types.NamespacedName{
+			Namespace: namespace, Name: controllerRef.Name,
+		}, hadoopJob)
+		if err != nil {
+			return nil
+		}
+		object = hadoopJob
+	} else {
 		return nil
 	}
-	if hadoopCLuster.GetUID() != controllerRef.UID {
+
+	if object.GetUID() != controllerRef.UID {
 		// The controller we found with this Name is not the same one that the
 		// ControllerRef points to.
 		return nil
 	}
-	return hadoopCLuster
+	return object
 }
 
 // OnDependentDeleteFunc modify expectations when dependent (pod/service) deletion observed.

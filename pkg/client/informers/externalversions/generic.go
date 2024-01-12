@@ -54,6 +54,8 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 	// Group=kubecluster.org, Version=v1alpha1
 	case v1alpha1.SchemeGroupVersion.WithResource("hadoopclusters"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Kubecluster().V1alpha1().HadoopClusters().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("hadoopjobs"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Kubecluster().V1alpha1().HadoopJobs().Informer()}, nil
 
 	}
 

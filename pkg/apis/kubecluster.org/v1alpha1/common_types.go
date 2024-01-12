@@ -9,4 +9,6 @@ const (
 	ReplicaTypeNodemanager     ReplicaType = "nodemanager"
 
 	ReplicaTypeConfigMap ReplicaType = "configmap"
+
+	ReplicaTypeDriver ReplicaType = "driver"
 )

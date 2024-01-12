@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	"github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1"
 	"github.com/chriskery/hadoop-cluster-operator/pkg/util/testutil"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
@@ -34,7 +35,7 @@ func TestGenOwnerReference(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ownerReference := GenOwnerReference(tt.args.obj)
+			ownerReference := GenOwnerReference(tt.args.obj, v1alpha1.GroupVersion.WithKind(v1alpha1.HadoopClusterKind).Kind)
 			assert.Equalf(t, tt.want.APIVersion, ownerReference.APIVersion, "GenOwnerReference, want %s, got %s", tt.want.APIVersion, ownerReference.APIVersion)
 			assert.Equalf(t, tt.want.Kind, ownerReference.Kind, "GenOwnerReference, want %s, got %s", tt.want.Kind, ownerReference.Kind)
 			assert.Equalf(t, tt.want.Name, ownerReference.Name, "GenOwnerReference, want %s, got %s", tt.want.Name, ownerReference.Name)
@@ -45,7 +46,7 @@ func TestGenOwnerReference(t *testing.T) {
 
 func TestConvertPodListWithFilter(t *testing.T) {
 	hadoopCluster := testutil.NewHadoopCluster()
-	ownerReference := GenOwnerReference(hadoopCluster)
+	ownerReference := GenOwnerReference(hadoopCluster, v1alpha1.GroupVersion.WithKind(v1alpha1.HadoopClusterKind).Kind)
 
 	var pods []corev1.Pod
 	for i := 0; i < 10; i++ {

@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/xml"
 	hadoopclusterorgv1alpha1 "github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1"
-	"github.com/chriskery/hadoop-cluster-operator/pkg/controllers/control"
+	"github.com/chriskery/hadoop-cluster-operator/pkg/control"
 	"github.com/chriskery/hadoop-cluster-operator/pkg/util"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -61,7 +61,7 @@ case "$HADOOP_ROLE" in
         ;;
     *)
         echo "Environment variable is set to an unknown value: $HADOOP_ROLE"
-        exit 1
+        exit 0
         ;;
 esac
 `
@@ -72,7 +72,6 @@ esac
 	yarnSiteXmlKey   = "yarn-site.xml"
 
 	entrypointKey = "entrypoint"
-	configKey     = "config"
 )
 
 type HadoopConfiguration struct {
@@ -277,7 +276,8 @@ func (h *ConfigMapBuilder) SetupWithManager(mgr manager.Manager, recorder record
 	}
 }
 
-func (h *ConfigMapBuilder) Build(cluster *hadoopclusterorgv1alpha1.HadoopCluster, status *hadoopclusterorgv1alpha1.HadoopClusterStatus) error {
+func (h *ConfigMapBuilder) Build(obj interface{}, _ interface{}) error {
+	cluster := obj.(*hadoopclusterorgv1alpha1.HadoopCluster)
 	err := h.Get(
 		context.Background(),
 		client.ObjectKey{Name: util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeConfigMap), Namespace: cluster.Namespace},
@@ -291,11 +291,13 @@ func (h *ConfigMapBuilder) Build(cluster *hadoopclusterorgv1alpha1.HadoopCluster
 	if err != nil {
 		return err
 	}
-	ownerRef := util.GenOwnerReference(cluster)
+	ownerRef := util.GenOwnerReference(cluster, hadoopclusterorgv1alpha1.GroupVersion.WithKind(hadoopclusterorgv1alpha1.HadoopClusterKind).Kind)
 	return h.ConfigMapControl.CreateConfigMapWithControllerRef(cluster.GetNamespace(), configMap, cluster, ownerRef)
 }
 
-func (h *ConfigMapBuilder) Clean(cluster *hadoopclusterorgv1alpha1.HadoopCluster) error {
+func (h *ConfigMapBuilder) Clean(obj interface{}) error {
+	cluster := obj.(*hadoopclusterorgv1alpha1.HadoopCluster)
+
 	configMapName := util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeConfigMap)
 	err := h.ConfigMapControl.DeleteConfigMap(cluster.GetNamespace(), configMapName, &corev1.ConfigMap{})
 	if err != nil {

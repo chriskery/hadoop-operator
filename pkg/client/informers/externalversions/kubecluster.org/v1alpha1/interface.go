@@ -25,6 +25,8 @@ import (
 type Interface interface {
 	// HadoopClusters returns a HadoopClusterInformer.
 	HadoopClusters() HadoopClusterInformer
+	// HadoopJobs returns a HadoopJobInformer.
+	HadoopJobs() HadoopJobInformer
 }
 
 type version struct {
@@ -41,4 +43,9 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 // HadoopClusters returns a HadoopClusterInformer.
 func (v *version) HadoopClusters() HadoopClusterInformer {
 	return &hadoopClusterInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// HadoopJobs returns a HadoopJobInformer.
+func (v *version) HadoopJobs() HadoopJobInformer {
+	return &hadoopJobInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

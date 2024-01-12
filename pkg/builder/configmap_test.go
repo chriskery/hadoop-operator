@@ -68,4 +68,3 @@ func TestBuildHadoopConfigMap(t *testing.T) {
 	assert.Greater(t, len(yarnSite.Properties), 0)
 	assert.Contains(t, yarnSite.Properties, Property{Name: "yarn.nodemanager.resource.cpu-vcores", Value: "1"})
 }
-

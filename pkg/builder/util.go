@@ -1,8 +1,9 @@
 package builder
 
 import (
+	"fmt"
 	"github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1"
-	"github.com/chriskery/hadoop-cluster-operator/pkg/controllers/control"
+	"github.com/chriskery/hadoop-cluster-operator/pkg/control"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/json"
@@ -17,6 +18,8 @@ const (
 	EnvHadoopRole     = "HADOOP_ROLE"
 	EnvNameNodeFormat = "NAME_NODE_FORMAT"
 )
+
+var entrypointCmd = fmt.Sprintf("cp %s /tmp/entrypoint && chmod +x /tmp/entrypoint && /tmp/entrypoint", entrypointPath)
 
 func appendHadoopConfigMapVolume(volumes []corev1.Volume, configMapName string) []corev1.Volume {
 	if volumes == nil {

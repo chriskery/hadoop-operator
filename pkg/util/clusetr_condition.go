@@ -37,13 +37,13 @@ func UpdateClusterReplicaStatuses(status *v1alpha1.HadoopClusterStatus, replicaT
 
 // UpdateClusterConditions updates the conditions of the given Hadoopcluster.
 func UpdateClusterConditions(status *v1alpha1.HadoopClusterStatus, conditionType v1alpha1.ClusterConditionType, reason, message string) error {
-	condition := newCondition(conditionType, reason, message)
-	setCondition(status, condition)
+	condition := newClusterCondition(conditionType, reason, message)
+	setClusterCondition(status, condition)
 	return nil
 }
 
-// newCondition creates a new Hadoopcluster condition.
-func newCondition(conditionType v1alpha1.ClusterConditionType, reason, message string) v1alpha1.ClusterCondition {
+// newClusterCondition creates a new Hadoopcluster condition.
+func newClusterCondition(conditionType v1alpha1.ClusterConditionType, reason, message string) v1alpha1.ClusterCondition {
 	return v1alpha1.ClusterCondition{
 		Type:               conditionType,
 		Status:             corev1.ConditionTrue,
@@ -54,8 +54,8 @@ func newCondition(conditionType v1alpha1.ClusterConditionType, reason, message s
 	}
 }
 
-// getCondition returns the condition with the provided type.
-func getCondition(status v1alpha1.HadoopClusterStatus, condType v1alpha1.ClusterConditionType) *v1alpha1.ClusterCondition {
+// getCLusterCondition returns the condition with the provided type.
+func getCLusterCondition(status v1alpha1.HadoopClusterStatus, condType v1alpha1.ClusterConditionType) *v1alpha1.ClusterCondition {
 	for _, condition := range status.Conditions {
 		if condition.Type == condType {
 			return &condition
@@ -64,12 +64,12 @@ func getCondition(status v1alpha1.HadoopClusterStatus, condType v1alpha1.Cluster
 	return nil
 }
 
-// setCondition updates the Hadoopcluster to include the provided condition.
+// setClusterCondition updates the Hadoopcluster to include the provided condition.
 // If the condition that we are about to add already exists
 // and has the same status and reason then we are not going to update.
-func setCondition(status *v1alpha1.HadoopClusterStatus, condition v1alpha1.ClusterCondition) {
+func setClusterCondition(status *v1alpha1.HadoopClusterStatus, condition v1alpha1.ClusterCondition) {
 
-	currentCond := getCondition(*status, condition.Type)
+	currentCond := getCLusterCondition(*status, condition.Type)
 
 	// Do nothing if condition doesn't change
 	if currentCond != nil && currentCond.Status == condition.Status && currentCond.Reason == condition.Reason {
@@ -82,12 +82,12 @@ func setCondition(status *v1alpha1.HadoopClusterStatus, condition v1alpha1.Clust
 	}
 
 	// Append the updated condition
-	newConditions := filterOutCondition(status.Conditions, condition.Type)
+	newConditions := filterOutClusterCondition(status.Conditions, condition.Type)
 	status.Conditions = append(newConditions, condition)
 }
 
-// filterOutCondition returns a new slice of Hadoopcluster conditions without conditions with the provided type.
-func filterOutCondition(conditions []v1alpha1.ClusterCondition, condType v1alpha1.ClusterConditionType) []v1alpha1.ClusterCondition {
+// filterOutClusterCondition returns a new slice of Hadoopcluster conditions without conditions with the provided type.
+func filterOutClusterCondition(conditions []v1alpha1.ClusterCondition, condType v1alpha1.ClusterConditionType) []v1alpha1.ClusterCondition {
 	var newConditions []v1alpha1.ClusterCondition
 	for _, c := range conditions {
 		if condType == v1alpha1.ClusterRestarting && c.Type == v1alpha1.ClusterRunning {
@@ -103,6 +103,7 @@ func filterOutCondition(conditions []v1alpha1.ClusterCondition, condType v1alpha
 	return newConditions
 }
 
+// ReplicaReady checks whether the replica is ready.
 func ReplicaReady(replicas *int32, defaultReplicas int32, active int32) bool {
 	if replicas == nil {
 		return active >= defaultReplicas

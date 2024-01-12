@@ -24,3 +24,11 @@ type HadoopClusterListerExpansion interface{}
 // HadoopClusterNamespaceListerExpansion allows custom methods to be added to
 // HadoopClusterNamespaceLister.
 type HadoopClusterNamespaceListerExpansion interface{}
+
+// HadoopJobListerExpansion allows custom methods to be added to
+// HadoopJobLister.
+type HadoopJobListerExpansion interface{}
+
+// HadoopJobNamespaceListerExpansion allows custom methods to be added to
+// HadoopJobNamespaceLister.
+type HadoopJobNamespaceListerExpansion interface{}
