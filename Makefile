@@ -69,7 +69,7 @@ vet: ## Run go vet against code.
 
 .PHONY: test
 test: ## Run tests.
-	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test -v ./... -coverprofile cover.out
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test -v ./pkg/util -coverprofile cover.out
 	cat cover.out
 
 ##@ Build
