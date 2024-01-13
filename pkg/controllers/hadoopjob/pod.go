@@ -17,3 +17,8 @@ func isPodFailed(p *corev1.Pod) bool {
 func isPodSucceeded(p *corev1.Pod) bool {
 	return p.Status.Phase == corev1.PodSucceeded
 }
+
+// isPodRunning returns true if the pod is running
+func isPodFinished(p *corev1.Pod) bool {
+	return isPodSucceeded(p) || isPodFailed(p)
+}

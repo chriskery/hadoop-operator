@@ -23,6 +23,8 @@ var _ Builder = &HdfsBuilder{}
 type HdfsBuilder struct {
 	client.Client
 
+	Recorder record.EventRecorder
+
 	// StatefulSetControl is used to add or delete statefulsets.
 	StatefulSetControl control.StatefulSetControlInterface
 
@@ -37,6 +39,7 @@ func (h *HdfsBuilder) SetupWithManager(mgr manager.Manager, recorder record.Even
 
 	kubeClientSet := kubeclientset.NewForConfigOrDie(cfg)
 	h.Client = mgr.GetClient()
+	h.Recorder = recorder
 	h.StatefulSetControl = control.RealStatefulSetControl{KubeClient: kubeClientSet, Recorder: recorder}
 	h.ServiceControl = control.RealServiceControl{KubeClient: kubeClientSet, Recorder: recorder}
 	h.PodControl = control.RealPodControl{KubeClient: kubeClientSet, Recorder: recorder}
@@ -158,26 +161,29 @@ func (h *HdfsBuilder) buildNameNodePod(cluster *hadoopclusterorgv1alpha1.HadoopC
 	return nil
 }
 
-func (h *HdfsBuilder) buildDataNode(cluster *hadoopclusterorgv1alpha1.HadoopCluster, status *hadoopclusterorgv1alpha1.HadoopClusterStatus) error {
+func (h *HdfsBuilder) buildDataNode(
+	cluster *hadoopclusterorgv1alpha1.HadoopCluster,
+	status *hadoopclusterorgv1alpha1.HadoopClusterStatus,
+) error {
 	labels := utillabels.GenLabels(cluster.GetName(), hadoopclusterorgv1alpha1.ReplicaTypeDataNode)
 	dataNodeStatefulSet := &appv1.StatefulSet{}
+	dataNodeName := util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeDataNode)
 	err := h.Get(
 		context.Background(),
-		client.ObjectKey{Name: util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeDataNode), Namespace: cluster.Namespace},
+		client.ObjectKey{Name: dataNodeName, Namespace: cluster.Namespace},
 		dataNodeStatefulSet,
 	)
 	if err != nil {
 		if !errors.IsNotFound(err) {
 			return err
 		}
-		if err = h.buildDataNodeStatefulSet(cluster, labels); err != nil {
+		if err = h.buildDataNodeStatefulSet(cluster, dataNodeName, labels); err != nil {
 			return err
 		}
-	} else {
-		if cluster.Spec.HDFS.DataNode.Replicas != nil && (*dataNodeStatefulSet.Spec.Replicas != *cluster.Spec.HDFS.DataNode.Replicas) {
-			if err = h.reconcileDataNodeHPA(cluster, dataNodeStatefulSet); err != nil {
-				return err
-			}
+	}
+	if h.isNeedReconcileDataNodeHPA(cluster, dataNodeStatefulSet) {
+		if err = h.reconcileDataNodeHPA(cluster, dataNodeStatefulSet, status); err != nil {
+			return err
 		}
 	}
 
@@ -189,6 +195,22 @@ func (h *HdfsBuilder) buildDataNode(cluster *hadoopclusterorgv1alpha1.HadoopClus
 		return err
 	}
 	return nil
+}
+
+func (h *HdfsBuilder) isNeedReconcileDataNodeHPA(
+	cluster *hadoopclusterorgv1alpha1.HadoopCluster,
+	dataNodeStatefulSet *appv1.StatefulSet,
+) bool {
+	if cluster.Spec.HDFS.DataNode.Replicas == nil && dataNodeStatefulSet.Spec.Replicas == nil {
+		return false
+	}
+	if cluster.Spec.HDFS.DataNode.Replicas == nil && *dataNodeStatefulSet.Spec.Replicas == 1 {
+		return false
+	}
+	if *cluster.Spec.HDFS.DataNode.Replicas == 1 && dataNodeStatefulSet.Spec.Replicas == nil {
+		return false
+	}
+	return *cluster.Spec.HDFS.DataNode.Replicas != *dataNodeStatefulSet.Spec.Replicas
 }
 
 func (h *HdfsBuilder) updateDataNodeStatus(
@@ -227,10 +249,14 @@ func (h *HdfsBuilder) updateDataNodeStatus(
 	return nil
 }
 
-func (h *HdfsBuilder) buildDataNodeStatefulSet(cluster *hadoopclusterorgv1alpha1.HadoopCluster, labels map[string]string) error {
+func (h *HdfsBuilder) buildDataNodeStatefulSet(
+	cluster *hadoopclusterorgv1alpha1.HadoopCluster,
+	name string,
+	labels map[string]string,
+) error {
 	dataNodeStatulSet := &appv1.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeDataNode),
+			Name:      name,
 			Namespace: cluster.Namespace,
 			Labels:    labels,
 		},
@@ -277,6 +303,7 @@ func (h *HdfsBuilder) genNameNodePodSpec(
 		Command:         nameNodeCmd,
 		Resources:       nameNodeSpec.Resources,
 		VolumeMounts:    volumeMounts,
+		Env:             cluster.Spec.HDFS.NameNode.Env,
 		ReadinessProbe:  nil,
 		StartupProbe:    nil,
 		ImagePullPolicy: nameNodeSpec.ImagePullPolicy,
@@ -345,6 +372,7 @@ func (h *HdfsBuilder) genDataNodePodSpec(
 		Command:         nameNodeCmd,
 		Resources:       dataNodeSpec.Resources,
 		VolumeMounts:    volumeMounts,
+		Env:             cluster.Spec.HDFS.DataNode.Env,
 		ReadinessProbe:  nil,
 		StartupProbe:    nil,
 		ImagePullPolicy: dataNodeSpec.ImagePullPolicy,
@@ -443,13 +471,29 @@ func (h *HdfsBuilder) cleanDataNode(cluster *hadoopclusterorgv1alpha1.HadoopClus
 	return nil
 }
 
-func (h *HdfsBuilder) reconcileDataNodeHPA(cluster *hadoopclusterorgv1alpha1.HadoopCluster, statefulSet *appv1.StatefulSet) error {
+func (h *HdfsBuilder) reconcileDataNodeHPA(
+	cluster *hadoopclusterorgv1alpha1.HadoopCluster,
+	statefulSet *appv1.StatefulSet,
+	status *hadoopclusterorgv1alpha1.HadoopClusterStatus,
+) error {
 	statefulSet.Spec.Replicas = cluster.Spec.HDFS.DataNode.Replicas
 	if statefulSet.Spec.Replicas == nil {
 		statefulSet.Spec.Replicas = ptr.To(int32(1))
 	}
 
-	return reconcileStatefulSetHPA(h.StatefulSetControl, statefulSet, *statefulSet.Spec.Replicas)
+	err := reconcileStatefulSetHPA(h.StatefulSetControl, statefulSet, *statefulSet.Spec.Replicas)
+	if err != nil {
+		return err
+	}
+
+	msg := fmt.Sprintf("HadoopCluster %s/%s is reconfiguraing datanodes replicas.", cluster.Namespace, cluster.Name)
+	err = util.UpdateClusterConditions(status, hadoopclusterorgv1alpha1.ClusterReconfiguring, util.HadoopclusterReconfiguringReason, msg)
+	if err != nil {
+		return err
+	}
+	h.Recorder.Eventf(cluster, corev1.EventTypeNormal, "HadoopClusterReconfiguring", msg)
+
+	return nil
 }
 
 func (h *HdfsBuilder) buildNameNodeNodePortService(

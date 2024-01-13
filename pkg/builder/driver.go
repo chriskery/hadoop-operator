@@ -99,6 +99,7 @@ func (h *DriverBuilder) genDriverPodSpec(job *v1alpha1.HadoopJob, driverPodName 
 		Command:         driverCmd,
 		Resources:       driverPodSpec.Resources,
 		VolumeMounts:    volumeMounts,
+		Env:             job.Spec.Env,
 		ReadinessProbe:  nil,
 		StartupProbe:    nil,
 		ImagePullPolicy: driverPodSpec.ImagePullPolicy,

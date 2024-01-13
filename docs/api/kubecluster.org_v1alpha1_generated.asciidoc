@@ -252,6 +252,7 @@ HadoopJobSpec defines the desired state of HadoopJob NOTE: json tags are require
 | *`mainApplicationFile`* __string__ | MainFile is the path to a bundled JAR, Python, or R file of the application.
 | *`arguments`* __string array__ | Arguments is a list of arguments to be passed to the application.
 | *`executorSpec`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopnodespec[$$HadoopNodeSpec$$]__ | 
+| *`env`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#envvar-v1-core[$$EnvVar$$] array__ | List of environment variables to set in the container. Cannot be updated.
 |===
 
 
@@ -291,6 +292,7 @@ HadoopJobStatus defines the observed state of HadoopJob
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
+| *`env`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#envvar-v1-core[$$EnvVar$$] array__ | List of environment variables to set in the container. Cannot be updated.
 | *`replicas`* __integer__ | Number of desired pods. This is a pointer to distinguish between explicit zero and not specified. Defaults to 1.
 | *`image`* __string__ | Container image name. More info: https://kubernetes.io/docs/concepts/containers/images This field is optional to allow higher level config management to default or override container images in workload controllers like Deployments and StatefulSets.
 | *`volumeMounts`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#volumemount-v1-core[$$VolumeMount$$] array__ | Pod volumes to mount into the container's filesystem. Cannot be updated.

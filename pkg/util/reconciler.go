@@ -46,13 +46,20 @@ func OnDependentUpdateFunc(client client.Client) func(updateEvent event.UpdateEv
 			return false
 		}
 
-		var logger *log.Entry
-
 		newControllerRef := metav1.GetControllerOf(newObj)
 		oldControllerRef := metav1.GetControllerOf(oldObj)
 		controllerRefChanged := !reflect.DeepEqual(newControllerRef, oldControllerRef)
 
-		kind := newControllerRef.Kind
+		var kind string
+		if newControllerRef != nil {
+			kind = newControllerRef.Kind
+		} else if oldControllerRef != nil {
+			kind = oldControllerRef.Kind
+		} else {
+			return false
+		}
+
+		var logger *log.Entry
 		switch obj := newObj.(type) {
 		case *corev1.Pod, *corev1.Service, *corev1.ConfigMap, *appv1.StatefulSet, *v1alpha1.HadoopCluster:
 			logger = LoggerForGenericKind(obj, obj.GetObjectKind().GroupVersionKind().Kind)

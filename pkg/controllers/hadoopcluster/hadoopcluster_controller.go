@@ -23,12 +23,13 @@ import (
 	"github.com/chriskery/hadoop-cluster-operator/pkg/builder"
 	"github.com/chriskery/hadoop-cluster-operator/pkg/util"
 	"github.com/go-logr/logr"
+	"github.com/sirupsen/logrus"
 	appv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/klog/v2"
+	"k8s.io/utils/ptr"
 	"reflect"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -46,12 +47,11 @@ const controllerName = "hadoop-cluster-operator"
 func NewReconciler(mgr manager.Manager) *HadoopClusterReconciler {
 	recorder := mgr.GetEventRecorderFor(controllerName)
 	r := &HadoopClusterReconciler{
-		Client:    mgr.GetClient(),
-		Scheme:    mgr.GetScheme(),
-		apiReader: mgr.GetAPIReader(),
-		builders:  builder.ResourceBuilders(mgr, recorder),
-		Log:       log.Log,
-		Recorder:  recorder,
+		Client:   mgr.GetClient(),
+		Scheme:   mgr.GetScheme(),
+		builders: builder.ResourceBuilders(mgr, recorder),
+		Log:      log.Log,
+		Recorder: recorder,
 	}
 
 	return r
@@ -62,9 +62,8 @@ type HadoopClusterReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 
-	apiReader client.Reader
-	Recorder  record.EventRecorder
-	Log       logr.Logger
+	Recorder record.EventRecorder
+	Log      logr.Logger
 
 	builders []builder.Builder
 }
@@ -97,18 +96,18 @@ func (r *HadoopClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 	// skip for HadoopCluster that is being deleted
 	if !hadoopCluster.GetDeletionTimestamp().IsZero() {
-		return ctrl.Result{}, r.prepareForDeletion(ctx, hadoopCluster)
+		return ctrl.Result{}, util.PrepareForDeletion(ctx, r.Client, hadoopCluster, DeletionFinalizer, r)
 	}
 
 	// Ensure the resource have a deletion marker
-	if err = r.addFinalizerIfNeeded(ctx, hadoopCluster); err != nil {
+	if err = util.AddFinalizerIfNeeded(ctx, r.Client, hadoopCluster, DeletionFinalizer); err != nil {
 		return ctrl.Result{}, err
 	}
 
 	oldStatus := hadoopCluster.Status.DeepCopy()
 	for _, builder := range r.builders {
 		if err = builder.Build(hadoopCluster, oldStatus); err != nil {
-			klog.Warningf("Reconcile Hadoop Cluster error %v", err)
+			logrus.Warningf("Reconcile Hadoop Cluster error %v", err)
 			return ctrl.Result{}, err
 		}
 	}
@@ -136,7 +135,7 @@ func (r *HadoopClusterReconciler) UpdateClusterStatusInApiServer(cluster *v1alph
 	clusterCopy.Status = *status.DeepCopy()
 
 	if err := r.Status().Update(context.Background(), clusterCopy); err != nil {
-		klog.Error(err, " failed to update HadoopCluster conditions in the API server")
+		logrus.Error(err, " failed to update HadoopCluster conditions in the API server")
 		return err
 	}
 
@@ -216,16 +215,15 @@ func (r *HadoopClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 func (r *HadoopClusterReconciler) UpdateClusterStatus(cluster *v1alpha1.HadoopCluster, status *v1alpha1.HadoopClusterStatus) error {
+	if status.StartTime == nil {
+		status.StartTime = ptr.To(metav1.Now())
+	}
+
 	if len(status.Conditions) == 0 {
 		msg := fmt.Sprintf("HadoopCluster %s is created.", cluster.GetName())
 		if err := util.UpdateClusterConditions(status, v1alpha1.ClusterCreated, util.HadoopclusterCreatedReason, msg); err != nil {
 			return err
 		}
-	}
-
-	if status.StartTime == nil {
-		now := metav1.Now()
-		status.StartTime = &now
 	}
 
 	clusetrRunning := true
@@ -266,10 +264,10 @@ func (r *HadoopClusterReconciler) onOwnerCreateFunc() func(event.CreateEvent) bo
 			return true
 		}
 		msg := fmt.Sprintf("HadoopCluster %s is created.", e.Object.GetName())
-		klog.Info(msg)
+		logrus.Info(msg)
 
 		if err := util.UpdateClusterConditions(&hadoopClusetr.Status, v1alpha1.ClusterCreated, util.HadoopclusterCreatedReason, msg); err != nil {
-			klog.Error(msg)
+			logrus.Error(msg)
 			return false
 		}
 		return true

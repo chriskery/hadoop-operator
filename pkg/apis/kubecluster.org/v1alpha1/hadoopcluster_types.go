@@ -41,6 +41,12 @@ const (
 )
 
 type HadoopNodeSpec struct {
+	// List of environment variables to set in the container.
+	// Cannot be updated.
+	// +optional
+	// +patchMergeKey=name
+	// +patchStrategy=merge
+	Env []corev1.EnvVar `json:"env,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,7,rep,name=env"`
 	// Number of desired pods. This is a pointer to distinguish between explicit
 	// zero and not specified. Defaults to 1.
 	// +optional
@@ -183,11 +189,9 @@ const (
 	// The training is running without error.
 	ClusterRunning ClusterConditionType = "Running"
 
-	// ClusterRestarting means one or more sub-resources (e.g. services/pods) of this job
-	// reached phase failed but maybe restarted according to it's restart policy
-	// which specified by user in v1.PodTemplateSpec.
-	// The training is freezing/pending.
-	ClusterRestarting ClusterConditionType = "Restarting"
+	// ClusterReconfiguring means one or more sub-resources (e.g. datanoe/namenode) of this cluster
+	// apply replicas changed configuration.
+	ClusterReconfiguring ClusterConditionType = "Reconfiguring"
 )
 
 // +k8s:openapi-gen=true

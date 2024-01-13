@@ -23,6 +23,8 @@ var _ Builder = &YarnBuilder{}
 type YarnBuilder struct {
 	client.Client
 
+	Recorder record.EventRecorder
+
 	// StatefulSetControl is used to add or delete statefulsets.
 	StatefulSetControl control.StatefulSetControlInterface
 
@@ -38,6 +40,7 @@ func (h *YarnBuilder) SetupWithManager(mgr manager.Manager, recorder record.Even
 	kubeClientSet := kubeclientset.NewForConfigOrDie(cfg)
 
 	h.Client = mgr.GetClient()
+	h.Recorder = recorder
 	h.StatefulSetControl = control.RealStatefulSetControl{KubeClient: kubeClientSet, Recorder: recorder}
 	h.ServiceControl = control.RealServiceControl{KubeClient: kubeClientSet, Recorder: recorder}
 	h.PodControl = control.RealPodControl{KubeClient: kubeClientSet, Recorder: recorder}
@@ -156,26 +159,31 @@ func (h *YarnBuilder) buildResourceManagerPod(cluster *hadoopclusterorgv1alpha1.
 	return nil
 }
 
-func (h *YarnBuilder) buildNodeManager(cluster *hadoopclusterorgv1alpha1.HadoopCluster, status *hadoopclusterorgv1alpha1.HadoopClusterStatus) error {
+func (h *YarnBuilder) buildNodeManager(
+	cluster *hadoopclusterorgv1alpha1.HadoopCluster,
+	status *hadoopclusterorgv1alpha1.HadoopClusterStatus,
+) error {
+	nodeManagerName := util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeNodemanager)
 	labels := utillabels.GenLabels(cluster.GetName(), hadoopclusterorgv1alpha1.ReplicaTypeNodemanager)
+
 	nodeManagerStatefulSet := &appv1.StatefulSet{}
 	err := h.Get(
 		context.Background(),
-		client.ObjectKey{Name: util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeNodemanager), Namespace: cluster.Namespace},
+		client.ObjectKey{Name: nodeManagerName, Namespace: cluster.Namespace},
 		nodeManagerStatefulSet,
 	)
 	if err != nil {
 		if !errors.IsNotFound(err) {
 			return err
 		}
-		if err = h.buildNodeManagerStatefulSet(cluster, labels); err != nil {
+		if err = h.buildNodeManagerStatefulSet(cluster, nodeManagerName, labels); err != nil {
 			return err
 		}
-	} else {
-		if cluster.Spec.Yarn.NodeManager.Replicas != nil && (cluster.Spec.Yarn.NodeManager.Replicas != nodeManagerStatefulSet.Spec.Replicas) {
-			if err = h.reconcileNodeManagerHPA(cluster, nodeManagerStatefulSet); err != nil {
-				return err
-			}
+	}
+
+	if h.isNeedReconcileNodeManagerHPA(cluster, nodeManagerStatefulSet) {
+		if err = h.reconcileNodeManagerHPA(cluster, nodeManagerStatefulSet, status); err != nil {
+			return err
 		}
 	}
 
@@ -189,7 +197,31 @@ func (h *YarnBuilder) buildNodeManager(cluster *hadoopclusterorgv1alpha1.HadoopC
 	return nil
 }
 
-func (h *YarnBuilder) buildNodeManagerService(cluster *hadoopclusterorgv1alpha1.HadoopCluster, name string, labels map[string]string) error {
+// isNeedReconcileNodeManagerHPA checks whether need to reconcile node manager HPA.
+func (h *YarnBuilder) isNeedReconcileNodeManagerHPA(
+	cluster *hadoopclusterorgv1alpha1.HadoopCluster,
+	nodeManagerStatefulSet *appv1.StatefulSet,
+) bool {
+	if cluster.Spec.Yarn.NodeManager.Replicas == nodeManagerStatefulSet.Spec.Replicas {
+		return false
+	}
+	if cluster.Spec.Yarn.NodeManager.Replicas == nil && nodeManagerStatefulSet.Spec.Replicas == nil {
+		return false
+	}
+	if cluster.Spec.Yarn.NodeManager.Replicas == nil && *nodeManagerStatefulSet.Spec.Replicas == 1 {
+		return false
+	}
+	if *cluster.Spec.Yarn.NodeManager.Replicas == 1 && nodeManagerStatefulSet.Spec.Replicas == nil {
+		return false
+	}
+	return *cluster.Spec.Yarn.NodeManager.Replicas != *nodeManagerStatefulSet.Spec.Replicas
+}
+
+func (h *YarnBuilder) buildNodeManagerService(
+	cluster *hadoopclusterorgv1alpha1.HadoopCluster,
+	name string,
+	labels map[string]string,
+) error {
 	resourceManagerService := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -209,10 +241,14 @@ func (h *YarnBuilder) buildNodeManagerService(cluster *hadoopclusterorgv1alpha1.
 	return nil
 }
 
-func (h *YarnBuilder) buildNodeManagerStatefulSet(cluster *hadoopclusterorgv1alpha1.HadoopCluster, labels map[string]string) error {
+func (h *YarnBuilder) buildNodeManagerStatefulSet(
+	cluster *hadoopclusterorgv1alpha1.HadoopCluster,
+	name string,
+	labels map[string]string,
+) error {
 	nodeManagerStatefulSet := &appv1.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeNodemanager),
+			Name:      name,
 			Namespace: cluster.Namespace,
 			Labels:    labels,
 		},
@@ -276,6 +312,7 @@ func (h *YarnBuilder) genNodeManagerPodSpec(cluster *hadoopclusterorgv1alpha1.Ha
 		Command:         nodeManagerCmd,
 		Resources:       nodeManagerSpec.Resources,
 		VolumeMounts:    volumeMounts,
+		Env:             cluster.Spec.Yarn.NodeManager.Env,
 		ReadinessProbe:  nil,
 		StartupProbe:    nil,
 		ImagePullPolicy: nodeManagerSpec.ImagePullPolicy,
@@ -324,6 +361,7 @@ func (h *YarnBuilder) genResourceManagerPodSpec(
 		Command:         resourceManagerCmd,
 		Resources:       resourceManagerSpec.Resources,
 		VolumeMounts:    volumeMounts,
+		Env:             cluster.Spec.Yarn.ResourceManager.Env,
 		ReadinessProbe:  nil,
 		StartupProbe:    nil,
 		ImagePullPolicy: resourceManagerSpec.ImagePullPolicy,
@@ -471,11 +509,27 @@ func (h *YarnBuilder) cleanNodeManager(cluster *hadoopclusterorgv1alpha1.HadoopC
 	return nil
 }
 
-func (h *YarnBuilder) reconcileNodeManagerHPA(cluster *hadoopclusterorgv1alpha1.HadoopCluster, statefulSet *appv1.StatefulSet) error {
+func (h *YarnBuilder) reconcileNodeManagerHPA(
+	cluster *hadoopclusterorgv1alpha1.HadoopCluster,
+	statefulSet *appv1.StatefulSet,
+	status *hadoopclusterorgv1alpha1.HadoopClusterStatus,
+) error {
 	statefulSet.Spec.Replicas = cluster.Spec.HDFS.DataNode.Replicas
 	if statefulSet.Spec.Replicas == nil {
 		statefulSet.Spec.Replicas = ptr.To(int32(1))
 	}
 
-	return reconcileStatefulSetHPA(h.StatefulSetControl, statefulSet, *statefulSet.Spec.Replicas)
+	err := reconcileStatefulSetHPA(h.StatefulSetControl, statefulSet, *statefulSet.Spec.Replicas)
+	if err != nil {
+		return err
+	}
+
+	msg := fmt.Sprintf("HadoopCluster %s/%s is reconfiguraing nodemanager replicas.", cluster.Namespace, cluster.Name)
+	err = util.UpdateClusterConditions(status, hadoopclusterorgv1alpha1.ClusterReconfiguring, util.HadoopclusterReconfiguringReason, msg)
+	if err != nil {
+		return err
+	}
+	h.Recorder.Eventf(cluster, corev1.EventTypeNormal, "HadoopClusterReconfiguring", msg)
+
+	return nil
 }
