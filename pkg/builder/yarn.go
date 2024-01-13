@@ -83,6 +83,7 @@ func (h *YarnBuilder) buildResourceManager(
 	status *hadoopclusterorgv1alpha1.HadoopClusterStatus,
 ) error {
 	labels := utillabels.GenLabels(cluster.GetName(), hadoopclusterorgv1alpha1.ReplicaTypeResourcemanager)
+	util.MergeMap(labels, cluster.Labels)
 
 	podName := util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeResourcemanager)
 	resourceManagerPod := &corev1.Pod{}
@@ -165,6 +166,7 @@ func (h *YarnBuilder) buildNodeManager(
 ) error {
 	nodeManagerName := util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeNodemanager)
 	labels := utillabels.GenLabels(cluster.GetName(), hadoopclusterorgv1alpha1.ReplicaTypeNodemanager)
+	util.MergeMap(labels, cluster.Labels)
 
 	nodeManagerStatefulSet := &appv1.StatefulSet{}
 	err := h.Get(
@@ -285,15 +287,21 @@ func (h *YarnBuilder) genNodeManagerStatefulSetSpec(
 	return statefulSetSpec, nil
 }
 
-func (h *YarnBuilder) genNodeManagerPodSpec(cluster *hadoopclusterorgv1alpha1.HadoopCluster, nodeManagerSpec *hadoopclusterorgv1alpha1.YarnNodeManagerSpecTemplate, labels map[string]string) (*corev1.PodTemplateSpec, error) {
+func (h *YarnBuilder) genNodeManagerPodSpec(
+	cluster *hadoopclusterorgv1alpha1.HadoopCluster,
+	nodeManagerSpec *hadoopclusterorgv1alpha1.YarnNodeManagerSpecTemplate,
+	labels map[string]string,
+) (*corev1.PodTemplateSpec, error) {
 	podTemplateSpec := &corev1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: labels,
 		},
 		Spec: corev1.PodSpec{
-			Volumes:       nodeManagerSpec.Volumes,
-			RestartPolicy: corev1.RestartPolicyAlways,
-			DNSPolicy:     corev1.DNSClusterFirstWithHostNet,
+			Volumes:          nodeManagerSpec.Volumes,
+			RestartPolicy:    corev1.RestartPolicyAlways,
+			DNSPolicy:        corev1.DNSClusterFirstWithHostNet,
+			ImagePullSecrets: nodeManagerSpec.ImagePullSecrets,
+			HostNetwork:      nodeManagerSpec.HostNetwork,
 		},
 	}
 
@@ -313,14 +321,12 @@ func (h *YarnBuilder) genNodeManagerPodSpec(cluster *hadoopclusterorgv1alpha1.Ha
 		Resources:       nodeManagerSpec.Resources,
 		VolumeMounts:    volumeMounts,
 		Env:             cluster.Spec.Yarn.NodeManager.Env,
-		ReadinessProbe:  nil,
-		StartupProbe:    nil,
 		ImagePullPolicy: nodeManagerSpec.ImagePullPolicy,
 		SecurityContext: nodeManagerSpec.SecurityContext,
 	}}
 
 	podTemplateSpec.Spec.Containers = containers
-	setPodEnv(podTemplateSpec, hadoopclusterorgv1alpha1.ReplicaTypeNodemanager)
+	setPodEnv(cluster, podTemplateSpec, hadoopclusterorgv1alpha1.ReplicaTypeNodemanager)
 
 	if err := setInitContainer(cluster, hadoopclusterorgv1alpha1.ReplicaTypeNodemanager, podTemplateSpec); err != nil {
 		return nil, err
@@ -339,9 +345,11 @@ func (h *YarnBuilder) genResourceManagerPodSpec(
 			Name:   util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeResourcemanager),
 		},
 		Spec: corev1.PodSpec{
-			Volumes:       resourceManagerSpec.Volumes,
-			RestartPolicy: corev1.RestartPolicyAlways,
-			DNSPolicy:     corev1.DNSClusterFirstWithHostNet,
+			Volumes:          resourceManagerSpec.Volumes,
+			RestartPolicy:    corev1.RestartPolicyAlways,
+			DNSPolicy:        corev1.DNSClusterFirstWithHostNet,
+			ImagePullSecrets: resourceManagerSpec.ImagePullSecrets,
+			HostNetwork:      resourceManagerSpec.HostNetwork,
 		},
 	}
 
@@ -370,7 +378,7 @@ func (h *YarnBuilder) genResourceManagerPodSpec(
 
 	podTemplateSpec.Spec.Containers = containers
 
-	setPodEnv(podTemplateSpec, hadoopclusterorgv1alpha1.ReplicaTypeResourcemanager)
+	setPodEnv(cluster, podTemplateSpec, hadoopclusterorgv1alpha1.ReplicaTypeResourcemanager)
 
 	if err := setInitContainer(cluster, hadoopclusterorgv1alpha1.ReplicaTypeResourcemanager, podTemplateSpec); err != nil {
 		return nil, err
@@ -379,7 +387,7 @@ func (h *YarnBuilder) genResourceManagerPodSpec(
 }
 
 func (h *YarnBuilder) buildNodeManagerServices(cluster *hadoopclusterorgv1alpha1.HadoopCluster, labels map[string]string) error {
-	replicas := cluster.Spec.HDFS.DataNode.Replicas
+	replicas := cluster.Spec.Yarn.NodeManager.Replicas
 	if replicas == nil {
 		return nil
 	}
@@ -514,7 +522,7 @@ func (h *YarnBuilder) reconcileNodeManagerHPA(
 	statefulSet *appv1.StatefulSet,
 	status *hadoopclusterorgv1alpha1.HadoopClusterStatus,
 ) error {
-	statefulSet.Spec.Replicas = cluster.Spec.HDFS.DataNode.Replicas
+	statefulSet.Spec.Replicas = cluster.Spec.Yarn.NodeManager.Replicas
 	if statefulSet.Spec.Replicas == nil {
 		statefulSet.Spec.Replicas = ptr.To(int32(1))
 	}

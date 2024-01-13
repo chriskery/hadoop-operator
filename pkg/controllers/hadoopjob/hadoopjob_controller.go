@@ -105,7 +105,7 @@ func (r *HadoopJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	// Use common to reconcile the job related pod and service
 	err = r.ReconcileJobs(hadoopJob, oldStatus)
 	if err != nil {
-		logger.Error(err, "Reconcile PyTorchJob error")
+		logger.Error(err, "Reconcile HadoopJobs error")
 		return ctrl.Result{}, err
 	}
 
@@ -277,7 +277,7 @@ func (r *HadoopJobReconciler) CreateHadoopCluster(job *v1alpha1.HadoopJob, _ *v1
 				},
 			},
 			HDFS: v1alpha1.HDFSSpec{
-				NameNode: v1alpha1.HDFSNameNodeSpecTemplate{HadoopNodeSpec: job.Spec.ExecutorSpec, Format: true},
+				NameNode: v1alpha1.HDFSNameNodeSpecTemplate{HadoopNodeSpec: job.Spec.ExecutorSpec, Format: job.Spec.NameNodeDirFormat},
 				DataNode: v1alpha1.HDFSDataNodeSpecTemplate{HadoopNodeSpec: job.Spec.ExecutorSpec},
 			},
 		},

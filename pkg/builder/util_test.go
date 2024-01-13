@@ -35,7 +35,7 @@ func TestSetPodEnv(t *testing.T) {
 		},
 	}
 	replicaType := v1alpha1.ReplicaTypeDataNode
-	setPodEnv(podTemplateSpec, replicaType)
+	setPodEnv(cluster, podTemplateSpec, replicaType)
 	assert.Equal(t, 1, len(podTemplateSpec.Spec.Containers[0].Env))
 	assert.Equal(t, EnvHadoopRole, podTemplateSpec.Spec.Containers[0].Env[0].Name)
 	assert.Equal(t, string(replicaType), podTemplateSpec.Spec.Containers[0].Env[0].Value)

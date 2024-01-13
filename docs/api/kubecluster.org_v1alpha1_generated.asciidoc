@@ -252,6 +252,7 @@ HadoopJobSpec defines the desired state of HadoopJob NOTE: json tags are require
 | *`mainApplicationFile`* __string__ | MainFile is the path to a bundled JAR, Python, or R file of the application.
 | *`arguments`* __string array__ | Arguments is a list of arguments to be passed to the application.
 | *`executorSpec`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopnodespec[$$HadoopNodeSpec$$]__ | 
+| *`nameNodeDirFormat`* __boolean__ | 
 | *`env`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#envvar-v1-core[$$EnvVar$$] array__ | List of environment variables to set in the container. Cannot be updated.
 |===
 

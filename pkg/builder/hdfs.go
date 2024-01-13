@@ -79,6 +79,7 @@ func (h *HdfsBuilder) Clean(obj interface{}) error {
 
 func (h *HdfsBuilder) buildNameNode(cluster *hadoopclusterorgv1alpha1.HadoopCluster, status *hadoopclusterorgv1alpha1.HadoopClusterStatus) error {
 	labels := utillabels.GenLabels(cluster.GetName(), hadoopclusterorgv1alpha1.ReplicaTypeNameNode)
+	util.MergeMap(labels, cluster.Labels)
 
 	nameNodePod := &corev1.Pod{}
 	err := h.Get(
@@ -166,6 +167,8 @@ func (h *HdfsBuilder) buildDataNode(
 	status *hadoopclusterorgv1alpha1.HadoopClusterStatus,
 ) error {
 	labels := utillabels.GenLabels(cluster.GetName(), hadoopclusterorgv1alpha1.ReplicaTypeDataNode)
+	util.MergeMap(labels, cluster.Labels)
+
 	dataNodeStatefulSet := &appv1.StatefulSet{}
 	dataNodeName := util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeDataNode)
 	err := h.Get(
@@ -285,9 +288,11 @@ func (h *HdfsBuilder) genNameNodePodSpec(
 			Labels: labels,
 		},
 		Spec: corev1.PodSpec{
-			Volumes:       nameNodeSpec.Volumes,
-			RestartPolicy: corev1.RestartPolicyAlways,
-			DNSPolicy:     corev1.DNSClusterFirstWithHostNet,
+			Volumes:          nameNodeSpec.Volumes,
+			RestartPolicy:    corev1.RestartPolicyAlways,
+			DNSPolicy:        corev1.DNSClusterFirstWithHostNet,
+			ImagePullSecrets: nameNodeSpec.ImagePullSecrets,
+			HostNetwork:      nameNodeSpec.HostNetwork,
 		},
 	}
 
@@ -304,14 +309,13 @@ func (h *HdfsBuilder) genNameNodePodSpec(
 		Resources:       nameNodeSpec.Resources,
 		VolumeMounts:    volumeMounts,
 		Env:             cluster.Spec.HDFS.NameNode.Env,
-		ReadinessProbe:  nil,
-		StartupProbe:    nil,
 		ImagePullPolicy: nameNodeSpec.ImagePullPolicy,
 		SecurityContext: nameNodeSpec.SecurityContext,
 	}}
 
 	podTemplateSpec.Spec.Containers = containers
-	setPodEnv(podTemplateSpec, hadoopclusterorgv1alpha1.ReplicaTypeNameNode)
+	setPodEnv(cluster, podTemplateSpec, hadoopclusterorgv1alpha1.ReplicaTypeNameNode)
+
 	if nameNodeSpec.Format {
 		for i := range podTemplateSpec.Spec.Containers {
 			podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
@@ -350,9 +354,11 @@ func (h *HdfsBuilder) genDataNodePodSpec(
 			Labels: labels,
 		},
 		Spec: corev1.PodSpec{
-			Volumes:       dataNodeSpec.Volumes,
-			RestartPolicy: corev1.RestartPolicyAlways,
-			DNSPolicy:     corev1.DNSClusterFirstWithHostNet,
+			Volumes:          dataNodeSpec.Volumes,
+			RestartPolicy:    corev1.RestartPolicyAlways,
+			DNSPolicy:        corev1.DNSClusterFirstWithHostNet,
+			ImagePullSecrets: dataNodeSpec.ImagePullSecrets,
+			HostNetwork:      dataNodeSpec.HostNetwork,
 		},
 	}
 
@@ -373,14 +379,12 @@ func (h *HdfsBuilder) genDataNodePodSpec(
 		Resources:       dataNodeSpec.Resources,
 		VolumeMounts:    volumeMounts,
 		Env:             cluster.Spec.HDFS.DataNode.Env,
-		ReadinessProbe:  nil,
-		StartupProbe:    nil,
 		ImagePullPolicy: dataNodeSpec.ImagePullPolicy,
 		SecurityContext: dataNodeSpec.SecurityContext,
 	}}
 
 	podTemplateSpec.Spec.Containers = containers
-	setPodEnv(podTemplateSpec, hadoopclusterorgv1alpha1.ReplicaTypeDataNode)
+	setPodEnv(cluster, podTemplateSpec, hadoopclusterorgv1alpha1.ReplicaTypeDataNode)
 	if err := setInitContainer(cluster, hadoopclusterorgv1alpha1.ReplicaTypeDataNode, podTemplateSpec); err != nil {
 		return nil, err
 	}
@@ -440,7 +444,7 @@ func (h *HdfsBuilder) cleanNameNode(cluster *hadoopclusterorgv1alpha1.HadoopClus
 		return err
 	}
 
-	if cluster.Spec.Yarn.ResourceManager.ServiceType == corev1.ServiceTypeNodePort {
+	if cluster.Spec.HDFS.NameNode.ServiceType == corev1.ServiceTypeNodePort {
 		serviceNodePortName := fmt.Sprintf("%s-nodeport", serviceName)
 		err = h.ServiceControl.DeleteService(cluster.GetNamespace(), serviceNodePortName, &corev1.Service{})
 		if err != nil {
@@ -501,7 +505,7 @@ func (h *HdfsBuilder) buildNameNodeNodePortService(
 	labels map[string]string,
 	name string,
 ) error {
-	resourceManagerService := &corev1.Service{
+	nameNodeService := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: cluster.Namespace,
@@ -520,7 +524,7 @@ func (h *HdfsBuilder) buildNameNodeNodePortService(
 	}
 
 	ownerRef := util.GenOwnerReference(cluster, hadoopclusterorgv1alpha1.GroupVersion.WithKind(hadoopclusterorgv1alpha1.HadoopClusterKind).Kind)
-	if err := h.ServiceControl.CreateServicesWithControllerRef(cluster.GetNamespace(), resourceManagerService, cluster, ownerRef); err != nil {
+	if err := h.ServiceControl.CreateServicesWithControllerRef(cluster.GetNamespace(), nameNodeService, cluster, ownerRef); err != nil {
 		return err
 	}
 

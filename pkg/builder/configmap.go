@@ -39,25 +39,43 @@ fi
 
 mkdir -p  /tmp/hadoop-hadoop/dfs/name
 
+HDFS_PATH="hdfs"
+if command -v "hdfs" &> /dev/null
+then
+    echo "Command hdfs exists."
+else
+	HDFS_PATH=$HADOOP_HOME/bin/hdfs
+    echo "Command 'hdfs'' not found. Setting default value: $HDFS_PATH'"
+fi
+
+YARN_PATH="yarn"
+if command -v "yarn" &> /dev/null
+then
+    echo "Command yarn exists."
+else
+	YARN_PATH=$HADOOP_HOME/bin/yarn
+    echo "Command 'yarn'' not found. Setting default value: $YARN_PATH'"
+fi
+
 case "$HADOOP_ROLE" in
     resourcemanager)
         echo "Environment variable is set to resourcemanager"
-        yarn resourcemanager
+        $YARN_PATH resourcemanager
         ;;
     nodemanager)
         echo "Environment variable is set to nodemanager"
-        yarn nodemanager
+        $YARN_PATH nodemanager
         ;;
     namenode)
         echo "Environment variable is set to namenode"
-		if [ "$NAME_NODE_FORMAT" = "true" ]; then
-	        hdfs namenode -format
-		fi
-		hdfs namenode
+        if [ "$NAME_NODE_FORMAT" = "true" ]; then
+           $HDFS_PATH namenode -format
+        fi
+        $HDFS_PATH namenode
         ;;
     datanode)
         echo "Environment variable is set to datanode"
-        hdfs datanode
+        $HDFS_PATH datanode
         ;;
     *)
         echo "Environment variable is set to an unknown value: $HADOOP_ROLE"

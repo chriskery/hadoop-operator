@@ -56,6 +56,8 @@ type HadoopJobSpec struct {
 
 	ExecutorSpec HadoopNodeSpec `json:"executorSpec,omitempty"`
 
+	NameNodeDirFormat bool `json:"nameNodeDirFormat,omitempty"`
+
 	// List of environment variables to set in the container.
 	// Cannot be updated.
 	// +optional
