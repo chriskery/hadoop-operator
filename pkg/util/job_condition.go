@@ -74,15 +74,11 @@ func setCondition(status *v1alpha1.HadoopJobStatus, condition v1alpha1.JobCondit
 func filterOutJobCondition(conditions []v1alpha1.JobCondition, condType v1alpha1.JobConditionType) []v1alpha1.JobCondition {
 	var newConditions []v1alpha1.JobCondition
 	for _, c := range conditions {
-		// Set the running condition status to be false when current condition failed or succeeded
-		if (condType == v1alpha1.JobFailed || condType == v1alpha1.JobSucceeded) && (c.Type == v1alpha1.JobRunning || c.Type == v1alpha1.JobFailed) {
-			c.Status = corev1.ConditionFalse
-		}
-
 		if c.Type == condType {
 			continue
 		}
 
+		c.Status = corev1.ConditionFalse
 		newConditions = append(newConditions, c)
 	}
 	return newConditions

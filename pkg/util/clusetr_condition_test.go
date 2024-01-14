@@ -120,7 +120,7 @@ func Test_filterOutCondition(t *testing.T) {
 			Status: corev1.ConditionTrue,
 		},
 		{
-			Type:   v1alpha1.ClusterRestarting,
+			Type:   v1alpha1.ClusterReconfiguring,
 			Status: corev1.ConditionTrue,
 		},
 	}
@@ -137,11 +137,11 @@ func Test_filterOutCondition(t *testing.T) {
 			"test-running", args{conditions: initConditions, condType: v1alpha1.ClusterRunning}, []v1alpha1.ClusterCondition{
 				{
 					Type:   v1alpha1.ClusterCreated,
-					Status: corev1.ConditionTrue,
+					Status: corev1.ConditionFalse,
 				},
 				{
-					Type:   v1alpha1.ClusterRestarting,
-					Status: corev1.ConditionTrue,
+					Type:   v1alpha1.ClusterReconfiguring,
+					Status: corev1.ConditionFalse,
 				},
 			},
 		},
@@ -149,19 +149,19 @@ func Test_filterOutCondition(t *testing.T) {
 			"test-created", args{conditions: initConditions, condType: v1alpha1.ClusterCreated}, []v1alpha1.ClusterCondition{
 				{
 					Type:   v1alpha1.ClusterRunning,
-					Status: corev1.ConditionTrue,
+					Status: corev1.ConditionFalse,
 				},
 				{
-					Type:   v1alpha1.ClusterRestarting,
-					Status: corev1.ConditionTrue,
+					Type:   v1alpha1.ClusterReconfiguring,
+					Status: corev1.ConditionFalse,
 				},
 			},
 		},
 		{
-			"test-restarted", args{conditions: initConditions, condType: v1alpha1.ClusterRestarting}, []v1alpha1.ClusterCondition{
+			"test-restarted", args{conditions: initConditions, condType: v1alpha1.ClusterReconfiguring}, []v1alpha1.ClusterCondition{
 				{
 					Type:   v1alpha1.ClusterCreated,
-					Status: corev1.ConditionTrue,
+					Status: corev1.ConditionFalse,
 				},
 			},
 		},

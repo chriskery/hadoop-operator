@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1"
 	"github.com/chriskery/hadoop-cluster-operator/pkg/control"
+	"github.com/chriskery/hadoop-cluster-operator/pkg/util"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/json"
@@ -15,8 +16,10 @@ const (
 
 	entrypointPath = DefaultHadoopOperatorConfPath + "/entrypoint"
 
-	EnvHadoopRole     = "HADOOP_ROLE"
-	EnvNameNodeFormat = "NAME_NODE_FORMAT"
+	EnvHadoopRole          = "HADOOP_ROLE"
+	EnvNameNodeFormat      = "NAME_NODE_FORMAT"
+	EnvNameNodeAddr        = "HADOOP_NAME_NODE_ADDR"
+	EnvResourceManagerAddr = "HADOOP_RESOURCE_MANAGER_ADDR"
 )
 
 var entrypointCmd = fmt.Sprintf("cp %s /tmp/entrypoint && chmod +x /tmp/entrypoint && /tmp/entrypoint", entrypointPath)
@@ -49,7 +52,10 @@ func appendHadoopConfigMapVolumeMount(volumeMounts []corev1.VolumeMount) []corev
 	return volumeMounts
 }
 
-func setPodEnv(podTemplateSpec *corev1.PodTemplateSpec, replicaType v1alpha1.ReplicaType) {
+func setPodEnv(hadoopCluster *v1alpha1.HadoopCluster, podTemplateSpec *corev1.PodTemplateSpec, replicaType v1alpha1.ReplicaType) {
+	nameNodeAddr := util.GetReplicaName(hadoopCluster, v1alpha1.ReplicaTypeNameNode)
+	resourceManagerAddr := util.GetReplicaName(hadoopCluster, v1alpha1.ReplicaTypeResourcemanager)
+
 	for i := range podTemplateSpec.Spec.Containers {
 		replicaTypeExist := false
 		for _, envVar := range podTemplateSpec.Spec.Containers[i].Env {
@@ -64,6 +70,15 @@ func setPodEnv(podTemplateSpec *corev1.PodTemplateSpec, replicaType v1alpha1.Rep
 				Value: string(replicaType),
 			})
 		}
+
+		podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
+			Name:  EnvNameNodeAddr,
+			Value: nameNodeAddr,
+		})
+		podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
+			Name:  EnvResourceManagerAddr,
+			Value: resourceManagerAddr,
+		})
 	}
 }
 

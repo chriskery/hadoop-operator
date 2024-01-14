@@ -23,12 +23,13 @@ import (
 	"github.com/chriskery/hadoop-cluster-operator/pkg/builder"
 	"github.com/chriskery/hadoop-cluster-operator/pkg/util"
 	"github.com/go-logr/logr"
+	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/klog/v2"
+	"k8s.io/utils/ptr"
 	"reflect"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -46,11 +47,10 @@ const controllerName = "hadoop-job-operator"
 func NewReconciler(mgr manager.Manager) *HadoopJobReconciler {
 	recorder := mgr.GetEventRecorderFor(controllerName)
 	r := &HadoopJobReconciler{
-		Client:    mgr.GetClient(),
-		Scheme:    mgr.GetScheme(),
-		apiReader: mgr.GetAPIReader(),
-		Log:       log.Log,
-		Recorder:  recorder,
+		Client:   mgr.GetClient(),
+		Scheme:   mgr.GetScheme(),
+		Log:      log.Log,
+		Recorder: recorder,
 	}
 
 	r.driverBuilder = &builder.DriverBuilder{}
@@ -63,9 +63,8 @@ type HadoopJobReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 
-	apiReader client.Reader
-	Recorder  record.EventRecorder
-	Log       logr.Logger
+	Recorder record.EventRecorder
+	Log      logr.Logger
 
 	driverBuilder builder.Builder
 }
@@ -94,14 +93,19 @@ func (r *HadoopJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 
 	// skip for HadoopJob that is being deleted
 	if !hadoopJob.GetDeletionTimestamp().IsZero() {
-		return ctrl.Result{}, nil
+		return ctrl.Result{}, util.PrepareForDeletion(ctx, r.Client, hadoopJob, DeletionFinalizer, r)
+	}
+
+	// Ensure the resource have a deletion marker
+	if err = util.AddFinalizerIfNeeded(ctx, r.Client, hadoopJob, DeletionFinalizer); err != nil {
+		return ctrl.Result{}, err
 	}
 
 	oldStatus := hadoopJob.Status.DeepCopy()
 	// Use common to reconcile the job related pod and service
 	err = r.ReconcileJobs(hadoopJob, oldStatus)
 	if err != nil {
-		logger.Error(err, "Reconcile PyTorchJob error")
+		logger.Error(err, "Reconcile HadoopJobs error")
 		return ctrl.Result{}, err
 	}
 
@@ -120,7 +124,7 @@ func (r *HadoopJobReconciler) UpdateClusterStatusInApiServer(cluster *v1alpha1.H
 	clusterCopy.Status = *status.DeepCopy()
 
 	if err := r.Status().Update(context.Background(), clusterCopy); err != nil {
-		klog.Error(err, " failed to update HadoopJob conditions in the API server")
+		logrus.Error(err, " failed to update HadoopJob conditions in the API server")
 		return err
 	}
 
@@ -181,7 +185,7 @@ func (r *HadoopJobReconciler) onOwnerCreateFunc() func(event.CreateEvent) bool {
 			return true
 		}
 		msg := fmt.Sprintf("HadoopJob job %s created", job.GetName())
-		klog.Info(msg)
+		logrus.Info(msg)
 		err := util.UpdateJobConditions(&job.Status, v1alpha1.JobCreated, util.HadoopJobCreatedReason, msg)
 		if err != nil {
 			return false
@@ -193,29 +197,42 @@ func (r *HadoopJobReconciler) onOwnerCreateFunc() func(event.CreateEvent) bool {
 func (r *HadoopJobReconciler) ReconcileJobs(job *v1alpha1.HadoopJob, status *v1alpha1.HadoopJobStatus) error {
 	hadoopCluster, err := r.GetHadoopClusterForJob(job)
 	if err != nil {
-		klog.Warningf("GetPodsForJob error %v", err)
+		logrus.Warningf("GetPodsForJob error %v", err)
 		return err
 	}
 
-	if hadoopCluster != nil && util.IsJobFinished(job) {
-		// If the Job is succeed or failed, delete all pods and services.
-		if err = r.DeleteHadoopCluster(job, hadoopCluster); err != nil {
+	if util.IsJobFinished(job) {
+		if hadoopCluster != nil {
+			// If the Job is succeed or failed, delete all pods and services.
+			err = r.DeleteHadoopCluster(job, hadoopCluster)
+			return err
+		} else {
+			return nil
+		}
+	}
+
+	if status.Conditions == nil {
+		msg := fmt.Sprintf("HadoopJob job %s created", job.GetName())
+		if err = util.UpdateJobConditions(status, v1alpha1.JobCreated, util.HadoopJobCreatedReason, msg); err != nil {
 			return err
 		}
-		return nil
+	}
+
+	if status.StartTime == nil {
+		status.StartTime = ptr.To(metav1.Now())
 	}
 
 	if hadoopCluster == nil {
 		err = r.CreateHadoopCluster(job, status, hadoopCluster)
 		if err != nil {
-			klog.Warningf("ReconcilePods error %v", err)
+			logrus.Warningf("ReconcilePods error %v", err)
 			return err
 		}
 	}
 
 	err = r.ReconcileDriver(job, status, hadoopCluster)
 	if err != nil {
-		klog.Warningf("ReconcileServices error %v", err)
+		logrus.Warningf("ReconcileServices error %v", err)
 		return err
 	}
 
@@ -260,7 +277,7 @@ func (r *HadoopJobReconciler) CreateHadoopCluster(job *v1alpha1.HadoopJob, _ *v1
 				},
 			},
 			HDFS: v1alpha1.HDFSSpec{
-				NameNode: v1alpha1.HDFSNameNodeSpecTemplate{HadoopNodeSpec: job.Spec.ExecutorSpec, Format: true},
+				NameNode: v1alpha1.HDFSNameNodeSpecTemplate{HadoopNodeSpec: job.Spec.ExecutorSpec, Format: job.Spec.NameNodeDirFormat},
 				DataNode: v1alpha1.HDFSDataNodeSpecTemplate{HadoopNodeSpec: job.Spec.ExecutorSpec},
 			},
 		},
@@ -296,7 +313,7 @@ func (r *HadoopJobReconciler) ReconcileDriver(job *v1alpha1.HadoopJob, status *v
 		return err
 	}
 
-	if isPodReady(driverPod) {
+	if isPodReady(driverPod) && !util.IsJobRunning(job) {
 		msg := fmt.Sprintf("Driver %s/%s is ready.", driverPod.GetNamespace(), driverPod.GetName())
 		r.Recorder.Eventf(driverPod, corev1.EventTypeNormal, "DriverReady", msg)
 		err = util.UpdateJobConditions(status, v1alpha1.JobRunning, util.HadoopJobRunningReason, msg)
@@ -317,6 +334,10 @@ func (r *HadoopJobReconciler) ReconcileDriver(job *v1alpha1.HadoopJob, status *v
 		if err != nil {
 			return err
 		}
+	}
+
+	if status.CompletionTime == nil && isPodFinished(driverPod) {
+		status.CompletionTime = ptr.To(metav1.Now())
 	}
 
 	return nil

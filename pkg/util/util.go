@@ -52,3 +52,14 @@ func ConvertPodListWithFilter(list []corev1.Pod, pass ObjectFilterFunction) []*c
 	}
 	return ret
 }
+
+func MergeMap(des map[string]string, src map[string]string) {
+	if src == nil || des == nil {
+		return
+	}
+
+	for k, v := range src {
+		des[k] = v
+	}
+	return
+}
