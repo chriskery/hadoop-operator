@@ -16,10 +16,10 @@ const (
 
 	entrypointPath = DefaultHadoopOperatorConfPath + "/entrypoint"
 
-	EnvHadoopRole              = "HADOOP_ROLE"
-	EnvNameNodeFormat          = "NAME_NODE_FORMAT"
-	EnvNameNodeAddr            = "HADOOP_NAME_NODE_ADDR"
-	EnvNameResourceManagerAddr = "HADOOP_RESOURCE_MANAGER_ADDR"
+	EnvHadoopRole          = "HADOOP_ROLE"
+	EnvNameNodeFormat      = "NAME_NODE_FORMAT"
+	EnvNameNodeAddr        = "HADOOP_NAME_NODE_ADDR"
+	EnvResourceManagerAddr = "HADOOP_RESOURCE_MANAGER_ADDR"
 )
 
 var entrypointCmd = fmt.Sprintf("cp %s /tmp/entrypoint && chmod +x /tmp/entrypoint && /tmp/entrypoint", entrypointPath)
@@ -76,7 +76,7 @@ func setPodEnv(hadoopCluster *v1alpha1.HadoopCluster, podTemplateSpec *corev1.Po
 			Value: nameNodeAddr,
 		})
 		podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
-			Name:  EnvNameResourceManagerAddr,
+			Name:  EnvResourceManagerAddr,
 			Value: resourceManagerAddr,
 		})
 	}
