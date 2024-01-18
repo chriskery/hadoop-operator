@@ -1,4 +1,4 @@
-package hadoopjob
+package hadoopapplication
 
 import (
 	"testing"

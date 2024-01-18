@@ -3,7 +3,7 @@
 # It should be run by manifests/default
 resources:
 - bases/kubecluster.org_hadoopclusters.yaml
-- bases/kubecluster.org_hadoopjobs.yaml
+- bases/kubecluster.org_hadoopapplications.yaml
 #+kubebuilder:scaffold:crdkustomizeresource
 
 patchesStrategicMerge:

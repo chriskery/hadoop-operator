@@ -28,25 +28,25 @@ func TestClusterRunningCondition(t *testing.T) {
 	assert.False(t, IsClusterRunning(cluster))
 }
 
-func TestJobFinishedCondition(t *testing.T) {
-	job := &v1alpha1.HadoopJob{
-		Status: v1alpha1.HadoopJobStatus{
-			Conditions: []v1alpha1.JobCondition{
+func TestApplicationFinishedCondition(t *testing.T) {
+	application := &v1alpha1.HadoopApplication{
+		Status: v1alpha1.HadoopApplicationStatus{
+			Conditions: []v1alpha1.ApplicationCondition{
 				{
-					Type:   v1alpha1.JobFailed,
+					Type:   v1alpha1.ApplicationFailed,
 					Status: corev1.ConditionTrue,
 				},
 			},
 		},
 	}
-	assert.True(t, IsJobFinished(job))
+	assert.True(t, IsApplicationFinished(application))
 
-	job.Status.Conditions[0].Type = v1alpha1.JobSucceeded
-	assert.True(t, IsJobFinished(job))
+	application.Status.Conditions[0].Type = v1alpha1.ApplicationSucceeded
+	assert.True(t, IsApplicationFinished(application))
 
-	job.Status.Conditions[0].Status = corev1.ConditionFalse
-	assert.False(t, IsJobFinished(job))
+	application.Status.Conditions[0].Status = corev1.ConditionFalse
+	assert.False(t, IsApplicationFinished(application))
 
-	job.Status.Conditions = nil
-	assert.False(t, IsJobFinished(job))
+	application.Status.Conditions = nil
+	assert.False(t, IsApplicationFinished(application))
 }

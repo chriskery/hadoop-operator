@@ -1,2 +1,2 @@
+API rule violation: list_type_missing,github.com/chriskery/hadoop-operator/pkg/apis/kubecluster.org/v1alpha1,HadoopApplicationStatus,Conditions
 API rule violation: list_type_missing,github.com/chriskery/hadoop-operator/pkg/apis/kubecluster.org/v1alpha1,HadoopClusterStatus,Conditions
-API rule violation: list_type_missing,github.com/chriskery/hadoop-operator/pkg/apis/kubecluster.org/v1alpha1,HadoopJobStatus,Conditions

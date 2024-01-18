@@ -126,7 +126,7 @@ func LoggerForGenericKind(obj metav1.Object, kind string) *log.Entry {
 		}
 	}
 	return log.WithFields(log.Fields{
-		// We use job to match the key used in controller.go
+		// We use application to match the key used in controller.go
 		// In controller.go we log the key used with the workqueue.
 		"cluster": cluster,
 		kind:      obj.GetNamespace() + "." + obj.GetName(),

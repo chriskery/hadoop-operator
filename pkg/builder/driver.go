@@ -33,25 +33,28 @@ func (driverBuilder *DriverBuilder) SetupWithManager(mgr manager.Manager, record
 	driverBuilder.PodControl = control.RealPodControl{KubeClient: kubeClientSet, Recorder: recorder}
 }
 
-// Build creates driver pod for hadoop job
+// Build creates driver pod for hadoop application
 func (driverBuilder *DriverBuilder) Build(obj interface{}, objStatus interface{}) error {
-	job := obj.(*v1alpha1.HadoopJob)
-	driverPod := &corev1.Pod{}
-	driverPodName := util.GetReplicaName(job, v1alpha1.ReplicaTypeDriver)
-	err := driverBuilder.Get(context.Background(), types.NamespacedName{Namespace: job.GetNamespace(), Name: driverPodName}, driverPod)
+	application := obj.(*v1alpha1.HadoopApplication)
+
+	driverPod := &corev1.Pod{ObjectMeta: metav1.ObjectMeta{
+		Name:      util.GetReplicaName(application, v1alpha1.ReplicaTypeDriver),
+		Namespace: application.GetNamespace(),
+	}}
+	err := driverBuilder.Get(context.Background(), types.NamespacedName{Namespace: driverPod.GetNamespace(), Name: driverPod.GetName()}, driverPod)
 	if err == nil || !errors.IsNotFound(err) {
 		return err
 	}
 
-	podTemplateSpec := driverBuilder.genDriverPodSpec(job, driverPodName)
-	ownerRef := util.GenOwnerReference(job, v1alpha1.GroupVersion.WithKind(v1alpha1.HadoopJobKind).Kind)
-	if err = driverBuilder.PodControl.CreatePodsWithControllerRef(job.GetNamespace(), podTemplateSpec, job, ownerRef); err != nil {
+	podTemplateSpec := driverBuilder.genDriverPodSpec(application, driverPod.GetName())
+	ownerRef := util.GenOwnerReference(application, v1alpha1.GroupVersion.WithKind(v1alpha1.HadoopApplicationKind).Kind)
+	if err = driverBuilder.PodControl.CreatePodsWithControllerRef(application.GetNamespace(), podTemplateSpec, application, ownerRef); err != nil {
 		return err
 	}
 
-	jobStatus := objStatus.(*v1alpha1.HadoopJobStatus)
-	msg := fmt.Sprintf("Driver job %s submitted", driverPodName)
-	err = util.UpdateJobConditions(jobStatus, v1alpha1.JobSubmitted, util.HadoopJobSubmittedReason, msg)
+	applicationStatus := objStatus.(*v1alpha1.HadoopApplicationStatus)
+	msg := fmt.Sprintf("Driver application %s submitted", driverPod.GetName())
+	err = util.UpdateApplicationConditions(applicationStatus, v1alpha1.ApplicationSubmitted, util.HadoopApplicationSubmittedReason, msg)
 	if err != nil {
 		return err
 	}
@@ -59,16 +62,12 @@ func (driverBuilder *DriverBuilder) Build(obj interface{}, objStatus interface{}
 	return nil
 }
 
-// genDriverPodSpec generates driver pod spec for hadoop job
-func (driverBuilder *DriverBuilder) genDriverPodSpec(job *v1alpha1.HadoopJob, driverPodName string) *corev1.PodTemplateSpec {
-	labels := job.GetLabels()
-	if labels == nil {
-		labels = make(map[string]string)
-	}
-	labels[v1alpha1.ReplicaTypeLabel] = string(v1alpha1.ReplicaTypeDriver)
-	labels[v1alpha1.JobNameLabel] = job.GetName()
+// genDriverPodSpec generates driver pod spec for hadoop application
+func (driverBuilder *DriverBuilder) genDriverPodSpec(application *v1alpha1.HadoopApplication, driverPodName string) *corev1.PodTemplateSpec {
+	labels := getLabels(application, v1alpha1.ReplicaTypeDriver)
+	util.MergeMap(labels, application.GetLabels())
 
-	driverPodSpec := job.Spec.ExecutorSpec
+	driverPodSpec := application.Spec.ExecutorSpec
 	podTemplateSpec := &corev1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: labels,
@@ -85,50 +84,59 @@ func (driverBuilder *DriverBuilder) genDriverPodSpec(job *v1alpha1.HadoopJob, dr
 		podTemplateSpec.Spec.Volumes = make([]corev1.Volume, 0)
 	}
 
-	podTemplateSpec.Spec.Volumes = appendHadoopConfigMapVolume(podTemplateSpec.Spec.Volumes, util.GetReplicaName(job, v1alpha1.ReplicaTypeConfigMap))
+	podTemplateSpec.Spec.Volumes = appendHadoopConfigMapVolume(podTemplateSpec.Spec.Volumes, util.GetReplicaName(application, v1alpha1.ReplicaTypeConfigMap))
 
 	volumeMounts := driverPodSpec.VolumeMounts
 	volumeMounts = appendHadoopConfigMapVolumeMount(volumeMounts)
 
-	submitCMD := driverBuilder.getSubmitCMD(job)
-
+	submitCMD := driverBuilder.getSubmitCMD(application)
 	driverCmd := []string{
 		"sh",
 		"-c",
 		strings.Join([]string{entrypointCmd, submitCMD}, " && "),
 	}
+
 	containers := []corev1.Container{{
 		Name:            string(v1alpha1.ReplicaTypeDriver),
 		Image:           driverPodSpec.Image,
 		Command:         driverCmd,
 		Resources:       driverPodSpec.Resources,
 		VolumeMounts:    volumeMounts,
-		Env:             job.Spec.Env,
+		Env:             application.Spec.Env,
 		ImagePullPolicy: driverPodSpec.ImagePullPolicy,
 		SecurityContext: driverPodSpec.SecurityContext,
 	}}
 
 	podTemplateSpec.Spec.Containers = containers
 
-	setPodEnv(&v1alpha1.HadoopCluster{ObjectMeta: *job.ObjectMeta.DeepCopy()}, podTemplateSpec.Spec.Containers, v1alpha1.ReplicaTypeDriver)
+	setPodEnv(
+		&v1alpha1.HadoopCluster{ObjectMeta: *application.ObjectMeta.DeepCopy()},
+		podTemplateSpec.Spec.Containers,
+		v1alpha1.ReplicaTypeDriver,
+	)
+	setInitContainer(
+		&v1alpha1.HadoopCluster{ObjectMeta: *application.ObjectMeta.DeepCopy()},
+		v1alpha1.ReplicaTypeDriver,
+		podTemplateSpec,
+	)
 	return podTemplateSpec
 }
 
 // Clean deletes driver pod
 func (driverBuilder *DriverBuilder) Clean(obj interface{}) error {
-	job := obj.(*v1alpha1.HadoopJob)
+	application := obj.(*v1alpha1.HadoopApplication)
 
-	driverPodName := util.GetReplicaName(job, v1alpha1.ReplicaTypeDriver)
-	err := driverBuilder.PodControl.DeletePod(job.GetNamespace(), driverPodName, &corev1.Pod{})
+	driverPodName := util.GetReplicaName(application, v1alpha1.ReplicaTypeDriver)
+	err := driverBuilder.PodControl.DeletePod(application.GetNamespace(), driverPodName, &corev1.Pod{})
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (driverBuilder *DriverBuilder) getSubmitCMD(job *v1alpha1.HadoopJob) string {
-	args := []string{"jar", job.Spec.MainApplicationFile}
-	args = append(args, job.Spec.Arguments...)
+func (driverBuilder *DriverBuilder) getSubmitCMD(application *v1alpha1.HadoopApplication) string {
+	args := []string{"jar", application.Spec.MainApplicationFile}
+	args = append(args, application.Spec.Arguments...)
 
 	return fmt.Sprintf("hadoop %s", strings.Join(args, " "))
 }

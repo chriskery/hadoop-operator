@@ -23,10 +23,10 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
+	// HadoopApplications returns a HadoopApplicationInformer.
+	HadoopApplications() HadoopApplicationInformer
 	// HadoopClusters returns a HadoopClusterInformer.
 	HadoopClusters() HadoopClusterInformer
-	// HadoopJobs returns a HadoopJobInformer.
-	HadoopJobs() HadoopJobInformer
 }
 
 type version struct {
@@ -40,12 +40,12 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
 }
 
+// HadoopApplications returns a HadoopApplicationInformer.
+func (v *version) HadoopApplications() HadoopApplicationInformer {
+	return &hadoopApplicationInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
 // HadoopClusters returns a HadoopClusterInformer.
 func (v *version) HadoopClusters() HadoopClusterInformer {
 	return &hadoopClusterInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-}
-
-// HadoopJobs returns a HadoopJobInformer.
-func (v *version) HadoopJobs() HadoopJobInformer {
-	return &hadoopJobInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

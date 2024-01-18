@@ -16,7 +16,7 @@ func getLabels(object metav1.Object, replicaType v1alpha1.ReplicaType) map[strin
 	return labels
 }
 
-// genPodSpec generates driver pod spec for hadoop job
+// genPodSpec generates driver pod spec for hadoop application
 func getPodSpec(cluster *v1alpha1.HadoopCluster, replicaType v1alpha1.ReplicaType) (*corev1.PodTemplateSpec, error) {
 	labels := getLabels(cluster, replicaType)
 

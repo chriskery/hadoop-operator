@@ -10,6 +10,7 @@ rules:
   - configmaps
   verbs:
   - create
+  - delete
   - get
   - list
   - update
@@ -28,6 +29,7 @@ rules:
   - pods
   verbs:
   - create
+  - delete
   - get
   - list
   - update
@@ -54,6 +56,7 @@ rules:
   - services
   verbs:
   - create
+  - delete
   - get
   - list
   - update
@@ -69,6 +72,32 @@ rules:
   - list
   - update
   - watch
+- apiGroups:
+  - kubecluster.org
+  resources:
+  - hadoopapplications
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - kubecluster.org
+  resources:
+  - hadoopapplications/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - kubecluster.org
+  resources:
+  - hadoopapplications/status
+  verbs:
+  - get
+  - patch
+  - update
 - apiGroups:
   - kubecluster.org
   resources:
@@ -91,32 +120,6 @@ rules:
   - kubecluster.org
   resources:
   - hadoopclusters/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - kubecluster.org
-  resources:
-  - hadoopjobs
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - kubecluster.org
-  resources:
-  - hadoopjobs/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - kubecluster.org
-  resources:
-  - hadoopjobs/status
   verbs:
   - get
   - patch

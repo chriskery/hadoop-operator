@@ -17,6 +17,6 @@ limitations under the License.
 
 package v1alpha1
 
-type HadoopClusterExpansion interface{}
+type HadoopApplicationExpansion interface{}
 
-type HadoopJobExpansion interface{}
+type HadoopClusterExpansion interface{}

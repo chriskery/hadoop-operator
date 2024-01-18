@@ -50,7 +50,7 @@ hadoopcluster-sample-resourcemanager   1/1     Running   0          6s      10.2
 
 As you can see, there is a Pod that simulates **NameNode**, DataNode, NodeManager, and ResourceManager. If you need more Pods to run more tasks, you can adjust the number of associated Datanodes and Nodemanagers
 
-Now let's try logging in to a node and running a MapReduce job:
+Now let's try logging in to a node and running a MapReduce application:
 ```bash
 > kubectl exec -it hadoopcluster-sample-resourcemanager /bin/bash
 kubectl exec [POD] [COMMAND] is DEPRECATED and will be removed in a future version. Use kubectl exec [POD] -- [COMMAND] instead.
@@ -59,8 +59,8 @@ LICENSE-binary  LICENSE.txt  NOTICE-binary  NOTICE.txt  README.txt  bin  etc  in
 bash-4.2$ cd share/hadoop/mapreduce/
 bash-4.2$ ls         
 hadoop-mapreduce-client-app-3.3.1.jar     hadoop-mapreduce-client-hs-plugins-3.3.1.jar       hadoop-mapreduce-client-shuffle-3.3.1.jar   lib-examples
-hadoop-mapreduce-client-common-3.3.1.jar  hadoop-mapreduce-client-jobclient-3.3.1-tests.jar  hadoop-mapreduce-client-uploader-3.3.1.jar  sources
-hadoop-mapreduce-client-core-3.3.1.jar    hadoop-mapreduce-client-jobclient-3.3.1.jar        hadoop-mapreduce-examples-3.3.1.jar
+hadoop-mapreduce-client-common-3.3.1.jar  hadoop-mapreduce-client-applicationclient-3.3.1-tests.jar  hadoop-mapreduce-client-uploader-3.3.1.jar  sources
+hadoop-mapreduce-client-core-3.3.1.jar    hadoop-mapreduce-client-applicationclient-3.3.1.jar        hadoop-mapreduce-examples-3.3.1.jar
 hadoop-mapreduce-client-hs-3.3.1.jar      hadoop-mapreduce-client-nativetask-3.3.1.jar       jdiff
 bash-4.2$ hadoop jar hadoop-mapreduce-examples-3.3.1.jar pi 8 1000
 Number of Maps  = 8
@@ -73,16 +73,16 @@ Wrote input for Map #4
 Wrote input for Map #5
 Wrote input for Map #6
 Wrote input for Map #7
-Starting Job
+Starting Application
 2024-01-11 08:28:41 INFO  DefaultNoHARMFailoverProxyProvider:64 - Connecting to ResourceManager at hadoopcluster-sample-resourcemanager/10.244.0.101:8032
-2024-01-11 08:28:42 INFO  JobResourceUploader:906 - Disabling Erasure Coding for path: /tmp/hadoop-yarn/staging/hadoop/.staging/job_1704961336749_0001
+2024-01-11 08:28:42 INFO  ApplicationResourceUploader:906 - Disabling Erasure Coding for path: /tmp/hadoop-yarn/staging/hadoop/.staging/application_1704961336749_0001
 2024-01-11 08:28:42 INFO  FileInputFormat:300 - Total input files to process : 8
-2024-01-11 08:28:43 INFO  JobSubmitter:202 - number of splits:8
-2024-01-11 08:28:43 INFO  JobSubmitter:298 - Submitting tokens for job: job_1704961336749_0001
-2024-01-11 08:28:43 INFO  JobSubmitter:299 - Executing with tokens: []
+2024-01-11 08:28:43 INFO  ApplicationSubmitter:202 - number of splits:8
+2024-01-11 08:28:43 INFO  ApplicationSubmitter:298 - Submitting tokens for application: application_1704961336749_0001
+2024-01-11 08:28:43 INFO  ApplicationSubmitter:299 - Executing with tokens: []
 ......
 ......
-Job Finished in 26.166 seconds
+Application Finished in 26.166 seconds
 Estimated value of Pi is 3.14100000000000000000
 bash-4.2$ 
 ```

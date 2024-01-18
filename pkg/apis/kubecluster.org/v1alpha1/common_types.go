@@ -10,5 +10,6 @@ const (
 
 	ReplicaTypeConfigMap ReplicaType = "configmap"
 
-	ReplicaTypeDriver ReplicaType = "driver"
+	ReplicaTypeDriver     ReplicaType = "driver"
+	ReplicaTypeDataloader ReplicaType = "dataloader"
 )

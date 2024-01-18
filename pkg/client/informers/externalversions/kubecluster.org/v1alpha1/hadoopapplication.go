@@ -31,59 +31,59 @@ import (
 	cache "k8s.io/client-go/tools/cache"
 )
 
-// HadoopJobInformer provides access to a shared informer and lister for
-// HadoopJobs.
-type HadoopJobInformer interface {
+// HadoopApplicationInformer provides access to a shared informer and lister for
+// HadoopApplications.
+type HadoopApplicationInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1alpha1.HadoopJobLister
+	Lister() v1alpha1.HadoopApplicationLister
 }
 
-type hadoopJobInformer struct {
+type hadoopApplicationInformer struct {
 	factory          internalinterfaces.SharedInformerFactory
 	tweakListOptions internalinterfaces.TweakListOptionsFunc
 	namespace        string
 }
 
-// NewHadoopJobInformer constructs a new informer for HadoopJob type.
+// NewHadoopApplicationInformer constructs a new informer for HadoopApplication type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewHadoopJobInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
-	return NewFilteredHadoopJobInformer(client, namespace, resyncPeriod, indexers, nil)
+func NewHadoopApplicationInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
+	return NewFilteredHadoopApplicationInformer(client, namespace, resyncPeriod, indexers, nil)
 }
 
-// NewFilteredHadoopJobInformer constructs a new informer for HadoopJob type.
+// NewFilteredHadoopApplicationInformer constructs a new informer for HadoopApplication type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewFilteredHadoopJobInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
+func NewFilteredHadoopApplicationInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.KubeclusterV1alpha1().HadoopJobs(namespace).List(context.TODO(), options)
+				return client.KubeclusterV1alpha1().HadoopApplications(namespace).List(context.TODO(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.KubeclusterV1alpha1().HadoopJobs(namespace).Watch(context.TODO(), options)
+				return client.KubeclusterV1alpha1().HadoopApplications(namespace).Watch(context.TODO(), options)
 			},
 		},
-		&kubeclusterorgv1alpha1.HadoopJob{},
+		&kubeclusterorgv1alpha1.HadoopApplication{},
 		resyncPeriod,
 		indexers,
 	)
 }
 
-func (f *hadoopJobInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewFilteredHadoopJobInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
+func (f *hadoopApplicationInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
+	return NewFilteredHadoopApplicationInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 }
 
-func (f *hadoopJobInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&kubeclusterorgv1alpha1.HadoopJob{}, f.defaultInformer)
+func (f *hadoopApplicationInformer) Informer() cache.SharedIndexInformer {
+	return f.factory.InformerFor(&kubeclusterorgv1alpha1.HadoopApplication{}, f.defaultInformer)
 }
 
-func (f *hadoopJobInformer) Lister() v1alpha1.HadoopJobLister {
-	return v1alpha1.NewHadoopJobLister(f.Informer().GetIndexer())
+func (f *hadoopApplicationInformer) Lister() v1alpha1.HadoopApplicationLister {
+	return v1alpha1.NewHadoopApplicationLister(f.Informer().GetIndexer())
 }

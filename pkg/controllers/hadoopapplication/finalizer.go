@@ -1,4 +1,4 @@
-package hadoopjob
+package hadoopapplication
 
 import (
 	"context"
@@ -10,22 +10,22 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-const DeletionFinalizer = "deletion.finalizers.hadoopjobs.kubecluster.org"
+const DeletionFinalizer = "deletion.finalizers.hadoopapplications.kubecluster.org"
 
-var _ util.Finalizer = &HadoopJobReconciler{}
+var _ util.Finalizer = &HadoopApplicationReconciler{}
 
-func (r *HadoopJobReconciler) Clean(ctx context.Context, obj interface{}) error {
-	hadoopJob, ok := obj.(*v1alpha1.HadoopJob)
+func (r *HadoopApplicationReconciler) Clean(ctx context.Context, obj interface{}) error {
+	hadoopApplication, ok := obj.(*v1alpha1.HadoopApplication)
 	if !ok {
 		return fmt.Errorf("expected a HadoopCluster but got a %T", obj)
 	}
 
 	// Add label on all Pods to be picked up in pre-stop hook via Downward API
-	if err := r.addHadoopClusterDeletionLabel(ctx, hadoopJob); err != nil {
+	if err := r.addHadoopClusterDeletionLabel(ctx, hadoopApplication); err != nil {
 		return fmt.Errorf("failed to add deletion markers to HadoopCluster Pods: %w", err)
 	}
 
-	err := r.driverBuilder.Clean(hadoopJob)
+	err := r.driverBuilder.Clean(hadoopApplication)
 	if err != nil {
 		return err
 	}
@@ -33,10 +33,10 @@ func (r *HadoopJobReconciler) Clean(ctx context.Context, obj interface{}) error 
 }
 
 // removeFinalizer removes the deletion finalizer from the HadoopCluster
-func (r *HadoopJobReconciler) addHadoopClusterDeletionLabel(ctx context.Context, hadoopJob *v1alpha1.HadoopJob) error {
+func (r *HadoopApplicationReconciler) addHadoopClusterDeletionLabel(ctx context.Context, hadoopApplication *v1alpha1.HadoopApplication) error {
 	// Create selector.
 	selector, err := metav1.LabelSelectorAsSelector(&metav1.LabelSelector{
-		MatchLabels: map[string]string{v1alpha1.JobNameLabel: hadoopJob.Name},
+		MatchLabels: map[string]string{v1alpha1.ApplicationNameLabel: hadoopApplication.Name},
 	})
 	if err != nil {
 		return err
@@ -46,7 +46,7 @@ func (r *HadoopJobReconciler) addHadoopClusterDeletionLabel(ctx context.Context,
 	err = r.List(
 		context.Background(),
 		podList,
-		client.InNamespace(hadoopJob.Namespace),
+		client.InNamespace(hadoopApplication.Namespace),
 		client.MatchingLabelsSelector{Selector: selector},
 	)
 	if err != nil {

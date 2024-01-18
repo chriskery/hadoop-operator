@@ -69,7 +69,7 @@ func OnDependentUpdateFunc(client client.Client) func(updateEvent event.UpdateEv
 
 		if controllerRefChanged && oldControllerRef != nil {
 			// The ControllerRef was changed. Sync the old controller, if any.
-			if job := resolveControllerRef(kind, oldObj.GetNamespace(), oldControllerRef, client); job != nil {
+			if application := resolveControllerRef(kind, oldObj.GetNamespace(), oldControllerRef, client); application != nil {
 				logger.Infof("pod/service controller ref updated: %v, %v", newObj, oldObj)
 				return true
 			}
@@ -77,8 +77,8 @@ func OnDependentUpdateFunc(client client.Client) func(updateEvent event.UpdateEv
 
 		// If it has a controller ref, that's all that matters.
 		if newControllerRef != nil {
-			job := resolveControllerRef(kind, newObj.GetNamespace(), newControllerRef, client)
-			if job == nil {
+			application := resolveControllerRef(kind, newObj.GetNamespace(), newControllerRef, client)
+			if application == nil {
 				return false
 			}
 			logger.Debugf("pod/service has a controller ref: %v, %v", newObj, oldObj)
@@ -88,8 +88,8 @@ func OnDependentUpdateFunc(client client.Client) func(updateEvent event.UpdateEv
 	}
 }
 
-// resolveControllerRef returns the job referenced by a ControllerRef,
-// or nil if the ControllerRef could not be resolved to a matching job
+// resolveControllerRef returns the application referenced by a ControllerRef,
+// or nil if the ControllerRef could not be resolved to a matching application
 // of the correct Kind.
 func resolveControllerRef(controllerKind string, namespace string, controllerRef *metav1.OwnerReference, client client.Client) metav1.Object {
 	// We can't look up by UID, so look up by Name and then verify UID.
@@ -108,15 +108,15 @@ func resolveControllerRef(controllerKind string, namespace string, controllerRef
 			return nil
 		}
 		object = hadoopCLuster
-	} else if controllerRef.Kind == v1alpha1.HadoopJobKind {
-		hadoopJob := &v1alpha1.HadoopJob{}
+	} else if controllerRef.Kind == v1alpha1.HadoopApplicationKind {
+		hadoopApplication := &v1alpha1.HadoopApplication{}
 		err := client.Get(context.Background(), types.NamespacedName{
 			Namespace: namespace, Name: controllerRef.Name,
-		}, hadoopJob)
+		}, hadoopApplication)
 		if err != nil {
 			return nil
 		}
-		object = hadoopJob
+		object = hadoopApplication
 	} else {
 		return nil
 	}

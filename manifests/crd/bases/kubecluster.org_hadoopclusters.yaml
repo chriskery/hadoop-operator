@@ -11355,7 +11355,8 @@ spec:
               conditions:
                 description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
                   of cluster Important: Run "make" to regenerate code after modifying
-                  this file Conditions is an array of current observed job conditions.'
+                  this file Conditions is an array of current observed application
+                  conditions.'
                 items:
                   description: ClusterCondition describes current state of a cluster
                   properties:
@@ -11379,7 +11380,7 @@ spec:
                       description: Status of the condition, one of True, False, Unknown.
                       type: string
                     type:
-                      description: Type of job condition.
+                      description: Type of application condition.
                       type: string
                   required:
                   - status
@@ -11404,10 +11405,10 @@ spec:
                   specifies the status of each replica.
                 type: object
               startTime:
-                description: Represents time when the job was acknowledged by the
-                  job controller. It is not guaranteed to be set in happens-before
-                  order across separate operations. It is represented in RFC3339 form
-                  and is in UTC.
+                description: Represents time when the application was acknowledged
+                  by the application controller. It is not guaranteed to be set in
+                  happens-before order across separate operations. It is represented
+                  in RFC3339 form and is in UTC.
                 format: date-time
                 type: string
             required:

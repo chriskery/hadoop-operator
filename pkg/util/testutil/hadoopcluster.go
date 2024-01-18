@@ -59,26 +59,26 @@ func NewBasePod(name string, cluster metav1.Object, refs []metav1.OwnerReference
 	}
 }
 
-func NewBaseService(name string, testJob *v1alpha1.HadoopCluster, t *testing.T) *corev1.Service {
+func NewBaseService(name string, testApplication *v1alpha1.HadoopCluster, t *testing.T) *corev1.Service {
 	return &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            name,
-			Namespace:       testJob.Namespace,
-			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(testJob, v1alpha1.GroupVersion.WithKind(v1alpha1.HadoopClusterKind))},
+			Namespace:       testApplication.Namespace,
+			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(testApplication, v1alpha1.GroupVersion.WithKind(v1alpha1.HadoopClusterKind))},
 		},
 	}
 }
 
-func NewBaseStatefulSet(name string, testJob *v1alpha1.HadoopCluster, labels map[string]string) *appv1.StatefulSet {
+func NewBaseStatefulSet(name string, testApplication *v1alpha1.HadoopCluster, labels map[string]string) *appv1.StatefulSet {
 	podTemplate := NewTestReplicaSpecTemplate()
 	podTemplate.Labels = labels
 
 	return &appv1.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            name,
-			Namespace:       testJob.Namespace,
+			Namespace:       testApplication.Namespace,
 			Labels:          labels,
-			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(testJob, v1alpha1.GroupVersion.WithKind(v1alpha1.HadoopClusterKind))},
+			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(testApplication, v1alpha1.GroupVersion.WithKind(v1alpha1.HadoopClusterKind))},
 		},
 		Spec: appv1.StatefulSetSpec{
 			Replicas: ptr.To(int32(1)),

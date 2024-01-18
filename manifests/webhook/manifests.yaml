@@ -10,6 +10,26 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
+      path: /mutate-kubecluster-org-v1alpha1-hadoopapplication
+  failurePolicy: Fail
+  name: mhadoopapplication.kb.io
+  rules:
+  - apiGroups:
+    - kubecluster.org
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - hadoopapplications
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
       path: /mutate-kubecluster-org-v1alpha1-hadoopcluster
   failurePolicy: Fail
   name: mhadoopcluster.kb.io
@@ -24,15 +44,21 @@ webhooks:
     resources:
     - hadoopclusters
   sideEffects: None
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: validating-webhook-configuration
+webhooks:
 - admissionReviewVersions:
   - v1
   clientConfig:
     service:
       name: webhook-service
       namespace: system
-      path: /mutate-kubecluster-org-v1alpha1-hadoopjob
+      path: /validate-kubecluster-org-v1alpha1-hadoopapplication
   failurePolicy: Fail
-  name: mhadoopjob.kb.io
+  name: vhadoopapplication.kb.io
   rules:
   - apiGroups:
     - kubecluster.org
@@ -42,14 +68,8 @@ webhooks:
     - CREATE
     - UPDATE
     resources:
-    - hadoopjobs
+    - hadoopapplications
   sideEffects: None
----
-apiVersion: admissionregistration.k8s.io/v1
-kind: ValidatingWebhookConfiguration
-metadata:
-  name: validating-webhook-configuration
-webhooks:
 - admissionReviewVersions:
   - v1
   clientConfig:
@@ -69,24 +89,4 @@ webhooks:
     - UPDATE
     resources:
     - hadoopclusters
-  sideEffects: None
-- admissionReviewVersions:
-  - v1
-  clientConfig:
-    service:
-      name: webhook-service
-      namespace: system
-      path: /validate-kubecluster-org-v1alpha1-hadoopjob
-  failurePolicy: Fail
-  name: vhadoopjob.kb.io
-  rules:
-  - apiGroups:
-    - kubecluster.org
-    apiVersions:
-    - v1alpha1
-    operations:
-    - CREATE
-    - UPDATE
-    resources:
-    - hadoopjobs
   sideEffects: None

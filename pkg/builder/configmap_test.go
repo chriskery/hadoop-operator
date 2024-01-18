@@ -2,6 +2,7 @@ package builder
 
 import (
 	"encoding/xml"
+	"fmt"
 	hadoopclusterorgv1alpha1 "github.com/chriskery/hadoop-operator/pkg/apis/kubecluster.org/v1alpha1"
 	"github.com/chriskery/hadoop-operator/pkg/util"
 	"github.com/chriskery/hadoop-operator/pkg/util/testutil"
@@ -9,7 +10,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/utils/ptr"
+	"sort"
 	"strconv"
+	"strings"
 	"testing"
 )
 
@@ -67,4 +70,25 @@ func TestBuildHadoopConfigMap(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Greater(t, len(yarnSite.Properties), 0)
 	assert.Contains(t, yarnSite.Properties, Property{Name: "yarn.nodemanager.resource.cpu-vcores", Value: "1"})
+}
+
+func TestSortProperties(t *testing.T) {
+	templateGetters := []XMLTemplateGetter{
+		&coreSiteXMLTemplateGetter{},
+		&hdfsSiteXMLTemplateGetter{},
+		&mapredSiteXMLTemplateGetter{},
+		&yarnSiteXMLTemplateGetter{},
+	}
+	for _, getter := range templateGetters {
+		getter.Default()
+		template := getter.GetXMLTemplate(testutil.NewHadoopCluster())
+		sort.Sort(template)
+
+		var templateStr []string
+		for i := range template {
+			templateStr = append(templateStr, fmt.Sprintf("{\"%s\",\"%s\"}", template[i].Name, template[i].Value))
+		}
+
+		fmt.Println(strings.Join(templateStr, ","))
+	}
 }
