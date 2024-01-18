@@ -111,11 +111,7 @@ func (driverBuilder *DriverBuilder) genDriverPodSpec(job *v1alpha1.HadoopJob, dr
 	podTemplateSpec.Spec.Containers = containers
 
 	setPodEnv(&v1alpha1.HadoopCluster{ObjectMeta: *job.ObjectMeta.DeepCopy()}, podTemplateSpec.Spec.Containers, v1alpha1.ReplicaTypeDriver)
-	return podTemplateSpec
 }
-
-// Clean deletes driver pod
-func (driverBuilder *DriverBuilder) Clean(obj interface{}) error {
 	job := obj.(*v1alpha1.HadoopJob)
 
 	driverPodName := util.GetReplicaName(job, v1alpha1.ReplicaTypeDriver)
