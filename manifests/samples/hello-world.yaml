@@ -5,7 +5,8 @@ metadata:
 spec:
   yarn:
     resourceManager:
-      serviceType: NodePort
+      exposeSpec:
+        type: nodePort
   hdfs:
     nameNode:
       format: true

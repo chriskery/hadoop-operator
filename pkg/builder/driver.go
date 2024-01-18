@@ -25,27 +25,27 @@ type DriverBuilder struct {
 	PodControl control.PodControlInterface
 }
 
-func (h *DriverBuilder) SetupWithManager(mgr manager.Manager, recorder record.EventRecorder) {
+func (driverBuilder *DriverBuilder) SetupWithManager(mgr manager.Manager, recorder record.EventRecorder) {
 	cfg := mgr.GetConfig()
 
 	kubeClientSet := kubeclientset.NewForConfigOrDie(cfg)
-	h.Client = mgr.GetClient()
-	h.PodControl = control.RealPodControl{KubeClient: kubeClientSet, Recorder: recorder}
+	driverBuilder.Client = mgr.GetClient()
+	driverBuilder.PodControl = control.RealPodControl{KubeClient: kubeClientSet, Recorder: recorder}
 }
 
 // Build creates driver pod for hadoop job
-func (h *DriverBuilder) Build(obj interface{}, objStatus interface{}) error {
+func (driverBuilder *DriverBuilder) Build(obj interface{}, objStatus interface{}) error {
 	job := obj.(*v1alpha1.HadoopJob)
 	driverPod := &corev1.Pod{}
 	driverPodName := util.GetReplicaName(job, v1alpha1.ReplicaTypeDriver)
-	err := h.Get(context.Background(), types.NamespacedName{Namespace: job.GetNamespace(), Name: driverPodName}, driverPod)
+	err := driverBuilder.Get(context.Background(), types.NamespacedName{Namespace: job.GetNamespace(), Name: driverPodName}, driverPod)
 	if err == nil || !errors.IsNotFound(err) {
 		return err
 	}
 
-	podTemplateSpec := h.genDriverPodSpec(job, driverPodName)
+	podTemplateSpec := driverBuilder.genDriverPodSpec(job, driverPodName)
 	ownerRef := util.GenOwnerReference(job, v1alpha1.GroupVersion.WithKind(v1alpha1.HadoopJobKind).Kind)
-	if err = h.PodControl.CreatePodsWithControllerRef(job.GetNamespace(), podTemplateSpec, job, ownerRef); err != nil {
+	if err = driverBuilder.PodControl.CreatePodsWithControllerRef(job.GetNamespace(), podTemplateSpec, job, ownerRef); err != nil {
 		return err
 	}
 
@@ -60,15 +60,19 @@ func (h *DriverBuilder) Build(obj interface{}, objStatus interface{}) error {
 }
 
 // genDriverPodSpec generates driver pod spec for hadoop job
-func (h *DriverBuilder) genDriverPodSpec(job *v1alpha1.HadoopJob, driverPodName string) *corev1.PodTemplateSpec {
+func (driverBuilder *DriverBuilder) genDriverPodSpec(job *v1alpha1.HadoopJob, driverPodName string) *corev1.PodTemplateSpec {
+	labels := job.GetLabels()
+	if labels == nil {
+		labels = make(map[string]string)
+	}
+	labels[v1alpha1.ReplicaTypeLabel] = string(v1alpha1.ReplicaTypeDriver)
+	labels[v1alpha1.JobNameLabel] = job.GetName()
+
 	driverPodSpec := job.Spec.ExecutorSpec
 	podTemplateSpec := &corev1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
-			Labels: map[string]string{
-				v1alpha1.JobNameLabel:     job.GetName(),
-				v1alpha1.ReplicaTypeLabel: string(v1alpha1.ReplicaTypeDriver),
-			},
-			Name: driverPodName,
+			Labels: labels,
+			Name:   driverPodName,
 		},
 		Spec: corev1.PodSpec{
 			Volumes:       driverPodSpec.Volumes,
@@ -86,7 +90,7 @@ func (h *DriverBuilder) genDriverPodSpec(job *v1alpha1.HadoopJob, driverPodName 
 	volumeMounts := driverPodSpec.VolumeMounts
 	volumeMounts = appendHadoopConfigMapVolumeMount(volumeMounts)
 
-	submitCMD := h.getSubmitCMD(job)
+	submitCMD := driverBuilder.getSubmitCMD(job)
 
 	driverCmd := []string{
 		"sh",
@@ -99,31 +103,30 @@ func (h *DriverBuilder) genDriverPodSpec(job *v1alpha1.HadoopJob, driverPodName 
 		Command:         driverCmd,
 		Resources:       driverPodSpec.Resources,
 		VolumeMounts:    volumeMounts,
-		ReadinessProbe:  nil,
-		StartupProbe:    nil,
+		Env:             job.Spec.Env,
 		ImagePullPolicy: driverPodSpec.ImagePullPolicy,
 		SecurityContext: driverPodSpec.SecurityContext,
 	}}
 
 	podTemplateSpec.Spec.Containers = containers
 
-	setPodEnv(podTemplateSpec, v1alpha1.ReplicaTypeDriver)
+	setPodEnv(&v1alpha1.HadoopCluster{ObjectMeta: *job.ObjectMeta.DeepCopy()}, podTemplateSpec.Spec.Containers, v1alpha1.ReplicaTypeDriver)
 	return podTemplateSpec
 }
 
 // Clean deletes driver pod
-func (h *DriverBuilder) Clean(obj interface{}) error {
+func (driverBuilder *DriverBuilder) Clean(obj interface{}) error {
 	job := obj.(*v1alpha1.HadoopJob)
 
 	driverPodName := util.GetReplicaName(job, v1alpha1.ReplicaTypeDriver)
-	err := h.PodControl.DeletePod(job.GetNamespace(), driverPodName, &corev1.Pod{})
+	err := driverBuilder.PodControl.DeletePod(job.GetNamespace(), driverPodName, &corev1.Pod{})
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (b *DriverBuilder) getSubmitCMD(job *v1alpha1.HadoopJob) string {
+func (driverBuilder *DriverBuilder) getSubmitCMD(job *v1alpha1.HadoopJob) string {
 	args := []string{"jar", job.Spec.MainApplicationFile}
 	args = append(args, job.Spec.Arguments...)
 

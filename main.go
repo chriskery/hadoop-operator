@@ -19,6 +19,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"os"
 
 	"github.com/chriskery/hadoop-cluster-operator/pkg/config"
@@ -50,6 +51,10 @@ func init() {
 
 	utilruntime.Must(hadoopclusterorgv1alpha1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
+
+	logrus.SetFormatter(&logrus.TextFormatter{
+		ForceColors: true,
+	})
 }
 
 func main() {
@@ -69,8 +74,8 @@ func main() {
 		config.HadoopInitContainerImageDefault, "The image for hadoop init container")
 	flag.StringVar(&config.Config.HadoopInitContainerTemplateFile, "hadoop-init-container-template-file",
 		config.HadoopInitContainerTemplateFileDefault, "The template file for hadoop init container")
-	flag.Var(&enabledSchemes, "enable-scheme", "Enable scheme(s) as --enable-scheme=tfjob --enable-scheme=pytorchjob, case insensitive."+
-		" Now supporting TFJob, PyTorchJob, MXNetJob, XGBoostJob, PaddleJob. By default, all supported schemes will be enabled.")
+	flag.Var(&enabledSchemes, "enable-scheme", "Enable scheme(s) as --enable-scheme=hadoopcluster --enable-scheme=hadoopjob, case insensitive."+
+		" Now supporting HadoopCluster, HadoopJob. By default, all supported schemes will be enabled.")
 
 	opts := zap.Options{
 		Development: true,

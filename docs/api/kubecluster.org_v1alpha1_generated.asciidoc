@@ -56,6 +56,27 @@ ClusterCondition describes current state of a cluster
 
 
 
+[id="{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-exposespec"]
+==== ExposeSpec 
+
+
+
+.Appears In:
+****
+- xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hdfsnamenodespectemplate[$$HDFSNameNodeSpecTemplate$$]
+- xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-yarnnodemanagerspectemplate[$$YarnNodeManagerSpecTemplate$$]
+- xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-yarnresourcemanagerspectemplate[$$YarnResourceManagerSpecTemplate$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`type`* __string__ | 
+| *`httpNodePort`* __integer__ | 
+| *`ingress`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#ingressspec-v1-networking[$$IngressSpec$$]__ | 
+|===
+
+
 [id="{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hdfsdatanodespectemplate"]
 ==== HDFSDataNodeSpecTemplate 
 
@@ -88,7 +109,7 @@ ClusterCondition describes current state of a cluster
 |===
 | Field | Description
 | *`nodeSpec`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopnodespec[$$HadoopNodeSpec$$]__ | 
-| *`serviceType`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#servicetype-v1-core[$$ServiceType$$]__ | 
+| *`exposeSpec`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-exposespec[$$ExposeSpec$$]__ | 
 | *`format`* __boolean__ | This argument tells the namenode to format its namespace, which includes deleting the current contents of the namenode's metadata and starting fresh. This operation is typically performed the first time the namenode is started to ensure that the metadata directories are properly initialized. After this operation, any existing data in HDFS would be lost.
 | *`nameDir`* __string__ | NameDir refers to the directory where the NameNode stores crucial metadata for the Hadoop Distributed File System (HDFS). In the context of Hadoop, the NameNode is a vital component responsible for managing the namespace and storing metadata information for files.
 | *`logAggregationEnable`* __boolean__ | LogAggregationEnable refers to whether log aggregation is enabled.
@@ -252,6 +273,8 @@ HadoopJobSpec defines the desired state of HadoopJob NOTE: json tags are require
 | *`mainApplicationFile`* __string__ | MainFile is the path to a bundled JAR, Python, or R file of the application.
 | *`arguments`* __string array__ | Arguments is a list of arguments to be passed to the application.
 | *`executorSpec`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopnodespec[$$HadoopNodeSpec$$]__ | 
+| *`nameNodeDirFormat`* __boolean__ | 
+| *`env`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#envvar-v1-core[$$EnvVar$$] array__ | List of environment variables to set in the container. Cannot be updated.
 |===
 
 
@@ -291,6 +314,26 @@ HadoopJobStatus defines the observed state of HadoopJob
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
+| *`HadoopPodSpec`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadooppodspec[$$HadoopPodSpec$$]__ | 
+| *`lifecycle`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#lifecycle-v1-core[$$Lifecycle$$]__ | Actions that the management system should take in response to container lifecycle events. Cannot be updated.
+| *`deleteOnTermination`* __boolean__ | DeleteOnTermination specify whether executor pods should be deleted in case of failure or normal termination.
+|===
+
+
+[id="{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadooppodspec"]
+==== HadoopPodSpec 
+
+
+
+.Appears In:
+****
+- xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopnodespec[$$HadoopNodeSpec$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`env`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#envvar-v1-core[$$EnvVar$$] array__ | List of environment variables to set in the container. Cannot be updated.
 | *`replicas`* __integer__ | Number of desired pods. This is a pointer to distinguish between explicit zero and not specified. Defaults to 1.
 | *`image`* __string__ | Container image name. More info: https://kubernetes.io/docs/concepts/containers/images This field is optional to allow higher level config management to default or override container images in workload controllers like Deployments and StatefulSets.
 | *`volumeMounts`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#volumemount-v1-core[$$VolumeMount$$] array__ | Pod volumes to mount into the container's filesystem. Cannot be updated.
@@ -369,7 +412,7 @@ ReplicaStatus represents the current observed state of the replica.
 |===
 | Field | Description
 | *`nodeSpec`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopnodespec[$$HadoopNodeSpec$$]__ | 
-| *`serviceType`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#servicetype-v1-core[$$ServiceType$$]__ | 
+| *`exposeSpec`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-exposespec[$$ExposeSpec$$]__ | 
 |===
 
 
@@ -387,7 +430,7 @@ ReplicaStatus represents the current observed state of the replica.
 |===
 | Field | Description
 | *`nodeSpec`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopnodespec[$$HadoopNodeSpec$$]__ | 
-| *`serviceType`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#servicetype-v1-core[$$ServiceType$$]__ | 
+| *`exposeSpec`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-exposespec[$$ExposeSpec$$]__ | 
 |===
 
 

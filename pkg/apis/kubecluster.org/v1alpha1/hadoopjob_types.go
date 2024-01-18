@@ -55,6 +55,15 @@ type HadoopJobSpec struct {
 	Arguments []string `json:"arguments,omitempty"`
 
 	ExecutorSpec HadoopNodeSpec `json:"executorSpec,omitempty"`
+
+	NameNodeDirFormat bool `json:"nameNodeDirFormat,omitempty"`
+
+	// List of environment variables to set in the container.
+	// Cannot be updated.
+	// +optional
+	// +patchMergeKey=name
+	// +patchStrategy=merge
+	Env []corev1.EnvVar `json:"env,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,7,rep,name=env"`
 }
 
 // +k8s:openapi-gen=true

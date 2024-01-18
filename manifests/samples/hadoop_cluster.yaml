@@ -10,7 +10,8 @@ spec:
         replicas: 1
       format: true
       nameDir: /tmp/hadoop
-      serviceType: NodePort
+      exposeSpec:
+        type: nodePort
     dataNode:
       nodeSpec:
         image: apache/hadoop:3
@@ -20,18 +21,26 @@ spec:
       nodeSpec:
         image: apache/hadoop:3
         replicas: 1
-      serviceType: NodePort
+        volumes:
+          - name: demos
+            hostPath:
+              path: /root/demos
+        volumeMounts:
+          - name: demos
+            mountPath: /root/demos
+      exposeSpec:
+        type: nodePort
     nodeManager:
       nodeSpec:
         image: apache/hadoop:3
         replicas: 1
         resources:
           requests:
-            cpu: 1
-            memory: 1Gi
+            cpu: 2
+            memory: 4Gi
           limits:
-            cpu: 1
-            memory: 2Gi
+            cpu: 2
+            memory: 4Gi
 
 
 

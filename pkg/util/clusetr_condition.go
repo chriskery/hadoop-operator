@@ -7,10 +7,12 @@ import (
 )
 
 const (
-	// HadoopclusterCreatedReason is added in a mpijob when it is created.
+	// HadoopclusterCreatedReason is added in a hadoop cluster when it is created.
 	HadoopclusterCreatedReason = "HadoopCLusterCreated"
-	// HadoopclusterRunningReason is added in a mpijob when it is running.
+	// HadoopclusterRunningReason is added in a hadoop cluster when it is running.
 	HadoopclusterRunningReason = "HadoopClusterRunning"
+	// HadoopclusterReconfiguringReason is added in a hadoop cluster when it is reconfiguring.
+	HadoopclusterReconfiguringReason = "HadoopclusterReconfiguring"
 )
 
 // InitializeClusterStatuses initializes the ReplicaStatuses for MPIJob.
@@ -90,7 +92,7 @@ func setClusterCondition(status *v1alpha1.HadoopClusterStatus, condition v1alpha
 func filterOutClusterCondition(conditions []v1alpha1.ClusterCondition, condType v1alpha1.ClusterConditionType) []v1alpha1.ClusterCondition {
 	var newConditions []v1alpha1.ClusterCondition
 	for _, c := range conditions {
-		if condType == v1alpha1.ClusterRestarting && c.Type == v1alpha1.ClusterRunning {
+		if condType == v1alpha1.ClusterReconfiguring && c.Type == v1alpha1.ClusterRunning {
 			continue
 		}
 
@@ -98,6 +100,7 @@ func filterOutClusterCondition(conditions []v1alpha1.ClusterCondition, condType 
 			continue
 		}
 
+		c.Status = corev1.ConditionFalse
 		newConditions = append(newConditions, c)
 	}
 	return newConditions

@@ -58,6 +58,132 @@ spec:
                         type: string
                       nodeSpec:
                         properties:
+                          deleteOnTermination:
+                            description: DeleteOnTermination specify whether executor
+                              pods should be deleted in case of failure or normal
+                              termination.
+                            type: boolean
+                          env:
+                            description: List of environment variables to set in the
+                              container. Cannot be updated.
+                            items:
+                              description: EnvVar represents an environment variable
+                                present in a Container.
+                              properties:
+                                name:
+                                  description: Name of the environment variable. Must
+                                    be a C_IDENTIFIER.
+                                  type: string
+                                value:
+                                  description: 'Variable references $(VAR_NAME) are
+                                    expanded using the previously defined environment
+                                    variables in the container and any service environment
+                                    variables. If a variable cannot be resolved, the
+                                    reference in the input string will be unchanged.
+                                    Double $$ are reduced to a single $, which allows
+                                    for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)"
+                                    will produce the string literal "$(VAR_NAME)".
+                                    Escaped references will never be expanded, regardless
+                                    of whether the variable exists or not. Defaults
+                                    to "".'
+                                  type: string
+                                valueFrom:
+                                  description: Source for the environment variable's
+                                    value. Cannot be used if value is not empty.
+                                  properties:
+                                    configMapKeyRef:
+                                      description: Selects a key of a ConfigMap.
+                                      properties:
+                                        key:
+                                          description: The key to select.
+                                          type: string
+                                        name:
+                                          description: 'Name of the referent. More
+                                            info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                            TODO: Add other useful fields. apiVersion,
+                                            kind, uid?'
+                                          type: string
+                                        optional:
+                                          description: Specify whether the ConfigMap
+                                            or its key must be defined
+                                          type: boolean
+                                      required:
+                                      - key
+                                      type: object
+                                      x-kubernetes-map-type: atomic
+                                    fieldRef:
+                                      description: 'Selects a field of the pod: supports
+                                        metadata.name, metadata.namespace, `metadata.labels[''<KEY>'']`,
+                                        `metadata.annotations[''<KEY>'']`, spec.nodeName,
+                                        spec.serviceAccountName, status.hostIP, status.podIP,
+                                        status.podIPs.'
+                                      properties:
+                                        apiVersion:
+                                          description: Version of the schema the FieldPath
+                                            is written in terms of, defaults to "v1".
+                                          type: string
+                                        fieldPath:
+                                          description: Path of the field to select
+                                            in the specified API version.
+                                          type: string
+                                      required:
+                                      - fieldPath
+                                      type: object
+                                      x-kubernetes-map-type: atomic
+                                    resourceFieldRef:
+                                      description: 'Selects a resource of the container:
+                                        only resources limits and requests (limits.cpu,
+                                        limits.memory, limits.ephemeral-storage, requests.cpu,
+                                        requests.memory and requests.ephemeral-storage)
+                                        are currently supported.'
+                                      properties:
+                                        containerName:
+                                          description: 'Container name: required for
+                                            volumes, optional for env vars'
+                                          type: string
+                                        divisor:
+                                          anyOf:
+                                          - type: integer
+                                          - type: string
+                                          description: Specifies the output format
+                                            of the exposed resources, defaults to
+                                            "1"
+                                          pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                          x-kubernetes-int-or-string: true
+                                        resource:
+                                          description: 'Required: resource to select'
+                                          type: string
+                                      required:
+                                      - resource
+                                      type: object
+                                      x-kubernetes-map-type: atomic
+                                    secretKeyRef:
+                                      description: Selects a key of a secret in the
+                                        pod's namespace
+                                      properties:
+                                        key:
+                                          description: The key of the secret to select
+                                            from.  Must be a valid secret key.
+                                          type: string
+                                        name:
+                                          description: 'Name of the referent. More
+                                            info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                            TODO: Add other useful fields. apiVersion,
+                                            kind, uid?'
+                                          type: string
+                                        optional:
+                                          description: Specify whether the Secret
+                                            or its key must be defined
+                                          type: boolean
+                                      required:
+                                      - key
+                                      type: object
+                                      x-kubernetes-map-type: atomic
+                                  type: object
+                              required:
+                              - name
+                              type: object
+                            type: array
                           hostNetwork:
                             description: Host networking requested for this pod. Use
                               the host's network namespace. If this option is set,
@@ -90,6 +216,240 @@ spec:
                               type: object
                               x-kubernetes-map-type: atomic
                             type: array
+                          lifecycle:
+                            description: Actions that the management system should
+                              take in response to container lifecycle events. Cannot
+                              be updated.
+                            properties:
+                              postStart:
+                                description: 'PostStart is called immediately after
+                                  a container is created. If the handler fails, the
+                                  container is terminated and restarted according
+                                  to its restart policy. Other management of the container
+                                  blocks until the hook completes. More info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks'
+                                properties:
+                                  exec:
+                                    description: Exec specifies the action to take.
+                                    properties:
+                                      command:
+                                        description: Command is the command line to
+                                          execute inside the container, the working
+                                          directory for the command  is root ('/')
+                                          in the container's filesystem. The command
+                                          is simply exec'd, it is not run inside a
+                                          shell, so traditional shell instructions
+                                          ('|', etc) won't work. To use a shell, you
+                                          need to explicitly call out to that shell.
+                                          Exit status of 0 is treated as live/healthy
+                                          and non-zero is unhealthy.
+                                        items:
+                                          type: string
+                                        type: array
+                                    type: object
+                                  httpGet:
+                                    description: HTTPGet specifies the http request
+                                      to perform.
+                                    properties:
+                                      host:
+                                        description: Host name to connect to, defaults
+                                          to the pod IP. You probably want to set
+                                          "Host" in httpHeaders instead.
+                                        type: string
+                                      httpHeaders:
+                                        description: Custom headers to set in the
+                                          request. HTTP allows repeated headers.
+                                        items:
+                                          description: HTTPHeader describes a custom
+                                            header to be used in HTTP probes
+                                          properties:
+                                            name:
+                                              description: The header field name.
+                                                This will be canonicalized upon output,
+                                                so case-variant names will be understood
+                                                as the same header.
+                                              type: string
+                                            value:
+                                              description: The header field value
+                                              type: string
+                                          required:
+                                          - name
+                                          - value
+                                          type: object
+                                        type: array
+                                      path:
+                                        description: Path to access on the HTTP server.
+                                        type: string
+                                      port:
+                                        anyOf:
+                                        - type: integer
+                                        - type: string
+                                        description: Name or number of the port to
+                                          access on the container. Number must be
+                                          in the range 1 to 65535. Name must be an
+                                          IANA_SVC_NAME.
+                                        x-kubernetes-int-or-string: true
+                                      scheme:
+                                        description: Scheme to use for connecting
+                                          to the host. Defaults to HTTP.
+                                        type: string
+                                    required:
+                                    - port
+                                    type: object
+                                  sleep:
+                                    description: Sleep represents the duration that
+                                      the container should sleep before being terminated.
+                                    properties:
+                                      seconds:
+                                        description: Seconds is the number of seconds
+                                          to sleep.
+                                        format: int64
+                                        type: integer
+                                    required:
+                                    - seconds
+                                    type: object
+                                  tcpSocket:
+                                    description: Deprecated. TCPSocket is NOT supported
+                                      as a LifecycleHandler and kept for the backward
+                                      compatibility. There are no validation of this
+                                      field and lifecycle hooks will fail in runtime
+                                      when tcp handler is specified.
+                                    properties:
+                                      host:
+                                        description: 'Optional: Host name to connect
+                                          to, defaults to the pod IP.'
+                                        type: string
+                                      port:
+                                        anyOf:
+                                        - type: integer
+                                        - type: string
+                                        description: Number or name of the port to
+                                          access on the container. Number must be
+                                          in the range 1 to 65535. Name must be an
+                                          IANA_SVC_NAME.
+                                        x-kubernetes-int-or-string: true
+                                    required:
+                                    - port
+                                    type: object
+                                type: object
+                              preStop:
+                                description: 'PreStop is called immediately before
+                                  a container is terminated due to an API request
+                                  or management event such as liveness/startup probe
+                                  failure, preemption, resource contention, etc. The
+                                  handler is not called if the container crashes or
+                                  exits. The Pod''s termination grace period countdown
+                                  begins before the PreStop hook is executed. Regardless
+                                  of the outcome of the handler, the container will
+                                  eventually terminate within the Pod''s termination
+                                  grace period (unless delayed by finalizers). Other
+                                  management of the container blocks until the hook
+                                  completes or until the termination grace period
+                                  is reached. More info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks'
+                                properties:
+                                  exec:
+                                    description: Exec specifies the action to take.
+                                    properties:
+                                      command:
+                                        description: Command is the command line to
+                                          execute inside the container, the working
+                                          directory for the command  is root ('/')
+                                          in the container's filesystem. The command
+                                          is simply exec'd, it is not run inside a
+                                          shell, so traditional shell instructions
+                                          ('|', etc) won't work. To use a shell, you
+                                          need to explicitly call out to that shell.
+                                          Exit status of 0 is treated as live/healthy
+                                          and non-zero is unhealthy.
+                                        items:
+                                          type: string
+                                        type: array
+                                    type: object
+                                  httpGet:
+                                    description: HTTPGet specifies the http request
+                                      to perform.
+                                    properties:
+                                      host:
+                                        description: Host name to connect to, defaults
+                                          to the pod IP. You probably want to set
+                                          "Host" in httpHeaders instead.
+                                        type: string
+                                      httpHeaders:
+                                        description: Custom headers to set in the
+                                          request. HTTP allows repeated headers.
+                                        items:
+                                          description: HTTPHeader describes a custom
+                                            header to be used in HTTP probes
+                                          properties:
+                                            name:
+                                              description: The header field name.
+                                                This will be canonicalized upon output,
+                                                so case-variant names will be understood
+                                                as the same header.
+                                              type: string
+                                            value:
+                                              description: The header field value
+                                              type: string
+                                          required:
+                                          - name
+                                          - value
+                                          type: object
+                                        type: array
+                                      path:
+                                        description: Path to access on the HTTP server.
+                                        type: string
+                                      port:
+                                        anyOf:
+                                        - type: integer
+                                        - type: string
+                                        description: Name or number of the port to
+                                          access on the container. Number must be
+                                          in the range 1 to 65535. Name must be an
+                                          IANA_SVC_NAME.
+                                        x-kubernetes-int-or-string: true
+                                      scheme:
+                                        description: Scheme to use for connecting
+                                          to the host. Defaults to HTTP.
+                                        type: string
+                                    required:
+                                    - port
+                                    type: object
+                                  sleep:
+                                    description: Sleep represents the duration that
+                                      the container should sleep before being terminated.
+                                    properties:
+                                      seconds:
+                                        description: Seconds is the number of seconds
+                                          to sleep.
+                                        format: int64
+                                        type: integer
+                                    required:
+                                    - seconds
+                                    type: object
+                                  tcpSocket:
+                                    description: Deprecated. TCPSocket is NOT supported
+                                      as a LifecycleHandler and kept for the backward
+                                      compatibility. There are no validation of this
+                                      field and lifecycle hooks will fail in runtime
+                                      when tcp handler is specified.
+                                    properties:
+                                      host:
+                                        description: 'Optional: Host name to connect
+                                          to, defaults to the pod IP.'
+                                        type: string
+                                      port:
+                                        anyOf:
+                                        - type: integer
+                                        - type: string
+                                        description: Number or name of the port to
+                                          access on the container. Number must be
+                                          in the range 1 to 65535. Name must be an
+                                          IANA_SVC_NAME.
+                                        x-kubernetes-int-or-string: true
+                                    required:
+                                    - port
+                                    type: object
+                                type: object
+                            type: object
                           replicas:
                             description: Number of desired pods. This is a pointer
                               to distinguish between explicit zero and not specified.
@@ -2276,6 +2636,326 @@ spec:
                           new files.
                         format: int32
                         type: integer
+                      exposeSpec:
+                        properties:
+                          httpNodePort:
+                            format: int32
+                            type: integer
+                          ingress:
+                            description: IngressSpec describes the Ingress the user
+                              wishes to exist.
+                            properties:
+                              defaultBackend:
+                                description: defaultBackend is the backend that should
+                                  handle requests that don't match any rule. If Rules
+                                  are not specified, DefaultBackend must be specified.
+                                  If DefaultBackend is not set, the handling of requests
+                                  that do not match any of the rules will be up to
+                                  the Ingress controller.
+                                properties:
+                                  resource:
+                                    description: resource is an ObjectRef to another
+                                      Kubernetes resource in the namespace of the
+                                      Ingress object. If resource is specified, a
+                                      service.Name and service.Port must not be specified.
+                                      This is a mutually exclusive setting with "Service".
+                                    properties:
+                                      apiGroup:
+                                        description: APIGroup is the group for the
+                                          resource being referenced. If APIGroup is
+                                          not specified, the specified Kind must be
+                                          in the core API group. For any other third-party
+                                          types, APIGroup is required.
+                                        type: string
+                                      kind:
+                                        description: Kind is the type of resource
+                                          being referenced
+                                        type: string
+                                      name:
+                                        description: Name is the name of resource
+                                          being referenced
+                                        type: string
+                                    required:
+                                    - kind
+                                    - name
+                                    type: object
+                                    x-kubernetes-map-type: atomic
+                                  service:
+                                    description: service references a service as a
+                                      backend. This is a mutually exclusive setting
+                                      with "Resource".
+                                    properties:
+                                      name:
+                                        description: name is the referenced service.
+                                          The service must exist in the same namespace
+                                          as the Ingress object.
+                                        type: string
+                                      port:
+                                        description: port of the referenced service.
+                                          A port name or port number is required for
+                                          a IngressServiceBackend.
+                                        properties:
+                                          name:
+                                            description: name is the name of the port
+                                              on the Service. This is a mutually exclusive
+                                              setting with "Number".
+                                            type: string
+                                          number:
+                                            description: number is the numerical port
+                                              number (e.g. 80) on the Service. This
+                                              is a mutually exclusive setting with
+                                              "Name".
+                                            format: int32
+                                            type: integer
+                                        type: object
+                                    required:
+                                    - name
+                                    type: object
+                                type: object
+                              ingressClassName:
+                                description: ingressClassName is the name of an IngressClass
+                                  cluster resource. Ingress controller implementations
+                                  use this field to know whether they should be serving
+                                  this Ingress resource, by a transitive connection
+                                  (controller -> IngressClass -> Ingress resource).
+                                  Although the `kubernetes.io/ingress.class` annotation
+                                  (simple constant name) was never formally defined,
+                                  it was widely supported by Ingress controllers to
+                                  create a direct binding between Ingress controller
+                                  and Ingress resources. Newly created Ingress resources
+                                  should prefer using the field. However, even though
+                                  the annotation is officially deprecated, for backwards
+                                  compatibility reasons, ingress controllers should
+                                  still honor that annotation if present.
+                                type: string
+                              rules:
+                                description: rules is a list of host rules used to
+                                  configure the Ingress. If unspecified, or no rule
+                                  matches, all traffic is sent to the default backend.
+                                items:
+                                  description: IngressRule represents the rules mapping
+                                    the paths under a specified host to the related
+                                    backend services. Incoming requests are first
+                                    evaluated for a host match, then routed to the
+                                    backend associated with the matching IngressRuleValue.
+                                  properties:
+                                    host:
+                                      description: "host is the fully qualified domain
+                                        name of a network host, as defined by RFC
+                                        3986. Note the following deviations from the
+                                        \"host\" part of the URI as defined in RFC
+                                        3986: 1. IPs are not allowed. Currently an
+                                        IngressRuleValue can only apply to the IP
+                                        in the Spec of the parent Ingress. 2. The
+                                        `:` delimiter is not respected because ports
+                                        are not allowed. Currently the port of an
+                                        Ingress is implicitly :80 for http and :443
+                                        for https. Both these may change in the future.
+                                        Incoming requests are matched against the
+                                        host before the IngressRuleValue. If the host
+                                        is unspecified, the Ingress routes all traffic
+                                        based on the specified IngressRuleValue. \n
+                                        host can be \"precise\" which is a domain
+                                        name without the terminating dot of a network
+                                        host (e.g. \"foo.bar.com\") or \"wildcard\",
+                                        which is a domain name prefixed with a single
+                                        wildcard label (e.g. \"*.foo.com\"). The wildcard
+                                        character '*' must appear by itself as the
+                                        first DNS label and matches only a single
+                                        label. You cannot have a wildcard label by
+                                        itself (e.g. Host == \"*\"). Requests will
+                                        be matched against the Host field in the following
+                                        way: 1. If host is precise, the request matches
+                                        this rule if the http host header is equal
+                                        to Host. 2. If host is a wildcard, then the
+                                        request matches this rule if the http host
+                                        header is to equal to the suffix (removing
+                                        the first label) of the wildcard rule."
+                                      type: string
+                                    http:
+                                      description: 'HTTPIngressRuleValue is a list
+                                        of http selectors pointing to backends. In
+                                        the example: http://<host>/<path>?<searchpart>
+                                        -> backend where where parts of the url correspond
+                                        to RFC 3986, this resource will be used to
+                                        match against everything after the last ''/''
+                                        and before the first ''?'' or ''#''.'
+                                      properties:
+                                        paths:
+                                          description: paths is a collection of paths
+                                            that map requests to backends.
+                                          items:
+                                            description: HTTPIngressPath associates
+                                              a path with a backend. Incoming urls
+                                              matching the path are forwarded to the
+                                              backend.
+                                            properties:
+                                              backend:
+                                                description: backend defines the referenced
+                                                  service endpoint to which the traffic
+                                                  will be forwarded to.
+                                                properties:
+                                                  resource:
+                                                    description: resource is an ObjectRef
+                                                      to another Kubernetes resource
+                                                      in the namespace of the Ingress
+                                                      object. If resource is specified,
+                                                      a service.Name and service.Port
+                                                      must not be specified. This
+                                                      is a mutually exclusive setting
+                                                      with "Service".
+                                                    properties:
+                                                      apiGroup:
+                                                        description: APIGroup is the
+                                                          group for the resource being
+                                                          referenced. If APIGroup
+                                                          is not specified, the specified
+                                                          Kind must be in the core
+                                                          API group. For any other
+                                                          third-party types, APIGroup
+                                                          is required.
+                                                        type: string
+                                                      kind:
+                                                        description: Kind is the type
+                                                          of resource being referenced
+                                                        type: string
+                                                      name:
+                                                        description: Name is the name
+                                                          of resource being referenced
+                                                        type: string
+                                                    required:
+                                                    - kind
+                                                    - name
+                                                    type: object
+                                                    x-kubernetes-map-type: atomic
+                                                  service:
+                                                    description: service references
+                                                      a service as a backend. This
+                                                      is a mutually exclusive setting
+                                                      with "Resource".
+                                                    properties:
+                                                      name:
+                                                        description: name is the referenced
+                                                          service. The service must
+                                                          exist in the same namespace
+                                                          as the Ingress object.
+                                                        type: string
+                                                      port:
+                                                        description: port of the referenced
+                                                          service. A port name or
+                                                          port number is required
+                                                          for a IngressServiceBackend.
+                                                        properties:
+                                                          name:
+                                                            description: name is the
+                                                              name of the port on
+                                                              the Service. This is
+                                                              a mutually exclusive
+                                                              setting with "Number".
+                                                            type: string
+                                                          number:
+                                                            description: number is
+                                                              the numerical port number
+                                                              (e.g. 80) on the Service.
+                                                              This is a mutually exclusive
+                                                              setting with "Name".
+                                                            format: int32
+                                                            type: integer
+                                                        type: object
+                                                    required:
+                                                    - name
+                                                    type: object
+                                                type: object
+                                              path:
+                                                description: path is matched against
+                                                  the path of an incoming request.
+                                                  Currently it can contain characters
+                                                  disallowed from the conventional
+                                                  "path" part of a URL as defined
+                                                  by RFC 3986. Paths must begin with
+                                                  a '/' and must be present when using
+                                                  PathType with value "Exact" or "Prefix".
+                                                type: string
+                                              pathType:
+                                                description: 'pathType determines
+                                                  the interpretation of the path matching.
+                                                  PathType can be one of the following
+                                                  values: * Exact: Matches the URL
+                                                  path exactly. * Prefix: Matches
+                                                  based on a URL path prefix split
+                                                  by ''/''. Matching is done on a
+                                                  path element by element basis. A
+                                                  path element refers is the list
+                                                  of labels in the path split by the
+                                                  ''/'' separator. A request is a
+                                                  match for path p if every p is an
+                                                  element-wise prefix of p of the
+                                                  request path. Note that if the last
+                                                  element of the path is a substring
+                                                  of the last element in request path,
+                                                  it is not a match (e.g. /foo/bar
+                                                  matches /foo/bar/baz, but does not
+                                                  match /foo/barbaz). * ImplementationSpecific:
+                                                  Interpretation of the Path matching
+                                                  is up to the IngressClass. Implementations
+                                                  can treat this as a separate PathType
+                                                  or treat it identically to Prefix
+                                                  or Exact path types. Implementations
+                                                  are required to support all path
+                                                  types.'
+                                                type: string
+                                            required:
+                                            - backend
+                                            - pathType
+                                            type: object
+                                          type: array
+                                          x-kubernetes-list-type: atomic
+                                      required:
+                                      - paths
+                                      type: object
+                                  type: object
+                                type: array
+                                x-kubernetes-list-type: atomic
+                              tls:
+                                description: tls represents the TLS configuration.
+                                  Currently the Ingress only supports a single TLS
+                                  port, 443. If multiple members of this list specify
+                                  different hosts, they will be multiplexed on the
+                                  same port according to the hostname specified through
+                                  the SNI TLS extension, if the ingress controller
+                                  fulfilling the ingress supports SNI.
+                                items:
+                                  description: IngressTLS describes the transport
+                                    layer security associated with an ingress.
+                                  properties:
+                                    hosts:
+                                      description: hosts is a list of hosts included
+                                        in the TLS certificate. The values in this
+                                        list must match the name/s used in the tlsSecret.
+                                        Defaults to the wildcard host setting for
+                                        the loadbalancer controller fulfilling this
+                                        Ingress, if left unspecified.
+                                      items:
+                                        type: string
+                                      type: array
+                                      x-kubernetes-list-type: atomic
+                                    secretName:
+                                      description: secretName is the name of the secret
+                                        used to terminate TLS traffic on port 443.
+                                        Field is left optional to allow TLS routing
+                                        based on SNI hostname alone. If the SNI host
+                                        in a listener conflicts with the "Host" header
+                                        field used by an IngressRule, the SNI host
+                                        is used for termination and value of the "Host"
+                                        header is used for routing.
+                                      type: string
+                                  type: object
+                                type: array
+                                x-kubernetes-list-type: atomic
+                            type: object
+                          type:
+                            type: string
+                        type: object
                       format:
                         description: This argument tells the namenode to format its
                           namespace, which includes deleting the current contents
@@ -2303,6 +2983,132 @@ spec:
                         type: string
                       nodeSpec:
                         properties:
+                          deleteOnTermination:
+                            description: DeleteOnTermination specify whether executor
+                              pods should be deleted in case of failure or normal
+                              termination.
+                            type: boolean
+                          env:
+                            description: List of environment variables to set in the
+                              container. Cannot be updated.
+                            items:
+                              description: EnvVar represents an environment variable
+                                present in a Container.
+                              properties:
+                                name:
+                                  description: Name of the environment variable. Must
+                                    be a C_IDENTIFIER.
+                                  type: string
+                                value:
+                                  description: 'Variable references $(VAR_NAME) are
+                                    expanded using the previously defined environment
+                                    variables in the container and any service environment
+                                    variables. If a variable cannot be resolved, the
+                                    reference in the input string will be unchanged.
+                                    Double $$ are reduced to a single $, which allows
+                                    for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)"
+                                    will produce the string literal "$(VAR_NAME)".
+                                    Escaped references will never be expanded, regardless
+                                    of whether the variable exists or not. Defaults
+                                    to "".'
+                                  type: string
+                                valueFrom:
+                                  description: Source for the environment variable's
+                                    value. Cannot be used if value is not empty.
+                                  properties:
+                                    configMapKeyRef:
+                                      description: Selects a key of a ConfigMap.
+                                      properties:
+                                        key:
+                                          description: The key to select.
+                                          type: string
+                                        name:
+                                          description: 'Name of the referent. More
+                                            info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                            TODO: Add other useful fields. apiVersion,
+                                            kind, uid?'
+                                          type: string
+                                        optional:
+                                          description: Specify whether the ConfigMap
+                                            or its key must be defined
+                                          type: boolean
+                                      required:
+                                      - key
+                                      type: object
+                                      x-kubernetes-map-type: atomic
+                                    fieldRef:
+                                      description: 'Selects a field of the pod: supports
+                                        metadata.name, metadata.namespace, `metadata.labels[''<KEY>'']`,
+                                        `metadata.annotations[''<KEY>'']`, spec.nodeName,
+                                        spec.serviceAccountName, status.hostIP, status.podIP,
+                                        status.podIPs.'
+                                      properties:
+                                        apiVersion:
+                                          description: Version of the schema the FieldPath
+                                            is written in terms of, defaults to "v1".
+                                          type: string
+                                        fieldPath:
+                                          description: Path of the field to select
+                                            in the specified API version.
+                                          type: string
+                                      required:
+                                      - fieldPath
+                                      type: object
+                                      x-kubernetes-map-type: atomic
+                                    resourceFieldRef:
+                                      description: 'Selects a resource of the container:
+                                        only resources limits and requests (limits.cpu,
+                                        limits.memory, limits.ephemeral-storage, requests.cpu,
+                                        requests.memory and requests.ephemeral-storage)
+                                        are currently supported.'
+                                      properties:
+                                        containerName:
+                                          description: 'Container name: required for
+                                            volumes, optional for env vars'
+                                          type: string
+                                        divisor:
+                                          anyOf:
+                                          - type: integer
+                                          - type: string
+                                          description: Specifies the output format
+                                            of the exposed resources, defaults to
+                                            "1"
+                                          pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                          x-kubernetes-int-or-string: true
+                                        resource:
+                                          description: 'Required: resource to select'
+                                          type: string
+                                      required:
+                                      - resource
+                                      type: object
+                                      x-kubernetes-map-type: atomic
+                                    secretKeyRef:
+                                      description: Selects a key of a secret in the
+                                        pod's namespace
+                                      properties:
+                                        key:
+                                          description: The key of the secret to select
+                                            from.  Must be a valid secret key.
+                                          type: string
+                                        name:
+                                          description: 'Name of the referent. More
+                                            info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                            TODO: Add other useful fields. apiVersion,
+                                            kind, uid?'
+                                          type: string
+                                        optional:
+                                          description: Specify whether the Secret
+                                            or its key must be defined
+                                          type: boolean
+                                      required:
+                                      - key
+                                      type: object
+                                      x-kubernetes-map-type: atomic
+                                  type: object
+                              required:
+                              - name
+                              type: object
+                            type: array
                           hostNetwork:
                             description: Host networking requested for this pod. Use
                               the host's network namespace. If this option is set,
@@ -2335,6 +3141,240 @@ spec:
                               type: object
                               x-kubernetes-map-type: atomic
                             type: array
+                          lifecycle:
+                            description: Actions that the management system should
+                              take in response to container lifecycle events. Cannot
+                              be updated.
+                            properties:
+                              postStart:
+                                description: 'PostStart is called immediately after
+                                  a container is created. If the handler fails, the
+                                  container is terminated and restarted according
+                                  to its restart policy. Other management of the container
+                                  blocks until the hook completes. More info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks'
+                                properties:
+                                  exec:
+                                    description: Exec specifies the action to take.
+                                    properties:
+                                      command:
+                                        description: Command is the command line to
+                                          execute inside the container, the working
+                                          directory for the command  is root ('/')
+                                          in the container's filesystem. The command
+                                          is simply exec'd, it is not run inside a
+                                          shell, so traditional shell instructions
+                                          ('|', etc) won't work. To use a shell, you
+                                          need to explicitly call out to that shell.
+                                          Exit status of 0 is treated as live/healthy
+                                          and non-zero is unhealthy.
+                                        items:
+                                          type: string
+                                        type: array
+                                    type: object
+                                  httpGet:
+                                    description: HTTPGet specifies the http request
+                                      to perform.
+                                    properties:
+                                      host:
+                                        description: Host name to connect to, defaults
+                                          to the pod IP. You probably want to set
+                                          "Host" in httpHeaders instead.
+                                        type: string
+                                      httpHeaders:
+                                        description: Custom headers to set in the
+                                          request. HTTP allows repeated headers.
+                                        items:
+                                          description: HTTPHeader describes a custom
+                                            header to be used in HTTP probes
+                                          properties:
+                                            name:
+                                              description: The header field name.
+                                                This will be canonicalized upon output,
+                                                so case-variant names will be understood
+                                                as the same header.
+                                              type: string
+                                            value:
+                                              description: The header field value
+                                              type: string
+                                          required:
+                                          - name
+                                          - value
+                                          type: object
+                                        type: array
+                                      path:
+                                        description: Path to access on the HTTP server.
+                                        type: string
+                                      port:
+                                        anyOf:
+                                        - type: integer
+                                        - type: string
+                                        description: Name or number of the port to
+                                          access on the container. Number must be
+                                          in the range 1 to 65535. Name must be an
+                                          IANA_SVC_NAME.
+                                        x-kubernetes-int-or-string: true
+                                      scheme:
+                                        description: Scheme to use for connecting
+                                          to the host. Defaults to HTTP.
+                                        type: string
+                                    required:
+                                    - port
+                                    type: object
+                                  sleep:
+                                    description: Sleep represents the duration that
+                                      the container should sleep before being terminated.
+                                    properties:
+                                      seconds:
+                                        description: Seconds is the number of seconds
+                                          to sleep.
+                                        format: int64
+                                        type: integer
+                                    required:
+                                    - seconds
+                                    type: object
+                                  tcpSocket:
+                                    description: Deprecated. TCPSocket is NOT supported
+                                      as a LifecycleHandler and kept for the backward
+                                      compatibility. There are no validation of this
+                                      field and lifecycle hooks will fail in runtime
+                                      when tcp handler is specified.
+                                    properties:
+                                      host:
+                                        description: 'Optional: Host name to connect
+                                          to, defaults to the pod IP.'
+                                        type: string
+                                      port:
+                                        anyOf:
+                                        - type: integer
+                                        - type: string
+                                        description: Number or name of the port to
+                                          access on the container. Number must be
+                                          in the range 1 to 65535. Name must be an
+                                          IANA_SVC_NAME.
+                                        x-kubernetes-int-or-string: true
+                                    required:
+                                    - port
+                                    type: object
+                                type: object
+                              preStop:
+                                description: 'PreStop is called immediately before
+                                  a container is terminated due to an API request
+                                  or management event such as liveness/startup probe
+                                  failure, preemption, resource contention, etc. The
+                                  handler is not called if the container crashes or
+                                  exits. The Pod''s termination grace period countdown
+                                  begins before the PreStop hook is executed. Regardless
+                                  of the outcome of the handler, the container will
+                                  eventually terminate within the Pod''s termination
+                                  grace period (unless delayed by finalizers). Other
+                                  management of the container blocks until the hook
+                                  completes or until the termination grace period
+                                  is reached. More info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks'
+                                properties:
+                                  exec:
+                                    description: Exec specifies the action to take.
+                                    properties:
+                                      command:
+                                        description: Command is the command line to
+                                          execute inside the container, the working
+                                          directory for the command  is root ('/')
+                                          in the container's filesystem. The command
+                                          is simply exec'd, it is not run inside a
+                                          shell, so traditional shell instructions
+                                          ('|', etc) won't work. To use a shell, you
+                                          need to explicitly call out to that shell.
+                                          Exit status of 0 is treated as live/healthy
+                                          and non-zero is unhealthy.
+                                        items:
+                                          type: string
+                                        type: array
+                                    type: object
+                                  httpGet:
+                                    description: HTTPGet specifies the http request
+                                      to perform.
+                                    properties:
+                                      host:
+                                        description: Host name to connect to, defaults
+                                          to the pod IP. You probably want to set
+                                          "Host" in httpHeaders instead.
+                                        type: string
+                                      httpHeaders:
+                                        description: Custom headers to set in the
+                                          request. HTTP allows repeated headers.
+                                        items:
+                                          description: HTTPHeader describes a custom
+                                            header to be used in HTTP probes
+                                          properties:
+                                            name:
+                                              description: The header field name.
+                                                This will be canonicalized upon output,
+                                                so case-variant names will be understood
+                                                as the same header.
+                                              type: string
+                                            value:
+                                              description: The header field value
+                                              type: string
+                                          required:
+                                          - name
+                                          - value
+                                          type: object
+                                        type: array
+                                      path:
+                                        description: Path to access on the HTTP server.
+                                        type: string
+                                      port:
+                                        anyOf:
+                                        - type: integer
+                                        - type: string
+                                        description: Name or number of the port to
+                                          access on the container. Number must be
+                                          in the range 1 to 65535. Name must be an
+                                          IANA_SVC_NAME.
+                                        x-kubernetes-int-or-string: true
+                                      scheme:
+                                        description: Scheme to use for connecting
+                                          to the host. Defaults to HTTP.
+                                        type: string
+                                    required:
+                                    - port
+                                    type: object
+                                  sleep:
+                                    description: Sleep represents the duration that
+                                      the container should sleep before being terminated.
+                                    properties:
+                                      seconds:
+                                        description: Seconds is the number of seconds
+                                          to sleep.
+                                        format: int64
+                                        type: integer
+                                    required:
+                                    - seconds
+                                    type: object
+                                  tcpSocket:
+                                    description: Deprecated. TCPSocket is NOT supported
+                                      as a LifecycleHandler and kept for the backward
+                                      compatibility. There are no validation of this
+                                      field and lifecycle hooks will fail in runtime
+                                      when tcp handler is specified.
+                                    properties:
+                                      host:
+                                        description: 'Optional: Host name to connect
+                                          to, defaults to the pod IP.'
+                                        type: string
+                                      port:
+                                        anyOf:
+                                        - type: integer
+                                        - type: string
+                                        description: Number or name of the port to
+                                          access on the container. Number must be
+                                          in the range 1 to 65535. Name must be an
+                                          IANA_SVC_NAME.
+                                        x-kubernetes-int-or-string: true
+                                    required:
+                                    - port
+                                    type: object
+                                type: object
+                            type: object
                           replicas:
                             description: Number of desired pods. This is a pointer
                               to distinguish between explicit zero and not specified.
@@ -4513,18 +5553,460 @@ spec:
                               type: object
                             type: array
                         type: object
-                      serviceType:
-                        description: Service Type string describes ingress methods
-                          for a service
-                        type: string
                     type: object
                 type: object
               yarn:
                 properties:
                   nodeManager:
                     properties:
+                      exposeSpec:
+                        properties:
+                          httpNodePort:
+                            format: int32
+                            type: integer
+                          ingress:
+                            description: IngressSpec describes the Ingress the user
+                              wishes to exist.
+                            properties:
+                              defaultBackend:
+                                description: defaultBackend is the backend that should
+                                  handle requests that don't match any rule. If Rules
+                                  are not specified, DefaultBackend must be specified.
+                                  If DefaultBackend is not set, the handling of requests
+                                  that do not match any of the rules will be up to
+                                  the Ingress controller.
+                                properties:
+                                  resource:
+                                    description: resource is an ObjectRef to another
+                                      Kubernetes resource in the namespace of the
+                                      Ingress object. If resource is specified, a
+                                      service.Name and service.Port must not be specified.
+                                      This is a mutually exclusive setting with "Service".
+                                    properties:
+                                      apiGroup:
+                                        description: APIGroup is the group for the
+                                          resource being referenced. If APIGroup is
+                                          not specified, the specified Kind must be
+                                          in the core API group. For any other third-party
+                                          types, APIGroup is required.
+                                        type: string
+                                      kind:
+                                        description: Kind is the type of resource
+                                          being referenced
+                                        type: string
+                                      name:
+                                        description: Name is the name of resource
+                                          being referenced
+                                        type: string
+                                    required:
+                                    - kind
+                                    - name
+                                    type: object
+                                    x-kubernetes-map-type: atomic
+                                  service:
+                                    description: service references a service as a
+                                      backend. This is a mutually exclusive setting
+                                      with "Resource".
+                                    properties:
+                                      name:
+                                        description: name is the referenced service.
+                                          The service must exist in the same namespace
+                                          as the Ingress object.
+                                        type: string
+                                      port:
+                                        description: port of the referenced service.
+                                          A port name or port number is required for
+                                          a IngressServiceBackend.
+                                        properties:
+                                          name:
+                                            description: name is the name of the port
+                                              on the Service. This is a mutually exclusive
+                                              setting with "Number".
+                                            type: string
+                                          number:
+                                            description: number is the numerical port
+                                              number (e.g. 80) on the Service. This
+                                              is a mutually exclusive setting with
+                                              "Name".
+                                            format: int32
+                                            type: integer
+                                        type: object
+                                    required:
+                                    - name
+                                    type: object
+                                type: object
+                              ingressClassName:
+                                description: ingressClassName is the name of an IngressClass
+                                  cluster resource. Ingress controller implementations
+                                  use this field to know whether they should be serving
+                                  this Ingress resource, by a transitive connection
+                                  (controller -> IngressClass -> Ingress resource).
+                                  Although the `kubernetes.io/ingress.class` annotation
+                                  (simple constant name) was never formally defined,
+                                  it was widely supported by Ingress controllers to
+                                  create a direct binding between Ingress controller
+                                  and Ingress resources. Newly created Ingress resources
+                                  should prefer using the field. However, even though
+                                  the annotation is officially deprecated, for backwards
+                                  compatibility reasons, ingress controllers should
+                                  still honor that annotation if present.
+                                type: string
+                              rules:
+                                description: rules is a list of host rules used to
+                                  configure the Ingress. If unspecified, or no rule
+                                  matches, all traffic is sent to the default backend.
+                                items:
+                                  description: IngressRule represents the rules mapping
+                                    the paths under a specified host to the related
+                                    backend services. Incoming requests are first
+                                    evaluated for a host match, then routed to the
+                                    backend associated with the matching IngressRuleValue.
+                                  properties:
+                                    host:
+                                      description: "host is the fully qualified domain
+                                        name of a network host, as defined by RFC
+                                        3986. Note the following deviations from the
+                                        \"host\" part of the URI as defined in RFC
+                                        3986: 1. IPs are not allowed. Currently an
+                                        IngressRuleValue can only apply to the IP
+                                        in the Spec of the parent Ingress. 2. The
+                                        `:` delimiter is not respected because ports
+                                        are not allowed. Currently the port of an
+                                        Ingress is implicitly :80 for http and :443
+                                        for https. Both these may change in the future.
+                                        Incoming requests are matched against the
+                                        host before the IngressRuleValue. If the host
+                                        is unspecified, the Ingress routes all traffic
+                                        based on the specified IngressRuleValue. \n
+                                        host can be \"precise\" which is a domain
+                                        name without the terminating dot of a network
+                                        host (e.g. \"foo.bar.com\") or \"wildcard\",
+                                        which is a domain name prefixed with a single
+                                        wildcard label (e.g. \"*.foo.com\"). The wildcard
+                                        character '*' must appear by itself as the
+                                        first DNS label and matches only a single
+                                        label. You cannot have a wildcard label by
+                                        itself (e.g. Host == \"*\"). Requests will
+                                        be matched against the Host field in the following
+                                        way: 1. If host is precise, the request matches
+                                        this rule if the http host header is equal
+                                        to Host. 2. If host is a wildcard, then the
+                                        request matches this rule if the http host
+                                        header is to equal to the suffix (removing
+                                        the first label) of the wildcard rule."
+                                      type: string
+                                    http:
+                                      description: 'HTTPIngressRuleValue is a list
+                                        of http selectors pointing to backends. In
+                                        the example: http://<host>/<path>?<searchpart>
+                                        -> backend where where parts of the url correspond
+                                        to RFC 3986, this resource will be used to
+                                        match against everything after the last ''/''
+                                        and before the first ''?'' or ''#''.'
+                                      properties:
+                                        paths:
+                                          description: paths is a collection of paths
+                                            that map requests to backends.
+                                          items:
+                                            description: HTTPIngressPath associates
+                                              a path with a backend. Incoming urls
+                                              matching the path are forwarded to the
+                                              backend.
+                                            properties:
+                                              backend:
+                                                description: backend defines the referenced
+                                                  service endpoint to which the traffic
+                                                  will be forwarded to.
+                                                properties:
+                                                  resource:
+                                                    description: resource is an ObjectRef
+                                                      to another Kubernetes resource
+                                                      in the namespace of the Ingress
+                                                      object. If resource is specified,
+                                                      a service.Name and service.Port
+                                                      must not be specified. This
+                                                      is a mutually exclusive setting
+                                                      with "Service".
+                                                    properties:
+                                                      apiGroup:
+                                                        description: APIGroup is the
+                                                          group for the resource being
+                                                          referenced. If APIGroup
+                                                          is not specified, the specified
+                                                          Kind must be in the core
+                                                          API group. For any other
+                                                          third-party types, APIGroup
+                                                          is required.
+                                                        type: string
+                                                      kind:
+                                                        description: Kind is the type
+                                                          of resource being referenced
+                                                        type: string
+                                                      name:
+                                                        description: Name is the name
+                                                          of resource being referenced
+                                                        type: string
+                                                    required:
+                                                    - kind
+                                                    - name
+                                                    type: object
+                                                    x-kubernetes-map-type: atomic
+                                                  service:
+                                                    description: service references
+                                                      a service as a backend. This
+                                                      is a mutually exclusive setting
+                                                      with "Resource".
+                                                    properties:
+                                                      name:
+                                                        description: name is the referenced
+                                                          service. The service must
+                                                          exist in the same namespace
+                                                          as the Ingress object.
+                                                        type: string
+                                                      port:
+                                                        description: port of the referenced
+                                                          service. A port name or
+                                                          port number is required
+                                                          for a IngressServiceBackend.
+                                                        properties:
+                                                          name:
+                                                            description: name is the
+                                                              name of the port on
+                                                              the Service. This is
+                                                              a mutually exclusive
+                                                              setting with "Number".
+                                                            type: string
+                                                          number:
+                                                            description: number is
+                                                              the numerical port number
+                                                              (e.g. 80) on the Service.
+                                                              This is a mutually exclusive
+                                                              setting with "Name".
+                                                            format: int32
+                                                            type: integer
+                                                        type: object
+                                                    required:
+                                                    - name
+                                                    type: object
+                                                type: object
+                                              path:
+                                                description: path is matched against
+                                                  the path of an incoming request.
+                                                  Currently it can contain characters
+                                                  disallowed from the conventional
+                                                  "path" part of a URL as defined
+                                                  by RFC 3986. Paths must begin with
+                                                  a '/' and must be present when using
+                                                  PathType with value "Exact" or "Prefix".
+                                                type: string
+                                              pathType:
+                                                description: 'pathType determines
+                                                  the interpretation of the path matching.
+                                                  PathType can be one of the following
+                                                  values: * Exact: Matches the URL
+                                                  path exactly. * Prefix: Matches
+                                                  based on a URL path prefix split
+                                                  by ''/''. Matching is done on a
+                                                  path element by element basis. A
+                                                  path element refers is the list
+                                                  of labels in the path split by the
+                                                  ''/'' separator. A request is a
+                                                  match for path p if every p is an
+                                                  element-wise prefix of p of the
+                                                  request path. Note that if the last
+                                                  element of the path is a substring
+                                                  of the last element in request path,
+                                                  it is not a match (e.g. /foo/bar
+                                                  matches /foo/bar/baz, but does not
+                                                  match /foo/barbaz). * ImplementationSpecific:
+                                                  Interpretation of the Path matching
+                                                  is up to the IngressClass. Implementations
+                                                  can treat this as a separate PathType
+                                                  or treat it identically to Prefix
+                                                  or Exact path types. Implementations
+                                                  are required to support all path
+                                                  types.'
+                                                type: string
+                                            required:
+                                            - backend
+                                            - pathType
+                                            type: object
+                                          type: array
+                                          x-kubernetes-list-type: atomic
+                                      required:
+                                      - paths
+                                      type: object
+                                  type: object
+                                type: array
+                                x-kubernetes-list-type: atomic
+                              tls:
+                                description: tls represents the TLS configuration.
+                                  Currently the Ingress only supports a single TLS
+                                  port, 443. If multiple members of this list specify
+                                  different hosts, they will be multiplexed on the
+                                  same port according to the hostname specified through
+                                  the SNI TLS extension, if the ingress controller
+                                  fulfilling the ingress supports SNI.
+                                items:
+                                  description: IngressTLS describes the transport
+                                    layer security associated with an ingress.
+                                  properties:
+                                    hosts:
+                                      description: hosts is a list of hosts included
+                                        in the TLS certificate. The values in this
+                                        list must match the name/s used in the tlsSecret.
+                                        Defaults to the wildcard host setting for
+                                        the loadbalancer controller fulfilling this
+                                        Ingress, if left unspecified.
+                                      items:
+                                        type: string
+                                      type: array
+                                      x-kubernetes-list-type: atomic
+                                    secretName:
+                                      description: secretName is the name of the secret
+                                        used to terminate TLS traffic on port 443.
+                                        Field is left optional to allow TLS routing
+                                        based on SNI hostname alone. If the SNI host
+                                        in a listener conflicts with the "Host" header
+                                        field used by an IngressRule, the SNI host
+                                        is used for termination and value of the "Host"
+                                        header is used for routing.
+                                      type: string
+                                  type: object
+                                type: array
+                                x-kubernetes-list-type: atomic
+                            type: object
+                          type:
+                            type: string
+                        type: object
                       nodeSpec:
                         properties:
+                          deleteOnTermination:
+                            description: DeleteOnTermination specify whether executor
+                              pods should be deleted in case of failure or normal
+                              termination.
+                            type: boolean
+                          env:
+                            description: List of environment variables to set in the
+                              container. Cannot be updated.
+                            items:
+                              description: EnvVar represents an environment variable
+                                present in a Container.
+                              properties:
+                                name:
+                                  description: Name of the environment variable. Must
+                                    be a C_IDENTIFIER.
+                                  type: string
+                                value:
+                                  description: 'Variable references $(VAR_NAME) are
+                                    expanded using the previously defined environment
+                                    variables in the container and any service environment
+                                    variables. If a variable cannot be resolved, the
+                                    reference in the input string will be unchanged.
+                                    Double $$ are reduced to a single $, which allows
+                                    for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)"
+                                    will produce the string literal "$(VAR_NAME)".
+                                    Escaped references will never be expanded, regardless
+                                    of whether the variable exists or not. Defaults
+                                    to "".'
+                                  type: string
+                                valueFrom:
+                                  description: Source for the environment variable's
+                                    value. Cannot be used if value is not empty.
+                                  properties:
+                                    configMapKeyRef:
+                                      description: Selects a key of a ConfigMap.
+                                      properties:
+                                        key:
+                                          description: The key to select.
+                                          type: string
+                                        name:
+                                          description: 'Name of the referent. More
+                                            info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                            TODO: Add other useful fields. apiVersion,
+                                            kind, uid?'
+                                          type: string
+                                        optional:
+                                          description: Specify whether the ConfigMap
+                                            or its key must be defined
+                                          type: boolean
+                                      required:
+                                      - key
+                                      type: object
+                                      x-kubernetes-map-type: atomic
+                                    fieldRef:
+                                      description: 'Selects a field of the pod: supports
+                                        metadata.name, metadata.namespace, `metadata.labels[''<KEY>'']`,
+                                        `metadata.annotations[''<KEY>'']`, spec.nodeName,
+                                        spec.serviceAccountName, status.hostIP, status.podIP,
+                                        status.podIPs.'
+                                      properties:
+                                        apiVersion:
+                                          description: Version of the schema the FieldPath
+                                            is written in terms of, defaults to "v1".
+                                          type: string
+                                        fieldPath:
+                                          description: Path of the field to select
+                                            in the specified API version.
+                                          type: string
+                                      required:
+                                      - fieldPath
+                                      type: object
+                                      x-kubernetes-map-type: atomic
+                                    resourceFieldRef:
+                                      description: 'Selects a resource of the container:
+                                        only resources limits and requests (limits.cpu,
+                                        limits.memory, limits.ephemeral-storage, requests.cpu,
+                                        requests.memory and requests.ephemeral-storage)
+                                        are currently supported.'
+                                      properties:
+                                        containerName:
+                                          description: 'Container name: required for
+                                            volumes, optional for env vars'
+                                          type: string
+                                        divisor:
+                                          anyOf:
+                                          - type: integer
+                                          - type: string
+                                          description: Specifies the output format
+                                            of the exposed resources, defaults to
+                                            "1"
+                                          pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                          x-kubernetes-int-or-string: true
+                                        resource:
+                                          description: 'Required: resource to select'
+                                          type: string
+                                      required:
+                                      - resource
+                                      type: object
+                                      x-kubernetes-map-type: atomic
+                                    secretKeyRef:
+                                      description: Selects a key of a secret in the
+                                        pod's namespace
+                                      properties:
+                                        key:
+                                          description: The key of the secret to select
+                                            from.  Must be a valid secret key.
+                                          type: string
+                                        name:
+                                          description: 'Name of the referent. More
+                                            info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                            TODO: Add other useful fields. apiVersion,
+                                            kind, uid?'
+                                          type: string
+                                        optional:
+                                          description: Specify whether the Secret
+                                            or its key must be defined
+                                          type: boolean
+                                      required:
+                                      - key
+                                      type: object
+                                      x-kubernetes-map-type: atomic
+                                  type: object
+                              required:
+                              - name
+                              type: object
+                            type: array
                           hostNetwork:
                             description: Host networking requested for this pod. Use
                               the host's network namespace. If this option is set,
@@ -4557,6 +6039,240 @@ spec:
                               type: object
                               x-kubernetes-map-type: atomic
                             type: array
+                          lifecycle:
+                            description: Actions that the management system should
+                              take in response to container lifecycle events. Cannot
+                              be updated.
+                            properties:
+                              postStart:
+                                description: 'PostStart is called immediately after
+                                  a container is created. If the handler fails, the
+                                  container is terminated and restarted according
+                                  to its restart policy. Other management of the container
+                                  blocks until the hook completes. More info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks'
+                                properties:
+                                  exec:
+                                    description: Exec specifies the action to take.
+                                    properties:
+                                      command:
+                                        description: Command is the command line to
+                                          execute inside the container, the working
+                                          directory for the command  is root ('/')
+                                          in the container's filesystem. The command
+                                          is simply exec'd, it is not run inside a
+                                          shell, so traditional shell instructions
+                                          ('|', etc) won't work. To use a shell, you
+                                          need to explicitly call out to that shell.
+                                          Exit status of 0 is treated as live/healthy
+                                          and non-zero is unhealthy.
+                                        items:
+                                          type: string
+                                        type: array
+                                    type: object
+                                  httpGet:
+                                    description: HTTPGet specifies the http request
+                                      to perform.
+                                    properties:
+                                      host:
+                                        description: Host name to connect to, defaults
+                                          to the pod IP. You probably want to set
+                                          "Host" in httpHeaders instead.
+                                        type: string
+                                      httpHeaders:
+                                        description: Custom headers to set in the
+                                          request. HTTP allows repeated headers.
+                                        items:
+                                          description: HTTPHeader describes a custom
+                                            header to be used in HTTP probes
+                                          properties:
+                                            name:
+                                              description: The header field name.
+                                                This will be canonicalized upon output,
+                                                so case-variant names will be understood
+                                                as the same header.
+                                              type: string
+                                            value:
+                                              description: The header field value
+                                              type: string
+                                          required:
+                                          - name
+                                          - value
+                                          type: object
+                                        type: array
+                                      path:
+                                        description: Path to access on the HTTP server.
+                                        type: string
+                                      port:
+                                        anyOf:
+                                        - type: integer
+                                        - type: string
+                                        description: Name or number of the port to
+                                          access on the container. Number must be
+                                          in the range 1 to 65535. Name must be an
+                                          IANA_SVC_NAME.
+                                        x-kubernetes-int-or-string: true
+                                      scheme:
+                                        description: Scheme to use for connecting
+                                          to the host. Defaults to HTTP.
+                                        type: string
+                                    required:
+                                    - port
+                                    type: object
+                                  sleep:
+                                    description: Sleep represents the duration that
+                                      the container should sleep before being terminated.
+                                    properties:
+                                      seconds:
+                                        description: Seconds is the number of seconds
+                                          to sleep.
+                                        format: int64
+                                        type: integer
+                                    required:
+                                    - seconds
+                                    type: object
+                                  tcpSocket:
+                                    description: Deprecated. TCPSocket is NOT supported
+                                      as a LifecycleHandler and kept for the backward
+                                      compatibility. There are no validation of this
+                                      field and lifecycle hooks will fail in runtime
+                                      when tcp handler is specified.
+                                    properties:
+                                      host:
+                                        description: 'Optional: Host name to connect
+                                          to, defaults to the pod IP.'
+                                        type: string
+                                      port:
+                                        anyOf:
+                                        - type: integer
+                                        - type: string
+                                        description: Number or name of the port to
+                                          access on the container. Number must be
+                                          in the range 1 to 65535. Name must be an
+                                          IANA_SVC_NAME.
+                                        x-kubernetes-int-or-string: true
+                                    required:
+                                    - port
+                                    type: object
+                                type: object
+                              preStop:
+                                description: 'PreStop is called immediately before
+                                  a container is terminated due to an API request
+                                  or management event such as liveness/startup probe
+                                  failure, preemption, resource contention, etc. The
+                                  handler is not called if the container crashes or
+                                  exits. The Pod''s termination grace period countdown
+                                  begins before the PreStop hook is executed. Regardless
+                                  of the outcome of the handler, the container will
+                                  eventually terminate within the Pod''s termination
+                                  grace period (unless delayed by finalizers). Other
+                                  management of the container blocks until the hook
+                                  completes or until the termination grace period
+                                  is reached. More info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks'
+                                properties:
+                                  exec:
+                                    description: Exec specifies the action to take.
+                                    properties:
+                                      command:
+                                        description: Command is the command line to
+                                          execute inside the container, the working
+                                          directory for the command  is root ('/')
+                                          in the container's filesystem. The command
+                                          is simply exec'd, it is not run inside a
+                                          shell, so traditional shell instructions
+                                          ('|', etc) won't work. To use a shell, you
+                                          need to explicitly call out to that shell.
+                                          Exit status of 0 is treated as live/healthy
+                                          and non-zero is unhealthy.
+                                        items:
+                                          type: string
+                                        type: array
+                                    type: object
+                                  httpGet:
+                                    description: HTTPGet specifies the http request
+                                      to perform.
+                                    properties:
+                                      host:
+                                        description: Host name to connect to, defaults
+                                          to the pod IP. You probably want to set
+                                          "Host" in httpHeaders instead.
+                                        type: string
+                                      httpHeaders:
+                                        description: Custom headers to set in the
+                                          request. HTTP allows repeated headers.
+                                        items:
+                                          description: HTTPHeader describes a custom
+                                            header to be used in HTTP probes
+                                          properties:
+                                            name:
+                                              description: The header field name.
+                                                This will be canonicalized upon output,
+                                                so case-variant names will be understood
+                                                as the same header.
+                                              type: string
+                                            value:
+                                              description: The header field value
+                                              type: string
+                                          required:
+                                          - name
+                                          - value
+                                          type: object
+                                        type: array
+                                      path:
+                                        description: Path to access on the HTTP server.
+                                        type: string
+                                      port:
+                                        anyOf:
+                                        - type: integer
+                                        - type: string
+                                        description: Name or number of the port to
+                                          access on the container. Number must be
+                                          in the range 1 to 65535. Name must be an
+                                          IANA_SVC_NAME.
+                                        x-kubernetes-int-or-string: true
+                                      scheme:
+                                        description: Scheme to use for connecting
+                                          to the host. Defaults to HTTP.
+                                        type: string
+                                    required:
+                                    - port
+                                    type: object
+                                  sleep:
+                                    description: Sleep represents the duration that
+                                      the container should sleep before being terminated.
+                                    properties:
+                                      seconds:
+                                        description: Seconds is the number of seconds
+                                          to sleep.
+                                        format: int64
+                                        type: integer
+                                    required:
+                                    - seconds
+                                    type: object
+                                  tcpSocket:
+                                    description: Deprecated. TCPSocket is NOT supported
+                                      as a LifecycleHandler and kept for the backward
+                                      compatibility. There are no validation of this
+                                      field and lifecycle hooks will fail in runtime
+                                      when tcp handler is specified.
+                                    properties:
+                                      host:
+                                        description: 'Optional: Host name to connect
+                                          to, defaults to the pod IP.'
+                                        type: string
+                                      port:
+                                        anyOf:
+                                        - type: integer
+                                        - type: string
+                                        description: Number or name of the port to
+                                          access on the container. Number must be
+                                          in the range 1 to 65535. Name must be an
+                                          IANA_SVC_NAME.
+                                        x-kubernetes-int-or-string: true
+                                    required:
+                                    - port
+                                    type: object
+                                type: object
+                            type: object
                           replicas:
                             description: Number of desired pods. This is a pointer
                               to distinguish between explicit zero and not specified.
@@ -6735,15 +8451,457 @@ spec:
                               type: object
                             type: array
                         type: object
-                      serviceType:
-                        description: Service Type string describes ingress methods
-                          for a service
-                        type: string
                     type: object
                   resourceManager:
                     properties:
+                      exposeSpec:
+                        properties:
+                          httpNodePort:
+                            format: int32
+                            type: integer
+                          ingress:
+                            description: IngressSpec describes the Ingress the user
+                              wishes to exist.
+                            properties:
+                              defaultBackend:
+                                description: defaultBackend is the backend that should
+                                  handle requests that don't match any rule. If Rules
+                                  are not specified, DefaultBackend must be specified.
+                                  If DefaultBackend is not set, the handling of requests
+                                  that do not match any of the rules will be up to
+                                  the Ingress controller.
+                                properties:
+                                  resource:
+                                    description: resource is an ObjectRef to another
+                                      Kubernetes resource in the namespace of the
+                                      Ingress object. If resource is specified, a
+                                      service.Name and service.Port must not be specified.
+                                      This is a mutually exclusive setting with "Service".
+                                    properties:
+                                      apiGroup:
+                                        description: APIGroup is the group for the
+                                          resource being referenced. If APIGroup is
+                                          not specified, the specified Kind must be
+                                          in the core API group. For any other third-party
+                                          types, APIGroup is required.
+                                        type: string
+                                      kind:
+                                        description: Kind is the type of resource
+                                          being referenced
+                                        type: string
+                                      name:
+                                        description: Name is the name of resource
+                                          being referenced
+                                        type: string
+                                    required:
+                                    - kind
+                                    - name
+                                    type: object
+                                    x-kubernetes-map-type: atomic
+                                  service:
+                                    description: service references a service as a
+                                      backend. This is a mutually exclusive setting
+                                      with "Resource".
+                                    properties:
+                                      name:
+                                        description: name is the referenced service.
+                                          The service must exist in the same namespace
+                                          as the Ingress object.
+                                        type: string
+                                      port:
+                                        description: port of the referenced service.
+                                          A port name or port number is required for
+                                          a IngressServiceBackend.
+                                        properties:
+                                          name:
+                                            description: name is the name of the port
+                                              on the Service. This is a mutually exclusive
+                                              setting with "Number".
+                                            type: string
+                                          number:
+                                            description: number is the numerical port
+                                              number (e.g. 80) on the Service. This
+                                              is a mutually exclusive setting with
+                                              "Name".
+                                            format: int32
+                                            type: integer
+                                        type: object
+                                    required:
+                                    - name
+                                    type: object
+                                type: object
+                              ingressClassName:
+                                description: ingressClassName is the name of an IngressClass
+                                  cluster resource. Ingress controller implementations
+                                  use this field to know whether they should be serving
+                                  this Ingress resource, by a transitive connection
+                                  (controller -> IngressClass -> Ingress resource).
+                                  Although the `kubernetes.io/ingress.class` annotation
+                                  (simple constant name) was never formally defined,
+                                  it was widely supported by Ingress controllers to
+                                  create a direct binding between Ingress controller
+                                  and Ingress resources. Newly created Ingress resources
+                                  should prefer using the field. However, even though
+                                  the annotation is officially deprecated, for backwards
+                                  compatibility reasons, ingress controllers should
+                                  still honor that annotation if present.
+                                type: string
+                              rules:
+                                description: rules is a list of host rules used to
+                                  configure the Ingress. If unspecified, or no rule
+                                  matches, all traffic is sent to the default backend.
+                                items:
+                                  description: IngressRule represents the rules mapping
+                                    the paths under a specified host to the related
+                                    backend services. Incoming requests are first
+                                    evaluated for a host match, then routed to the
+                                    backend associated with the matching IngressRuleValue.
+                                  properties:
+                                    host:
+                                      description: "host is the fully qualified domain
+                                        name of a network host, as defined by RFC
+                                        3986. Note the following deviations from the
+                                        \"host\" part of the URI as defined in RFC
+                                        3986: 1. IPs are not allowed. Currently an
+                                        IngressRuleValue can only apply to the IP
+                                        in the Spec of the parent Ingress. 2. The
+                                        `:` delimiter is not respected because ports
+                                        are not allowed. Currently the port of an
+                                        Ingress is implicitly :80 for http and :443
+                                        for https. Both these may change in the future.
+                                        Incoming requests are matched against the
+                                        host before the IngressRuleValue. If the host
+                                        is unspecified, the Ingress routes all traffic
+                                        based on the specified IngressRuleValue. \n
+                                        host can be \"precise\" which is a domain
+                                        name without the terminating dot of a network
+                                        host (e.g. \"foo.bar.com\") or \"wildcard\",
+                                        which is a domain name prefixed with a single
+                                        wildcard label (e.g. \"*.foo.com\"). The wildcard
+                                        character '*' must appear by itself as the
+                                        first DNS label and matches only a single
+                                        label. You cannot have a wildcard label by
+                                        itself (e.g. Host == \"*\"). Requests will
+                                        be matched against the Host field in the following
+                                        way: 1. If host is precise, the request matches
+                                        this rule if the http host header is equal
+                                        to Host. 2. If host is a wildcard, then the
+                                        request matches this rule if the http host
+                                        header is to equal to the suffix (removing
+                                        the first label) of the wildcard rule."
+                                      type: string
+                                    http:
+                                      description: 'HTTPIngressRuleValue is a list
+                                        of http selectors pointing to backends. In
+                                        the example: http://<host>/<path>?<searchpart>
+                                        -> backend where where parts of the url correspond
+                                        to RFC 3986, this resource will be used to
+                                        match against everything after the last ''/''
+                                        and before the first ''?'' or ''#''.'
+                                      properties:
+                                        paths:
+                                          description: paths is a collection of paths
+                                            that map requests to backends.
+                                          items:
+                                            description: HTTPIngressPath associates
+                                              a path with a backend. Incoming urls
+                                              matching the path are forwarded to the
+                                              backend.
+                                            properties:
+                                              backend:
+                                                description: backend defines the referenced
+                                                  service endpoint to which the traffic
+                                                  will be forwarded to.
+                                                properties:
+                                                  resource:
+                                                    description: resource is an ObjectRef
+                                                      to another Kubernetes resource
+                                                      in the namespace of the Ingress
+                                                      object. If resource is specified,
+                                                      a service.Name and service.Port
+                                                      must not be specified. This
+                                                      is a mutually exclusive setting
+                                                      with "Service".
+                                                    properties:
+                                                      apiGroup:
+                                                        description: APIGroup is the
+                                                          group for the resource being
+                                                          referenced. If APIGroup
+                                                          is not specified, the specified
+                                                          Kind must be in the core
+                                                          API group. For any other
+                                                          third-party types, APIGroup
+                                                          is required.
+                                                        type: string
+                                                      kind:
+                                                        description: Kind is the type
+                                                          of resource being referenced
+                                                        type: string
+                                                      name:
+                                                        description: Name is the name
+                                                          of resource being referenced
+                                                        type: string
+                                                    required:
+                                                    - kind
+                                                    - name
+                                                    type: object
+                                                    x-kubernetes-map-type: atomic
+                                                  service:
+                                                    description: service references
+                                                      a service as a backend. This
+                                                      is a mutually exclusive setting
+                                                      with "Resource".
+                                                    properties:
+                                                      name:
+                                                        description: name is the referenced
+                                                          service. The service must
+                                                          exist in the same namespace
+                                                          as the Ingress object.
+                                                        type: string
+                                                      port:
+                                                        description: port of the referenced
+                                                          service. A port name or
+                                                          port number is required
+                                                          for a IngressServiceBackend.
+                                                        properties:
+                                                          name:
+                                                            description: name is the
+                                                              name of the port on
+                                                              the Service. This is
+                                                              a mutually exclusive
+                                                              setting with "Number".
+                                                            type: string
+                                                          number:
+                                                            description: number is
+                                                              the numerical port number
+                                                              (e.g. 80) on the Service.
+                                                              This is a mutually exclusive
+                                                              setting with "Name".
+                                                            format: int32
+                                                            type: integer
+                                                        type: object
+                                                    required:
+                                                    - name
+                                                    type: object
+                                                type: object
+                                              path:
+                                                description: path is matched against
+                                                  the path of an incoming request.
+                                                  Currently it can contain characters
+                                                  disallowed from the conventional
+                                                  "path" part of a URL as defined
+                                                  by RFC 3986. Paths must begin with
+                                                  a '/' and must be present when using
+                                                  PathType with value "Exact" or "Prefix".
+                                                type: string
+                                              pathType:
+                                                description: 'pathType determines
+                                                  the interpretation of the path matching.
+                                                  PathType can be one of the following
+                                                  values: * Exact: Matches the URL
+                                                  path exactly. * Prefix: Matches
+                                                  based on a URL path prefix split
+                                                  by ''/''. Matching is done on a
+                                                  path element by element basis. A
+                                                  path element refers is the list
+                                                  of labels in the path split by the
+                                                  ''/'' separator. A request is a
+                                                  match for path p if every p is an
+                                                  element-wise prefix of p of the
+                                                  request path. Note that if the last
+                                                  element of the path is a substring
+                                                  of the last element in request path,
+                                                  it is not a match (e.g. /foo/bar
+                                                  matches /foo/bar/baz, but does not
+                                                  match /foo/barbaz). * ImplementationSpecific:
+                                                  Interpretation of the Path matching
+                                                  is up to the IngressClass. Implementations
+                                                  can treat this as a separate PathType
+                                                  or treat it identically to Prefix
+                                                  or Exact path types. Implementations
+                                                  are required to support all path
+                                                  types.'
+                                                type: string
+                                            required:
+                                            - backend
+                                            - pathType
+                                            type: object
+                                          type: array
+                                          x-kubernetes-list-type: atomic
+                                      required:
+                                      - paths
+                                      type: object
+                                  type: object
+                                type: array
+                                x-kubernetes-list-type: atomic
+                              tls:
+                                description: tls represents the TLS configuration.
+                                  Currently the Ingress only supports a single TLS
+                                  port, 443. If multiple members of this list specify
+                                  different hosts, they will be multiplexed on the
+                                  same port according to the hostname specified through
+                                  the SNI TLS extension, if the ingress controller
+                                  fulfilling the ingress supports SNI.
+                                items:
+                                  description: IngressTLS describes the transport
+                                    layer security associated with an ingress.
+                                  properties:
+                                    hosts:
+                                      description: hosts is a list of hosts included
+                                        in the TLS certificate. The values in this
+                                        list must match the name/s used in the tlsSecret.
+                                        Defaults to the wildcard host setting for
+                                        the loadbalancer controller fulfilling this
+                                        Ingress, if left unspecified.
+                                      items:
+                                        type: string
+                                      type: array
+                                      x-kubernetes-list-type: atomic
+                                    secretName:
+                                      description: secretName is the name of the secret
+                                        used to terminate TLS traffic on port 443.
+                                        Field is left optional to allow TLS routing
+                                        based on SNI hostname alone. If the SNI host
+                                        in a listener conflicts with the "Host" header
+                                        field used by an IngressRule, the SNI host
+                                        is used for termination and value of the "Host"
+                                        header is used for routing.
+                                      type: string
+                                  type: object
+                                type: array
+                                x-kubernetes-list-type: atomic
+                            type: object
+                          type:
+                            type: string
+                        type: object
                       nodeSpec:
                         properties:
+                          deleteOnTermination:
+                            description: DeleteOnTermination specify whether executor
+                              pods should be deleted in case of failure or normal
+                              termination.
+                            type: boolean
+                          env:
+                            description: List of environment variables to set in the
+                              container. Cannot be updated.
+                            items:
+                              description: EnvVar represents an environment variable
+                                present in a Container.
+                              properties:
+                                name:
+                                  description: Name of the environment variable. Must
+                                    be a C_IDENTIFIER.
+                                  type: string
+                                value:
+                                  description: 'Variable references $(VAR_NAME) are
+                                    expanded using the previously defined environment
+                                    variables in the container and any service environment
+                                    variables. If a variable cannot be resolved, the
+                                    reference in the input string will be unchanged.
+                                    Double $$ are reduced to a single $, which allows
+                                    for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)"
+                                    will produce the string literal "$(VAR_NAME)".
+                                    Escaped references will never be expanded, regardless
+                                    of whether the variable exists or not. Defaults
+                                    to "".'
+                                  type: string
+                                valueFrom:
+                                  description: Source for the environment variable's
+                                    value. Cannot be used if value is not empty.
+                                  properties:
+                                    configMapKeyRef:
+                                      description: Selects a key of a ConfigMap.
+                                      properties:
+                                        key:
+                                          description: The key to select.
+                                          type: string
+                                        name:
+                                          description: 'Name of the referent. More
+                                            info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                            TODO: Add other useful fields. apiVersion,
+                                            kind, uid?'
+                                          type: string
+                                        optional:
+                                          description: Specify whether the ConfigMap
+                                            or its key must be defined
+                                          type: boolean
+                                      required:
+                                      - key
+                                      type: object
+                                      x-kubernetes-map-type: atomic
+                                    fieldRef:
+                                      description: 'Selects a field of the pod: supports
+                                        metadata.name, metadata.namespace, `metadata.labels[''<KEY>'']`,
+                                        `metadata.annotations[''<KEY>'']`, spec.nodeName,
+                                        spec.serviceAccountName, status.hostIP, status.podIP,
+                                        status.podIPs.'
+                                      properties:
+                                        apiVersion:
+                                          description: Version of the schema the FieldPath
+                                            is written in terms of, defaults to "v1".
+                                          type: string
+                                        fieldPath:
+                                          description: Path of the field to select
+                                            in the specified API version.
+                                          type: string
+                                      required:
+                                      - fieldPath
+                                      type: object
+                                      x-kubernetes-map-type: atomic
+                                    resourceFieldRef:
+                                      description: 'Selects a resource of the container:
+                                        only resources limits and requests (limits.cpu,
+                                        limits.memory, limits.ephemeral-storage, requests.cpu,
+                                        requests.memory and requests.ephemeral-storage)
+                                        are currently supported.'
+                                      properties:
+                                        containerName:
+                                          description: 'Container name: required for
+                                            volumes, optional for env vars'
+                                          type: string
+                                        divisor:
+                                          anyOf:
+                                          - type: integer
+                                          - type: string
+                                          description: Specifies the output format
+                                            of the exposed resources, defaults to
+                                            "1"
+                                          pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                          x-kubernetes-int-or-string: true
+                                        resource:
+                                          description: 'Required: resource to select'
+                                          type: string
+                                      required:
+                                      - resource
+                                      type: object
+                                      x-kubernetes-map-type: atomic
+                                    secretKeyRef:
+                                      description: Selects a key of a secret in the
+                                        pod's namespace
+                                      properties:
+                                        key:
+                                          description: The key of the secret to select
+                                            from.  Must be a valid secret key.
+                                          type: string
+                                        name:
+                                          description: 'Name of the referent. More
+                                            info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                            TODO: Add other useful fields. apiVersion,
+                                            kind, uid?'
+                                          type: string
+                                        optional:
+                                          description: Specify whether the Secret
+                                            or its key must be defined
+                                          type: boolean
+                                      required:
+                                      - key
+                                      type: object
+                                      x-kubernetes-map-type: atomic
+                                  type: object
+                              required:
+                              - name
+                              type: object
+                            type: array
                           hostNetwork:
                             description: Host networking requested for this pod. Use
                               the host's network namespace. If this option is set,
@@ -6776,6 +8934,240 @@ spec:
                               type: object
                               x-kubernetes-map-type: atomic
                             type: array
+                          lifecycle:
+                            description: Actions that the management system should
+                              take in response to container lifecycle events. Cannot
+                              be updated.
+                            properties:
+                              postStart:
+                                description: 'PostStart is called immediately after
+                                  a container is created. If the handler fails, the
+                                  container is terminated and restarted according
+                                  to its restart policy. Other management of the container
+                                  blocks until the hook completes. More info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks'
+                                properties:
+                                  exec:
+                                    description: Exec specifies the action to take.
+                                    properties:
+                                      command:
+                                        description: Command is the command line to
+                                          execute inside the container, the working
+                                          directory for the command  is root ('/')
+                                          in the container's filesystem. The command
+                                          is simply exec'd, it is not run inside a
+                                          shell, so traditional shell instructions
+                                          ('|', etc) won't work. To use a shell, you
+                                          need to explicitly call out to that shell.
+                                          Exit status of 0 is treated as live/healthy
+                                          and non-zero is unhealthy.
+                                        items:
+                                          type: string
+                                        type: array
+                                    type: object
+                                  httpGet:
+                                    description: HTTPGet specifies the http request
+                                      to perform.
+                                    properties:
+                                      host:
+                                        description: Host name to connect to, defaults
+                                          to the pod IP. You probably want to set
+                                          "Host" in httpHeaders instead.
+                                        type: string
+                                      httpHeaders:
+                                        description: Custom headers to set in the
+                                          request. HTTP allows repeated headers.
+                                        items:
+                                          description: HTTPHeader describes a custom
+                                            header to be used in HTTP probes
+                                          properties:
+                                            name:
+                                              description: The header field name.
+                                                This will be canonicalized upon output,
+                                                so case-variant names will be understood
+                                                as the same header.
+                                              type: string
+                                            value:
+                                              description: The header field value
+                                              type: string
+                                          required:
+                                          - name
+                                          - value
+                                          type: object
+                                        type: array
+                                      path:
+                                        description: Path to access on the HTTP server.
+                                        type: string
+                                      port:
+                                        anyOf:
+                                        - type: integer
+                                        - type: string
+                                        description: Name or number of the port to
+                                          access on the container. Number must be
+                                          in the range 1 to 65535. Name must be an
+                                          IANA_SVC_NAME.
+                                        x-kubernetes-int-or-string: true
+                                      scheme:
+                                        description: Scheme to use for connecting
+                                          to the host. Defaults to HTTP.
+                                        type: string
+                                    required:
+                                    - port
+                                    type: object
+                                  sleep:
+                                    description: Sleep represents the duration that
+                                      the container should sleep before being terminated.
+                                    properties:
+                                      seconds:
+                                        description: Seconds is the number of seconds
+                                          to sleep.
+                                        format: int64
+                                        type: integer
+                                    required:
+                                    - seconds
+                                    type: object
+                                  tcpSocket:
+                                    description: Deprecated. TCPSocket is NOT supported
+                                      as a LifecycleHandler and kept for the backward
+                                      compatibility. There are no validation of this
+                                      field and lifecycle hooks will fail in runtime
+                                      when tcp handler is specified.
+                                    properties:
+                                      host:
+                                        description: 'Optional: Host name to connect
+                                          to, defaults to the pod IP.'
+                                        type: string
+                                      port:
+                                        anyOf:
+                                        - type: integer
+                                        - type: string
+                                        description: Number or name of the port to
+                                          access on the container. Number must be
+                                          in the range 1 to 65535. Name must be an
+                                          IANA_SVC_NAME.
+                                        x-kubernetes-int-or-string: true
+                                    required:
+                                    - port
+                                    type: object
+                                type: object
+                              preStop:
+                                description: 'PreStop is called immediately before
+                                  a container is terminated due to an API request
+                                  or management event such as liveness/startup probe
+                                  failure, preemption, resource contention, etc. The
+                                  handler is not called if the container crashes or
+                                  exits. The Pod''s termination grace period countdown
+                                  begins before the PreStop hook is executed. Regardless
+                                  of the outcome of the handler, the container will
+                                  eventually terminate within the Pod''s termination
+                                  grace period (unless delayed by finalizers). Other
+                                  management of the container blocks until the hook
+                                  completes or until the termination grace period
+                                  is reached. More info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks'
+                                properties:
+                                  exec:
+                                    description: Exec specifies the action to take.
+                                    properties:
+                                      command:
+                                        description: Command is the command line to
+                                          execute inside the container, the working
+                                          directory for the command  is root ('/')
+                                          in the container's filesystem. The command
+                                          is simply exec'd, it is not run inside a
+                                          shell, so traditional shell instructions
+                                          ('|', etc) won't work. To use a shell, you
+                                          need to explicitly call out to that shell.
+                                          Exit status of 0 is treated as live/healthy
+                                          and non-zero is unhealthy.
+                                        items:
+                                          type: string
+                                        type: array
+                                    type: object
+                                  httpGet:
+                                    description: HTTPGet specifies the http request
+                                      to perform.
+                                    properties:
+                                      host:
+                                        description: Host name to connect to, defaults
+                                          to the pod IP. You probably want to set
+                                          "Host" in httpHeaders instead.
+                                        type: string
+                                      httpHeaders:
+                                        description: Custom headers to set in the
+                                          request. HTTP allows repeated headers.
+                                        items:
+                                          description: HTTPHeader describes a custom
+                                            header to be used in HTTP probes
+                                          properties:
+                                            name:
+                                              description: The header field name.
+                                                This will be canonicalized upon output,
+                                                so case-variant names will be understood
+                                                as the same header.
+                                              type: string
+                                            value:
+                                              description: The header field value
+                                              type: string
+                                          required:
+                                          - name
+                                          - value
+                                          type: object
+                                        type: array
+                                      path:
+                                        description: Path to access on the HTTP server.
+                                        type: string
+                                      port:
+                                        anyOf:
+                                        - type: integer
+                                        - type: string
+                                        description: Name or number of the port to
+                                          access on the container. Number must be
+                                          in the range 1 to 65535. Name must be an
+                                          IANA_SVC_NAME.
+                                        x-kubernetes-int-or-string: true
+                                      scheme:
+                                        description: Scheme to use for connecting
+                                          to the host. Defaults to HTTP.
+                                        type: string
+                                    required:
+                                    - port
+                                    type: object
+                                  sleep:
+                                    description: Sleep represents the duration that
+                                      the container should sleep before being terminated.
+                                    properties:
+                                      seconds:
+                                        description: Seconds is the number of seconds
+                                          to sleep.
+                                        format: int64
+                                        type: integer
+                                    required:
+                                    - seconds
+                                    type: object
+                                  tcpSocket:
+                                    description: Deprecated. TCPSocket is NOT supported
+                                      as a LifecycleHandler and kept for the backward
+                                      compatibility. There are no validation of this
+                                      field and lifecycle hooks will fail in runtime
+                                      when tcp handler is specified.
+                                    properties:
+                                      host:
+                                        description: 'Optional: Host name to connect
+                                          to, defaults to the pod IP.'
+                                        type: string
+                                      port:
+                                        anyOf:
+                                        - type: integer
+                                        - type: string
+                                        description: Number or name of the port to
+                                          access on the container. Number must be
+                                          in the range 1 to 65535. Name must be an
+                                          IANA_SVC_NAME.
+                                        x-kubernetes-int-or-string: true
+                                    required:
+                                    - port
+                                    type: object
+                                type: object
+                            type: object
                           replicas:
                             description: Number of desired pods. This is a pointer
                               to distinguish between explicit zero and not specified.
@@ -8954,10 +11346,6 @@ spec:
                               type: object
                             type: array
                         type: object
-                      serviceType:
-                        description: Service Type string describes ingress methods
-                          for a service
-                        type: string
                     type: object
                 type: object
             type: object
