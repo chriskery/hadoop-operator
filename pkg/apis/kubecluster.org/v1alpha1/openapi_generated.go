@@ -29,11 +29,11 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
-		"github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1.ClusterCondition":    schema_pkg_apis_kubeclusterorg_v1alpha1_ClusterCondition(ref),
-		"github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1.HadoopClusterStatus": schema_pkg_apis_kubeclusterorg_v1alpha1_HadoopClusterStatus(ref),
-		"github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1.HadoopJobStatus":     schema_pkg_apis_kubeclusterorg_v1alpha1_HadoopJobStatus(ref),
-		"github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1.JobCondition":        schema_pkg_apis_kubeclusterorg_v1alpha1_JobCondition(ref),
-		"github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1.ReplicaStatus":       schema_pkg_apis_kubeclusterorg_v1alpha1_ReplicaStatus(ref),
+		"github.com/chriskery/hadoop-operator/pkg/apis/kubecluster.org/v1alpha1.ClusterCondition":    schema_pkg_apis_kubeclusterorg_v1alpha1_ClusterCondition(ref),
+		"github.com/chriskery/hadoop-operator/pkg/apis/kubecluster.org/v1alpha1.HadoopClusterStatus": schema_pkg_apis_kubeclusterorg_v1alpha1_HadoopClusterStatus(ref),
+		"github.com/chriskery/hadoop-operator/pkg/apis/kubecluster.org/v1alpha1.HadoopJobStatus":     schema_pkg_apis_kubeclusterorg_v1alpha1_HadoopJobStatus(ref),
+		"github.com/chriskery/hadoop-operator/pkg/apis/kubecluster.org/v1alpha1.JobCondition":        schema_pkg_apis_kubeclusterorg_v1alpha1_JobCondition(ref),
+		"github.com/chriskery/hadoop-operator/pkg/apis/kubecluster.org/v1alpha1.ReplicaStatus":       schema_pkg_apis_kubeclusterorg_v1alpha1_ReplicaStatus(ref),
 	}
 }
 
@@ -110,7 +110,7 @@ func schema_pkg_apis_kubeclusterorg_v1alpha1_HadoopClusterStatus(ref common.Refe
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1.ClusterCondition"),
+										Ref:     ref("github.com/chriskery/hadoop-operator/pkg/apis/kubecluster.org/v1alpha1.ClusterCondition"),
 									},
 								},
 							},
@@ -124,7 +124,7 @@ func schema_pkg_apis_kubeclusterorg_v1alpha1_HadoopClusterStatus(ref common.Refe
 								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1.ReplicaStatus"),
+										Ref: ref("github.com/chriskery/hadoop-operator/pkg/apis/kubecluster.org/v1alpha1.ReplicaStatus"),
 									},
 								},
 							},
@@ -141,7 +141,7 @@ func schema_pkg_apis_kubeclusterorg_v1alpha1_HadoopClusterStatus(ref common.Refe
 			},
 		},
 		Dependencies: []string{
-			"github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1.ClusterCondition", "github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1.ReplicaStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
+			"github.com/chriskery/hadoop-operator/pkg/apis/kubecluster.org/v1alpha1.ClusterCondition", "github.com/chriskery/hadoop-operator/pkg/apis/kubecluster.org/v1alpha1.ReplicaStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
 	}
 }
 
@@ -160,7 +160,7 @@ func schema_pkg_apis_kubeclusterorg_v1alpha1_HadoopJobStatus(ref common.Referenc
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1.JobCondition"),
+										Ref:     ref("github.com/chriskery/hadoop-operator/pkg/apis/kubecluster.org/v1alpha1.JobCondition"),
 									},
 								},
 							},
@@ -183,7 +183,7 @@ func schema_pkg_apis_kubeclusterorg_v1alpha1_HadoopJobStatus(ref common.Referenc
 			},
 		},
 		Dependencies: []string{
-			"github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1.JobCondition", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
+			"github.com/chriskery/hadoop-operator/pkg/apis/kubecluster.org/v1alpha1.JobCondition", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
 	}
 }
 

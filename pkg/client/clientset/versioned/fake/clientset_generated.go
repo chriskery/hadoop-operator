@@ -18,9 +18,9 @@ limitations under the License.
 package fake
 
 import (
-	clientset "github.com/chriskery/hadoop-cluster-operator/pkg/client/clientset/versioned"
-	kubeclusterv1alpha1 "github.com/chriskery/hadoop-cluster-operator/pkg/client/clientset/versioned/typed/kubecluster.org/v1alpha1"
-	fakekubeclusterv1alpha1 "github.com/chriskery/hadoop-cluster-operator/pkg/client/clientset/versioned/typed/kubecluster.org/v1alpha1/fake"
+	clientset "github.com/chriskery/hadoop-operator/pkg/client/clientset/versioned"
+	kubeclusterv1alpha1 "github.com/chriskery/hadoop-operator/pkg/client/clientset/versioned/typed/kubecluster.org/v1alpha1"
+	fakekubeclusterv1alpha1 "github.com/chriskery/hadoop-operator/pkg/client/clientset/versioned/typed/kubecluster.org/v1alpha1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"

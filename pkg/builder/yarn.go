@@ -3,9 +3,9 @@ package builder
 import (
 	"context"
 	"fmt"
-	v1alpha1 "github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1"
-	"github.com/chriskery/hadoop-cluster-operator/pkg/control"
-	"github.com/chriskery/hadoop-cluster-operator/pkg/util"
+	v1alpha1 "github.com/chriskery/hadoop-operator/pkg/apis/kubecluster.org/v1alpha1"
+	"github.com/chriskery/hadoop-operator/pkg/control"
+	"github.com/chriskery/hadoop-operator/pkg/util"
 	appv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"

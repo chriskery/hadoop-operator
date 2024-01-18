@@ -2,8 +2,8 @@ package control
 
 import (
 	"encoding/json"
-	"github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1"
-	"github.com/chriskery/hadoop-cluster-operator/pkg/util/testutil"
+	"github.com/chriskery/hadoop-operator/pkg/apis/kubecluster.org/v1alpha1"
+	"github.com/chriskery/hadoop-operator/pkg/util/testutil"
 	appv1 "k8s.io/api/apps/v1"
 	"net/http/httptest"
 	"testing"

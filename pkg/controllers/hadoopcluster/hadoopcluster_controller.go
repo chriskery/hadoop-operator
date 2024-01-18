@@ -19,9 +19,9 @@ package hadoopcluster
 import (
 	"context"
 	"fmt"
-	v1alpha1 "github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1"
-	"github.com/chriskery/hadoop-cluster-operator/pkg/builder"
-	"github.com/chriskery/hadoop-cluster-operator/pkg/util"
+	v1alpha1 "github.com/chriskery/hadoop-operator/pkg/apis/kubecluster.org/v1alpha1"
+	"github.com/chriskery/hadoop-operator/pkg/builder"
+	"github.com/chriskery/hadoop-operator/pkg/util"
 	"github.com/go-logr/logr"
 	"github.com/sirupsen/logrus"
 	appv1 "k8s.io/api/apps/v1"

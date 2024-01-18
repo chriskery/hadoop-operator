@@ -22,9 +22,9 @@ import (
 	sync "sync"
 	time "time"
 
-	versioned "github.com/chriskery/hadoop-cluster-operator/pkg/client/clientset/versioned"
-	internalinterfaces "github.com/chriskery/hadoop-cluster-operator/pkg/client/informers/externalversions/internalinterfaces"
-	kubeclusterorg "github.com/chriskery/hadoop-cluster-operator/pkg/client/informers/externalversions/kubecluster.org"
+	versioned "github.com/chriskery/hadoop-operator/pkg/client/clientset/versioned"
+	internalinterfaces "github.com/chriskery/hadoop-operator/pkg/client/informers/externalversions/internalinterfaces"
+	kubeclusterorg "github.com/chriskery/hadoop-operator/pkg/client/informers/externalversions/kubecluster.org"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"

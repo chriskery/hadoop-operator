@@ -16,7 +16,7 @@ package control
 
 import (
 	"fmt"
-	"github.com/chriskery/hadoop-cluster-operator/pkg/util"
+	"github.com/chriskery/hadoop-operator/pkg/util"
 	corev1 "k8s.io/api/core/v1"
 	"sync"
 

@@ -2,9 +2,9 @@ package builder
 
 import (
 	"fmt"
-	"github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1"
-	"github.com/chriskery/hadoop-cluster-operator/pkg/util"
-	utillabels "github.com/chriskery/hadoop-cluster-operator/pkg/util/labels"
+	"github.com/chriskery/hadoop-operator/pkg/apis/kubecluster.org/v1alpha1"
+	"github.com/chriskery/hadoop-operator/pkg/util"
+	utillabels "github.com/chriskery/hadoop-operator/pkg/util/labels"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

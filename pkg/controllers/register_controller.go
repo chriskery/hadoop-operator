@@ -2,9 +2,9 @@ package controllers
 
 import (
 	"fmt"
-	"github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1"
-	"github.com/chriskery/hadoop-cluster-operator/pkg/controllers/hadoopcluster"
-	"github.com/chriskery/hadoop-cluster-operator/pkg/controllers/hadoopjob"
+	"github.com/chriskery/hadoop-operator/pkg/apis/kubecluster.org/v1alpha1"
+	"github.com/chriskery/hadoop-operator/pkg/controllers/hadoopcluster"
+	"github.com/chriskery/hadoop-operator/pkg/controllers/hadoopjob"
 	"strings"
 
 	"sigs.k8s.io/controller-runtime/pkg/manager"

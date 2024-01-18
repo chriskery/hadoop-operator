@@ -2,7 +2,7 @@ package util
 
 import (
 	"context"
-	"github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1"
+	"github.com/chriskery/hadoop-operator/pkg/apis/kubecluster.org/v1alpha1"
 	log "github.com/sirupsen/logrus"
 	appv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/types"

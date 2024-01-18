@@ -3,9 +3,9 @@ package builder
 import (
 	"context"
 	"fmt"
-	"github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1"
-	"github.com/chriskery/hadoop-cluster-operator/pkg/control"
-	"github.com/chriskery/hadoop-cluster-operator/pkg/util"
+	"github.com/chriskery/hadoop-operator/pkg/apis/kubecluster.org/v1alpha1"
+	"github.com/chriskery/hadoop-operator/pkg/control"
+	"github.com/chriskery/hadoop-operator/pkg/util"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -111,7 +111,11 @@ func (driverBuilder *DriverBuilder) genDriverPodSpec(job *v1alpha1.HadoopJob, dr
 	podTemplateSpec.Spec.Containers = containers
 
 	setPodEnv(&v1alpha1.HadoopCluster{ObjectMeta: *job.ObjectMeta.DeepCopy()}, podTemplateSpec.Spec.Containers, v1alpha1.ReplicaTypeDriver)
+	return podTemplateSpec
 }
+
+// Clean deletes driver pod
+func (driverBuilder *DriverBuilder) Clean(obj interface{}) error {
 	job := obj.(*v1alpha1.HadoopJob)
 
 	driverPodName := util.GetReplicaName(job, v1alpha1.ReplicaTypeDriver)

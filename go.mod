@@ -1,4 +1,4 @@
-module github.com/chriskery/hadoop-cluster-operator
+module github.com/chriskery/hadoop-operator
 
 go 1.21
 
