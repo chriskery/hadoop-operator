@@ -80,7 +80,7 @@ func setPodEnv(hadoopCluster *v1alpha1.HadoopCluster, containers []corev1.Contai
 			Name:  EnvResourceManagerAddr,
 			Value: resourceManagerAddr,
 		})
-		
+
 		if replicaType == v1alpha1.ReplicaTypeNameNode {
 			containers[i].Env = append(containers[i].Env, corev1.EnvVar{
 				Name:  EnvNameNodeFormat,
