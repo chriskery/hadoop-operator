@@ -14,28 +14,28 @@
 Package v1alpha1 contains API Schema definitions for the kubecluster.org v1alpha1 API group
 
 .Resource Types
-- xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopcluster[$$HadoopCluster$$]
-- xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopclusterlist[$$HadoopClusterList$$]
-- xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopjob[$$HadoopJob$$]
-- xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopjoblist[$$HadoopJobList$$]
+- xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopcluster[$$HadoopCluster$$]
+- xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopclusterlist[$$HadoopClusterList$$]
+- xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopjob[$$HadoopJob$$]
+- xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopjoblist[$$HadoopJobList$$]
 
 
 === Definitions
 
-[id="{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-clustercondition"]
+[id="{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-clustercondition"]
 ==== ClusterCondition 
 
 ClusterCondition describes current state of a cluster
 
 .Appears In:
 ****
-- xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopclusterstatus[$$HadoopClusterStatus$$]
+- xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopclusterstatus[$$HadoopClusterStatus$$]
 ****
 
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`type`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-clusterconditiontype[$$ClusterConditionType$$]__ | Type of job condition.
+| *`type`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-clusterconditiontype[$$ClusterConditionType$$]__ | Type of job condition.
 | *`status`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#conditionstatus-v1-core[$$ConditionStatus$$]__ | Status of the condition, one of True, False, Unknown.
 | *`reason`* __string__ | The reason for the condition's last transition.
 | *`message`* __string__ | A human readable message indicating details about the transition.
@@ -44,51 +44,72 @@ ClusterCondition describes current state of a cluster
 |===
 
 
-[id="{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-clusterconditiontype"]
+[id="{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-clusterconditiontype"]
 ==== ClusterConditionType (string) 
 
 
 
 .Appears In:
 ****
-- xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-clustercondition[$$ClusterCondition$$]
+- xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-clustercondition[$$ClusterCondition$$]
 ****
 
 
 
-[id="{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hdfsdatanodespectemplate"]
+[id="{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-exposespec"]
+==== ExposeSpec 
+
+
+
+.Appears In:
+****
+- xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hdfsnamenodespectemplate[$$HDFSNameNodeSpecTemplate$$]
+- xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-yarnnodemanagerspectemplate[$$YarnNodeManagerSpecTemplate$$]
+- xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-yarnresourcemanagerspectemplate[$$YarnResourceManagerSpecTemplate$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`type`* __string__ | 
+| *`httpNodePort`* __integer__ | 
+| *`ingress`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#ingressspec-v1-networking[$$IngressSpec$$]__ | 
+|===
+
+
+[id="{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hdfsdatanodespectemplate"]
 ==== HDFSDataNodeSpecTemplate 
 
 
 
 .Appears In:
 ****
-- xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hdfsspec[$$HDFSSpec$$]
+- xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hdfsspec[$$HDFSSpec$$]
 ****
 
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`nodeSpec`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopnodespec[$$HadoopNodeSpec$$]__ | 
+| *`nodeSpec`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopnodespec[$$HadoopNodeSpec$$]__ | 
 | *`dataDir`* __string__ | DataDir refers to the directory where the DataNode stores the HDFS blocks.
 |===
 
 
-[id="{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hdfsnamenodespectemplate"]
+[id="{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hdfsnamenodespectemplate"]
 ==== HDFSNameNodeSpecTemplate 
 
 
 
 .Appears In:
 ****
-- xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hdfsspec[$$HDFSSpec$$]
+- xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hdfsspec[$$HDFSSpec$$]
 ****
 
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`nodeSpec`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopnodespec[$$HadoopNodeSpec$$]__ | 
-| *`serviceType`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#servicetype-v1-core[$$ServiceType$$]__ | 
+| *`nodeSpec`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopnodespec[$$HadoopNodeSpec$$]__ | 
+| *`exposeSpec`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-exposespec[$$ExposeSpec$$]__ | 
 | *`format`* __boolean__ | This argument tells the namenode to format its namespace, which includes deleting the current contents of the namenode's metadata and starting fresh. This operation is typically performed the first time the namenode is started to ensure that the metadata directories are properly initialized. After this operation, any existing data in HDFS would be lost.
 | *`nameDir`* __string__ | NameDir refers to the directory where the NameNode stores crucial metadata for the Hadoop Distributed File System (HDFS). In the context of Hadoop, the NameNode is a vital component responsible for managing the namespace and storing metadata information for files.
 | *`logAggregationEnable`* __boolean__ | LogAggregationEnable refers to whether log aggregation is enabled.
@@ -97,32 +118,32 @@ ClusterCondition describes current state of a cluster
 |===
 
 
-[id="{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hdfsspec"]
+[id="{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hdfsspec"]
 ==== HDFSSpec 
 
 
 
 .Appears In:
 ****
-- xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopclusterspec[$$HadoopClusterSpec$$]
+- xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopclusterspec[$$HadoopClusterSpec$$]
 ****
 
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`nameNode`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hdfsnamenodespectemplate[$$HDFSNameNodeSpecTemplate$$]__ | 
-| *`dataNode`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hdfsdatanodespectemplate[$$HDFSDataNodeSpecTemplate$$]__ | 
+| *`nameNode`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hdfsnamenodespectemplate[$$HDFSNameNodeSpecTemplate$$]__ | 
+| *`dataNode`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hdfsdatanodespectemplate[$$HDFSDataNodeSpecTemplate$$]__ | 
 |===
 
 
-[id="{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopcluster"]
+[id="{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopcluster"]
 ==== HadoopCluster 
 
 HadoopCluster is the Schema for the hadoopclusters API
 
 .Appears In:
 ****
-- xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopclusterlist[$$HadoopClusterList$$]
+- xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopclusterlist[$$HadoopClusterList$$]
 ****
 
 [cols="25a,75a", options="header"]
@@ -133,12 +154,12 @@ HadoopCluster is the Schema for the hadoopclusters API
 | *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
-| *`spec`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopclusterspec[$$HadoopClusterSpec$$]__ | 
-| *`status`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopclusterstatus[$$HadoopClusterStatus$$]__ | 
+| *`spec`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopclusterspec[$$HadoopClusterSpec$$]__ | 
+| *`status`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopclusterstatus[$$HadoopClusterStatus$$]__ | 
 |===
 
 
-[id="{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopclusterlist"]
+[id="{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopclusterlist"]
 ==== HadoopClusterList 
 
 HadoopClusterList contains a list of HadoopCluster
@@ -153,55 +174,55 @@ HadoopClusterList contains a list of HadoopCluster
 | *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
-| *`items`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopcluster[$$HadoopCluster$$] array__ | 
+| *`items`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopcluster[$$HadoopCluster$$] array__ | 
 |===
 
 
-[id="{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopclusterspec"]
+[id="{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopclusterspec"]
 ==== HadoopClusterSpec 
 
 HadoopClusterSpec defines the desired state of HadoopCluster NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 .Appears In:
 ****
-- xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopcluster[$$HadoopCluster$$]
+- xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopcluster[$$HadoopCluster$$]
 ****
 
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`hdfs`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hdfsspec[$$HDFSSpec$$]__ | INSERT ADDITIONAL SPEC FIELDS - desired state of cluster Important: Run "make" to regenerate code after modifying this file
-| *`yarn`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-yarnspec[$$YarnSpec$$]__ | 
+| *`hdfs`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hdfsspec[$$HDFSSpec$$]__ | INSERT ADDITIONAL SPEC FIELDS - desired state of cluster Important: Run "make" to regenerate code after modifying this file
+| *`yarn`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-yarnspec[$$YarnSpec$$]__ | 
 |===
 
 
-[id="{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopclusterstatus"]
+[id="{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopclusterstatus"]
 ==== HadoopClusterStatus 
 
 HadoopClusterStatus defines the observed state of HadoopCluster
 
 .Appears In:
 ****
-- xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopcluster[$$HadoopCluster$$]
+- xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopcluster[$$HadoopCluster$$]
 ****
 
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`conditions`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-clustercondition[$$ClusterCondition$$] array__ | INSERT ADDITIONAL STATUS FIELD - define observed state of cluster Important: Run "make" to regenerate code after modifying this file Conditions is an array of current observed job conditions.
-| *`replicaStatuses`* __object (keys:ReplicaType, values:xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-replicastatus[$$ReplicaStatus$$])__ | ReplicaStatuses is map of ReplicaType and ReplicaStatus, specifies the status of each replica.
+| *`conditions`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-clustercondition[$$ClusterCondition$$] array__ | INSERT ADDITIONAL STATUS FIELD - define observed state of cluster Important: Run "make" to regenerate code after modifying this file Conditions is an array of current observed job conditions.
+| *`replicaStatuses`* __object (keys:ReplicaType, values:xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-replicastatus[$$ReplicaStatus$$])__ | ReplicaStatuses is map of ReplicaType and ReplicaStatus, specifies the status of each replica.
 | *`startTime`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#time-v1-meta[$$Time$$]__ | Represents time when the job was acknowledged by the job controller. It is not guaranteed to be set in happens-before order across separate operations. It is represented in RFC3339 form and is in UTC.
 |===
 
 
-[id="{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopjob"]
+[id="{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopjob"]
 ==== HadoopJob 
 
 HadoopJob is the Schema for the hadoopjobs API
 
 .Appears In:
 ****
-- xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopjoblist[$$HadoopJobList$$]
+- xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopjoblist[$$HadoopJobList$$]
 ****
 
 [cols="25a,75a", options="header"]
@@ -212,12 +233,12 @@ HadoopJob is the Schema for the hadoopjobs API
 | *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
-| *`spec`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopjobspec[$$HadoopJobSpec$$]__ | 
-| *`status`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopjobstatus[$$HadoopJobStatus$$]__ | 
+| *`spec`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopjobspec[$$HadoopJobSpec$$]__ | 
+| *`status`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopjobstatus[$$HadoopJobStatus$$]__ | 
 |===
 
 
-[id="{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopjoblist"]
+[id="{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopjoblist"]
 ==== HadoopJobList 
 
 HadoopJobList contains a list of HadoopJob
@@ -232,18 +253,18 @@ HadoopJobList contains a list of HadoopJob
 | *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
-| *`items`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopjob[$$HadoopJob$$] array__ | 
+| *`items`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopjob[$$HadoopJob$$] array__ | 
 |===
 
 
-[id="{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopjobspec"]
+[id="{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopjobspec"]
 ==== HadoopJobSpec 
 
 HadoopJobSpec defines the desired state of HadoopJob NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 .Appears In:
 ****
-- xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopjob[$$HadoopJob$$]
+- xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopjob[$$HadoopJob$$]
 ****
 
 [cols="25a,75a", options="header"]
@@ -251,43 +272,62 @@ HadoopJobSpec defines the desired state of HadoopJob NOTE: json tags are require
 | Field | Description
 | *`mainApplicationFile`* __string__ | MainFile is the path to a bundled JAR, Python, or R file of the application.
 | *`arguments`* __string array__ | Arguments is a list of arguments to be passed to the application.
-| *`executorSpec`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopnodespec[$$HadoopNodeSpec$$]__ | 
+| *`executorSpec`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopnodespec[$$HadoopNodeSpec$$]__ | 
 | *`nameNodeDirFormat`* __boolean__ | 
 | *`env`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#envvar-v1-core[$$EnvVar$$] array__ | List of environment variables to set in the container. Cannot be updated.
 |===
 
 
-[id="{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopjobstatus"]
+[id="{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopjobstatus"]
 ==== HadoopJobStatus 
 
 HadoopJobStatus defines the observed state of HadoopJob
 
 .Appears In:
 ****
-- xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopjob[$$HadoopJob$$]
+- xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopjob[$$HadoopJob$$]
 ****
 
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`conditions`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-jobcondition[$$JobCondition$$] array__ | INSERT ADDITIONAL STATUS FIELD - define observed state of cluster Important: Run "make" to regenerate code after modifying this file Conditions is an array of current observed job conditions.
+| *`conditions`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-jobcondition[$$JobCondition$$] array__ | INSERT ADDITIONAL STATUS FIELD - define observed state of cluster Important: Run "make" to regenerate code after modifying this file Conditions is an array of current observed job conditions.
 | *`startTime`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#time-v1-meta[$$Time$$]__ | Represents time when the job was acknowledged by the job controller. It is not guaranteed to be set in happens-before order across separate operations. It is represented in RFC3339 form and is in UTC.
 | *`completionTime`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#time-v1-meta[$$Time$$]__ | Represents time when the job was completed. It is not guaranteed to be set in happens-before order across separate operations. It is represented in RFC3339 form and is in UTC.
 |===
 
 
-[id="{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopnodespec"]
+[id="{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopnodespec"]
 ==== HadoopNodeSpec 
 
 
 
 .Appears In:
 ****
-- xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hdfsdatanodespectemplate[$$HDFSDataNodeSpecTemplate$$]
-- xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hdfsnamenodespectemplate[$$HDFSNameNodeSpecTemplate$$]
-- xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopjobspec[$$HadoopJobSpec$$]
-- xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-yarnnodemanagerspectemplate[$$YarnNodeManagerSpecTemplate$$]
-- xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-yarnresourcemanagerspectemplate[$$YarnResourceManagerSpecTemplate$$]
+- xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hdfsdatanodespectemplate[$$HDFSDataNodeSpecTemplate$$]
+- xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hdfsnamenodespectemplate[$$HDFSNameNodeSpecTemplate$$]
+- xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopjobspec[$$HadoopJobSpec$$]
+- xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-yarnnodemanagerspectemplate[$$YarnNodeManagerSpecTemplate$$]
+- xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-yarnresourcemanagerspectemplate[$$YarnResourceManagerSpecTemplate$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`HadoopPodSpec`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hadooppodspec[$$HadoopPodSpec$$]__ | 
+| *`lifecycle`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#lifecycle-v1-core[$$Lifecycle$$]__ | Actions that the management system should take in response to container lifecycle events. Cannot be updated.
+| *`deleteOnTermination`* __boolean__ | DeleteOnTermination specify whether executor pods should be deleted in case of failure or normal termination.
+|===
+
+
+[id="{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hadooppodspec"]
+==== HadoopPodSpec 
+
+
+
+.Appears In:
+****
+- xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopnodespec[$$HadoopNodeSpec$$]
 ****
 
 [cols="25a,75a", options="header"]
@@ -306,20 +346,20 @@ HadoopJobStatus defines the observed state of HadoopJob
 |===
 
 
-[id="{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-jobcondition"]
+[id="{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-jobcondition"]
 ==== JobCondition 
 
 JobCondition describes current state of a cluster
 
 .Appears In:
 ****
-- xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopjobstatus[$$HadoopJobStatus$$]
+- xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopjobstatus[$$HadoopJobStatus$$]
 ****
 
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`type`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-jobconditiontype[$$JobConditionType$$]__ | Type of job condition.
+| *`type`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-jobconditiontype[$$JobConditionType$$]__ | Type of job condition.
 | *`status`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#conditionstatus-v1-core[$$ConditionStatus$$]__ | Status of the condition, one of True, False, Unknown.
 | *`reason`* __string__ | The reason for the condition's last transition.
 | *`message`* __string__ | A human readable message indicating details about the transition.
@@ -328,26 +368,26 @@ JobCondition describes current state of a cluster
 |===
 
 
-[id="{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-jobconditiontype"]
+[id="{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-jobconditiontype"]
 ==== JobConditionType (string) 
 
 
 
 .Appears In:
 ****
-- xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-jobcondition[$$JobCondition$$]
+- xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-jobcondition[$$JobCondition$$]
 ****
 
 
 
-[id="{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-replicastatus"]
+[id="{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-replicastatus"]
 ==== ReplicaStatus 
 
 ReplicaStatus represents the current observed state of the replica.
 
 .Appears In:
 ****
-- xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopclusterstatus[$$HadoopClusterStatus$$]
+- xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopclusterstatus[$$HadoopClusterStatus$$]
 ****
 
 [cols="25a,75a", options="header"]
@@ -358,57 +398,57 @@ ReplicaStatus represents the current observed state of the replica.
 |===
 
 
-[id="{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-yarnnodemanagerspectemplate"]
+[id="{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-yarnnodemanagerspectemplate"]
 ==== YarnNodeManagerSpecTemplate 
 
 
 
 .Appears In:
 ****
-- xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-yarnspec[$$YarnSpec$$]
+- xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-yarnspec[$$YarnSpec$$]
 ****
 
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`nodeSpec`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopnodespec[$$HadoopNodeSpec$$]__ | 
-| *`serviceType`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#servicetype-v1-core[$$ServiceType$$]__ | 
+| *`nodeSpec`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopnodespec[$$HadoopNodeSpec$$]__ | 
+| *`exposeSpec`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-exposespec[$$ExposeSpec$$]__ | 
 |===
 
 
-[id="{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-yarnresourcemanagerspectemplate"]
+[id="{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-yarnresourcemanagerspectemplate"]
 ==== YarnResourceManagerSpecTemplate 
 
 
 
 .Appears In:
 ****
-- xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-yarnspec[$$YarnSpec$$]
+- xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-yarnspec[$$YarnSpec$$]
 ****
 
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`nodeSpec`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopnodespec[$$HadoopNodeSpec$$]__ | 
-| *`serviceType`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#servicetype-v1-core[$$ServiceType$$]__ | 
+| *`nodeSpec`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopnodespec[$$HadoopNodeSpec$$]__ | 
+| *`exposeSpec`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-exposespec[$$ExposeSpec$$]__ | 
 |===
 
 
-[id="{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-yarnspec"]
+[id="{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-yarnspec"]
 ==== YarnSpec 
 
 
 
 .Appears In:
 ****
-- xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopclusterspec[$$HadoopClusterSpec$$]
+- xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopclusterspec[$$HadoopClusterSpec$$]
 ****
 
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`nodeManager`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-yarnnodemanagerspectemplate[$$YarnNodeManagerSpecTemplate$$]__ | 
-| *`resourceManager`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-cluster-operator-pkg-apis-kubecluster-org-v1alpha1-yarnresourcemanagerspectemplate[$$YarnResourceManagerSpecTemplate$$]__ | 
+| *`nodeManager`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-yarnnodemanagerspectemplate[$$YarnNodeManagerSpecTemplate$$]__ | 
+| *`resourceManager`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-yarnresourcemanagerspectemplate[$$YarnResourceManagerSpecTemplate$$]__ | 
 |===
 
 

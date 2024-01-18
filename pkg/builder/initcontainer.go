@@ -2,9 +2,9 @@ package builder
 
 import (
 	"bytes"
-	"github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1"
-	"github.com/chriskery/hadoop-cluster-operator/pkg/config"
-	"github.com/chriskery/hadoop-cluster-operator/pkg/util"
+	"github.com/chriskery/hadoop-operator/pkg/apis/kubecluster.org/v1alpha1"
+	"github.com/chriskery/hadoop-operator/pkg/config"
+	"github.com/chriskery/hadoop-operator/pkg/util"
 	"html/template"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/yaml"

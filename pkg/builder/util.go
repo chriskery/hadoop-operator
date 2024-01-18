@@ -2,12 +2,13 @@ package builder
 
 import (
 	"fmt"
-	"github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1"
-	"github.com/chriskery/hadoop-cluster-operator/pkg/control"
-	"github.com/chriskery/hadoop-cluster-operator/pkg/util"
+	"github.com/chriskery/hadoop-operator/pkg/apis/kubecluster.org/v1alpha1"
+	"github.com/chriskery/hadoop-operator/pkg/control"
+	"github.com/chriskery/hadoop-operator/pkg/util"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/json"
+	"strconv"
 )
 
 const (
@@ -52,33 +53,40 @@ func appendHadoopConfigMapVolumeMount(volumeMounts []corev1.VolumeMount) []corev
 	return volumeMounts
 }
 
-func setPodEnv(hadoopCluster *v1alpha1.HadoopCluster, podTemplateSpec *corev1.PodTemplateSpec, replicaType v1alpha1.ReplicaType) {
+func setPodEnv(hadoopCluster *v1alpha1.HadoopCluster, containers []corev1.Container, replicaType v1alpha1.ReplicaType) {
 	nameNodeAddr := util.GetReplicaName(hadoopCluster, v1alpha1.ReplicaTypeNameNode)
 	resourceManagerAddr := util.GetReplicaName(hadoopCluster, v1alpha1.ReplicaTypeResourcemanager)
 
-	for i := range podTemplateSpec.Spec.Containers {
+	for i := range containers {
 		replicaTypeExist := false
-		for _, envVar := range podTemplateSpec.Spec.Containers[i].Env {
+		for _, envVar := range containers[i].Env {
 			if envVar.Name == EnvHadoopRole {
 				replicaTypeExist = true
 				break
 			}
 		}
 		if !replicaTypeExist {
-			podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
+			containers[i].Env = append(containers[i].Env, corev1.EnvVar{
 				Name:  EnvHadoopRole,
 				Value: string(replicaType),
 			})
 		}
 
-		podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
+		containers[i].Env = append(containers[i].Env, corev1.EnvVar{
 			Name:  EnvNameNodeAddr,
 			Value: nameNodeAddr,
 		})
-		podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
+		containers[i].Env = append(containers[i].Env, corev1.EnvVar{
 			Name:  EnvResourceManagerAddr,
 			Value: resourceManagerAddr,
 		})
+
+		if replicaType == v1alpha1.ReplicaTypeNameNode {
+			containers[i].Env = append(containers[i].Env, corev1.EnvVar{
+				Name:  EnvNameNodeFormat,
+				Value: strconv.FormatBool(hadoopCluster.Spec.HDFS.NameNode.Format),
+			})
+		}
 	}
 }
 
@@ -95,4 +103,13 @@ func reconcileStatefulSetHPA(statefulSetControl control.StatefulSetControlInterf
 	}
 
 	return statefulSetControl.PatchStatefulSet(object.GetNamespace(), object.GetName(), patchBytes)
+}
+
+// isServiceNodePortExpose check if expose type is service and type is nodeport
+func isServiceNodePortExpose(expose v1alpha1.ExposeSpec) bool {
+	return expose.ExposeType == v1alpha1.ExposeTypeNodePort
+}
+
+func isIngressExpose(expose v1alpha1.ExposeSpec) bool {
+	return expose.ExposeType == v1alpha1.ExposeTypeIngress
 }

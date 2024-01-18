@@ -6,7 +6,7 @@ domain: kubecluster.org
 layout:
 - go.kubebuilder.io/v3
 projectName: hadoop-cluster-operator
-repo: github.com/chriskery/hadoop-cluster-operator
+repo: github.com/chriskery/hadoop-operator
 resources:
 - api:
     crdVersion: v1
@@ -15,7 +15,7 @@ resources:
   domain: kubecluster.org
   group: hadoopcluster
   kind: HadoopCluster
-  path: github.com/chriskery/hadoop-cluster-operator/api/v1alpha1
+  path: github.com/chriskery/hadoop-operator/api/v1alpha1
   version: v1alpha1
   webhooks:
     defaulting: true

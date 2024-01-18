@@ -19,9 +19,9 @@ package hadoopjob
 import (
 	"context"
 	"fmt"
-	"github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1"
-	"github.com/chriskery/hadoop-cluster-operator/pkg/builder"
-	"github.com/chriskery/hadoop-cluster-operator/pkg/util"
+	"github.com/chriskery/hadoop-operator/pkg/apis/kubecluster.org/v1alpha1"
+	"github.com/chriskery/hadoop-operator/pkg/builder"
+	"github.com/chriskery/hadoop-operator/pkg/util"
 	"github.com/go-logr/logr"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -204,8 +204,7 @@ func (r *HadoopJobReconciler) ReconcileJobs(job *v1alpha1.HadoopJob, status *v1a
 	if util.IsJobFinished(job) {
 		if hadoopCluster != nil {
 			// If the Job is succeed or failed, delete all pods and services.
-			err = r.DeleteHadoopCluster(job, hadoopCluster)
-			return err
+			return r.DeleteHadoopCluster(job, hadoopCluster)
 		} else {
 			return nil
 		}
@@ -270,15 +269,21 @@ func (r *HadoopJobReconciler) CreateHadoopCluster(job *v1alpha1.HadoopJob, _ *v1
 			Yarn: v1alpha1.YarnSpec{
 				NodeManager: v1alpha1.YarnNodeManagerSpecTemplate{
 					HadoopNodeSpec: job.Spec.ExecutorSpec,
-					ServiceType:    corev1.ServiceTypeNodePort,
 				},
 				ResourceManager: v1alpha1.YarnResourceManagerSpecTemplate{
 					HadoopNodeSpec: job.Spec.ExecutorSpec,
+					Expose:         v1alpha1.ExposeSpec{ExposeType: v1alpha1.ExposeTypeNodePort},
 				},
 			},
 			HDFS: v1alpha1.HDFSSpec{
-				NameNode: v1alpha1.HDFSNameNodeSpecTemplate{HadoopNodeSpec: job.Spec.ExecutorSpec, Format: job.Spec.NameNodeDirFormat},
-				DataNode: v1alpha1.HDFSDataNodeSpecTemplate{HadoopNodeSpec: job.Spec.ExecutorSpec},
+				NameNode: v1alpha1.HDFSNameNodeSpecTemplate{
+					HadoopNodeSpec: job.Spec.ExecutorSpec,
+					Format:         job.Spec.NameNodeDirFormat,
+					Expose:         v1alpha1.ExposeSpec{ExposeType: v1alpha1.ExposeTypeNodePort},
+				},
+				DataNode: v1alpha1.HDFSDataNodeSpecTemplate{
+					HadoopNodeSpec: job.Spec.ExecutorSpec,
+				},
 			},
 		},
 	}
@@ -299,6 +304,8 @@ func (r *HadoopJobReconciler) CreateHadoopCluster(job *v1alpha1.HadoopJob, _ *v1
 func (r *HadoopJobReconciler) ReconcileDriver(job *v1alpha1.HadoopJob, status *v1alpha1.HadoopJobStatus, cluster *v1alpha1.HadoopCluster) error {
 	if cluster == nil || !util.IsClusterRunning(cluster) {
 		return nil
+	} else {
+		r.Recorder.Eventf(job, corev1.EventTypeNormal, "HadoopClusterReady", "HadoopCluster is ready.")
 	}
 
 	err := r.driverBuilder.Build(job, status)
@@ -316,6 +323,7 @@ func (r *HadoopJobReconciler) ReconcileDriver(job *v1alpha1.HadoopJob, status *v
 	if isPodReady(driverPod) && !util.IsJobRunning(job) {
 		msg := fmt.Sprintf("Driver %s/%s is ready.", driverPod.GetNamespace(), driverPod.GetName())
 		r.Recorder.Eventf(driverPod, corev1.EventTypeNormal, "DriverReady", msg)
+		r.Recorder.Eventf(job, corev1.EventTypeNormal, "DriverReady", msg)
 		err = util.UpdateJobConditions(status, v1alpha1.JobRunning, util.HadoopJobRunningReason, msg)
 		if err != nil {
 			return err
@@ -323,6 +331,7 @@ func (r *HadoopJobReconciler) ReconcileDriver(job *v1alpha1.HadoopJob, status *v
 	} else if isPodSucceeded(driverPod) {
 		msg := fmt.Sprintf("Driver %s/%s is succeeded.", driverPod.GetNamespace(), driverPod.GetName())
 		r.Recorder.Eventf(driverPod, corev1.EventTypeNormal, "DriverSucceeded", msg)
+		r.Recorder.Eventf(job, corev1.EventTypeNormal, "DriverSucceeded", msg)
 		err = util.UpdateJobConditions(status, v1alpha1.JobSucceeded, util.HadoopJobSucceededReason, msg)
 		if err != nil {
 			return err
@@ -330,6 +339,7 @@ func (r *HadoopJobReconciler) ReconcileDriver(job *v1alpha1.HadoopJob, status *v
 	} else if isPodFailed(driverPod) {
 		msg := fmt.Sprintf("Driver %s/%s is failed.", driverPod.GetNamespace(), driverPod.GetName())
 		r.Recorder.Eventf(driverPod, corev1.EventTypeNormal, "DriverFailed", msg)
+		r.Recorder.Eventf(job, corev1.EventTypeNormal, "DriverFailed", msg)
 		err = util.UpdateJobConditions(status, v1alpha1.JobFailed, util.HadoopJobFailedReason, msg)
 		if err != nil {
 			return err
@@ -344,10 +354,14 @@ func (r *HadoopJobReconciler) ReconcileDriver(job *v1alpha1.HadoopJob, status *v
 }
 
 func (r *HadoopJobReconciler) DeleteHadoopCluster(job *v1alpha1.HadoopJob, cluster *v1alpha1.HadoopCluster) error {
+	if job.Spec.ExecutorSpec.DeleteOnTermination != nil && !*job.Spec.ExecutorSpec.DeleteOnTermination {
+		r.Recorder.Event(job, corev1.EventTypeNormal, "CleanHadoopCluster", "No Need to delete HadoopCluster because DeleteOnTermination is true")
+		return nil
+	}
 	err := r.Delete(context.Background(), cluster)
 	if err != nil {
 		return err
 	}
-	r.Recorder.Event(job, corev1.EventTypeNormal, "CleanHadoopCluster", "Deletet po HadoopCluster because job finished")
+	r.Recorder.Event(job, corev1.EventTypeNormal, "CleanHadoopCluster", "Delete HadoopCluster because job finished")
 	return nil
 }

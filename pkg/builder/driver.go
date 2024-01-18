@@ -3,9 +3,9 @@ package builder
 import (
 	"context"
 	"fmt"
-	"github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1"
-	"github.com/chriskery/hadoop-cluster-operator/pkg/control"
-	"github.com/chriskery/hadoop-cluster-operator/pkg/util"
+	"github.com/chriskery/hadoop-operator/pkg/apis/kubecluster.org/v1alpha1"
+	"github.com/chriskery/hadoop-operator/pkg/control"
+	"github.com/chriskery/hadoop-operator/pkg/util"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -104,15 +104,13 @@ func (driverBuilder *DriverBuilder) genDriverPodSpec(job *v1alpha1.HadoopJob, dr
 		Resources:       driverPodSpec.Resources,
 		VolumeMounts:    volumeMounts,
 		Env:             job.Spec.Env,
-		ReadinessProbe:  nil,
-		StartupProbe:    nil,
 		ImagePullPolicy: driverPodSpec.ImagePullPolicy,
 		SecurityContext: driverPodSpec.SecurityContext,
 	}}
 
 	podTemplateSpec.Spec.Containers = containers
 
-	setPodEnv(&v1alpha1.HadoopCluster{ObjectMeta: *job.ObjectMeta.DeepCopy()}, podTemplateSpec, v1alpha1.ReplicaTypeDriver)
+	setPodEnv(&v1alpha1.HadoopCluster{ObjectMeta: *job.ObjectMeta.DeepCopy()}, podTemplateSpec.Spec.Containers, v1alpha1.ReplicaTypeDriver)
 	return podTemplateSpec
 }
 

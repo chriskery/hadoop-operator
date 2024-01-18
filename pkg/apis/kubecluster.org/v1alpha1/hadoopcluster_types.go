@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	corev1 "k8s.io/api/core/v1"
+	networkv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -40,7 +41,7 @@ const (
 	DeletionLabel = "kubeclusetr.org/deletion"
 )
 
-type HadoopNodeSpec struct {
+type HadoopPodSpec struct {
 	// List of environment variables to set in the container.
 	// Cannot be updated.
 	// +optional
@@ -95,6 +96,30 @@ type HadoopNodeSpec struct {
 	Volumes []corev1.Volume `json:"volumes,omitempty" patchStrategy:"merge,retainKeys" patchMergeKey:"name" protobuf:"bytes,1,rep,name=volumes"`
 }
 
+type HadoopNodeSpec struct {
+	HadoopPodSpec `json:",inline"`
+
+	// Actions that the management system should take in response to container lifecycle events.
+	// Cannot be updated.
+	// +optional
+	Lifecycle *corev1.Lifecycle `json:"lifecycle,omitempty" protobuf:"bytes,12,opt,name=lifecycle"`
+
+	// DeleteOnTermination specify whether executor pods should be deleted in case of failure or normal termination.
+	// +optional
+	DeleteOnTermination *bool `json:"deleteOnTermination,omitempty"`
+}
+
+const (
+	ExposeTypeNodePort = "nodePort"
+	ExposeTypeIngress  = "ingress"
+)
+
+type ExposeSpec struct {
+	ExposeType   string                `json:"type,omitempty" protobuf:"bytes,16,opt,name=type"`
+	HttpNodePort int32                 `json:"httpNodePort,omitempty" protobuf:"varint,17,opt,name=httpNodePort"`
+	Ingress      networkv1.IngressSpec `json:"ingress,omitempty" protobuf:"bytes,18,opt,name=ingress"`
+}
+
 type HDFSSpec struct {
 	NameNode HDFSNameNodeSpecTemplate `json:"nameNode,omitempty"`
 	DataNode HDFSDataNodeSpecTemplate `json:"dataNode,omitempty"`
@@ -103,7 +128,7 @@ type HDFSSpec struct {
 type HDFSNameNodeSpecTemplate struct {
 	HadoopNodeSpec `json:"nodeSpec,omitempty"`
 
-	ServiceType corev1.ServiceType `json:"serviceType,omitempty" protobuf:"bytes,16,opt,name=serviceType,casttype=ServiceType"`
+	Expose ExposeSpec `json:"exposeSpec,omitempty"`
 
 	// This argument tells the namenode to format its namespace, which includes deleting the current contents of the namenode's metadata
 	// and starting fresh. This operation is typically performed the first time the namenode is started to ensure
@@ -140,13 +165,13 @@ type YarnSpec struct {
 type YarnNodeManagerSpecTemplate struct {
 	HadoopNodeSpec `json:"nodeSpec,omitempty"`
 
-	ServiceType corev1.ServiceType `json:"serviceType,omitempty" protobuf:"bytes,16,opt,name=serviceType,casttype=ServiceType"`
+	Expose ExposeSpec `json:"exposeSpec,omitempty"`
 }
 
 type YarnResourceManagerSpecTemplate struct {
 	HadoopNodeSpec `json:"nodeSpec,omitempty"`
 
-	ServiceType corev1.ServiceType `json:"serviceType,omitempty" protobuf:"bytes,16,opt,name=serviceType,casttype=ServiceType"`
+	Expose ExposeSpec `json:"exposeSpec,omitempty"`
 }
 
 // HadoopClusterSpec defines the desired state of HadoopCluster

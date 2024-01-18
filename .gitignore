@@ -32,4 +32,5 @@ vendor
 
 .run
 
-./kubecluster-controller
+target
+

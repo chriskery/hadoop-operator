@@ -3,10 +3,9 @@ package builder
 import (
 	"context"
 	"fmt"
-	hadoopclusterorgv1alpha1 "github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1"
-	"github.com/chriskery/hadoop-cluster-operator/pkg/control"
-	"github.com/chriskery/hadoop-cluster-operator/pkg/util"
-	utillabels "github.com/chriskery/hadoop-cluster-operator/pkg/util/labels"
+	v1alpha1 "github.com/chriskery/hadoop-operator/pkg/apis/kubecluster.org/v1alpha1"
+	"github.com/chriskery/hadoop-operator/pkg/control"
+	"github.com/chriskery/hadoop-operator/pkg/util"
 	appv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -46,15 +45,15 @@ func (h *HdfsBuilder) SetupWithManager(mgr manager.Manager, recorder record.Even
 }
 
 func (h *HdfsBuilder) Build(obj interface{}, objStatus interface{}) error {
-	cluster := obj.(*hadoopclusterorgv1alpha1.HadoopCluster)
-	status := objStatus.(*hadoopclusterorgv1alpha1.HadoopClusterStatus)
+	cluster := obj.(*v1alpha1.HadoopCluster)
+	status := objStatus.(*v1alpha1.HadoopClusterStatus)
 
-	util.InitializeClusterStatuses(status, hadoopclusterorgv1alpha1.ReplicaTypeNameNode)
+	util.InitializeClusterStatuses(status, v1alpha1.ReplicaTypeNameNode)
 	if err := h.buildNameNode(cluster, status); err != nil {
 		return err
 	}
 
-	util.InitializeClusterStatuses(status, hadoopclusterorgv1alpha1.ReplicaTypeDataNode)
+	util.InitializeClusterStatuses(status, v1alpha1.ReplicaTypeDataNode)
 	if err := h.buildDataNode(cluster, status); err != nil {
 		return err
 	}
@@ -62,7 +61,7 @@ func (h *HdfsBuilder) Build(obj interface{}, objStatus interface{}) error {
 }
 
 func (h *HdfsBuilder) Clean(obj interface{}) error {
-	cluster := obj.(*hadoopclusterorgv1alpha1.HadoopCluster)
+	cluster := obj.(*v1alpha1.HadoopCluster)
 
 	err := h.cleanNameNode(cluster)
 	if err != nil {
@@ -77,51 +76,49 @@ func (h *HdfsBuilder) Clean(obj interface{}) error {
 	return nil
 }
 
-func (h *HdfsBuilder) buildNameNode(cluster *hadoopclusterorgv1alpha1.HadoopCluster, status *hadoopclusterorgv1alpha1.HadoopClusterStatus) error {
-	labels := utillabels.GenLabels(cluster.GetName(), hadoopclusterorgv1alpha1.ReplicaTypeNameNode)
-	util.MergeMap(labels, cluster.Labels)
-
+func (h *HdfsBuilder) buildNameNode(cluster *v1alpha1.HadoopCluster, status *v1alpha1.HadoopClusterStatus) error {
 	nameNodePod := &corev1.Pod{}
 	err := h.Get(
 		context.Background(),
-		client.ObjectKey{Name: util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeNameNode), Namespace: cluster.Namespace},
+		client.ObjectKey{Name: util.GetReplicaName(cluster, v1alpha1.ReplicaTypeNameNode), Namespace: cluster.Namespace},
 		nameNodePod,
 	)
 	if err != nil {
 		if !errors.IsNotFound(err) {
 			return err
 		}
-		if err = h.buildNameNodePod(cluster, labels); err != nil {
+		if err = h.buildNameNodePod(cluster); err != nil {
 			return err
 		}
 	} else {
-		util.UpdateClusterReplicaStatuses(status, hadoopclusterorgv1alpha1.ReplicaTypeNameNode, nameNodePod)
+		util.UpdateClusterReplicaStatuses(status, v1alpha1.ReplicaTypeNameNode, nameNodePod)
 	}
-	status.ReplicaStatuses[hadoopclusterorgv1alpha1.ReplicaTypeNameNode].Expect = cluster.Spec.HDFS.NameNode.Replicas
+	status.ReplicaStatuses[v1alpha1.ReplicaTypeNameNode].Expect = cluster.Spec.HDFS.NameNode.Replicas
 
-	serviceName := util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeNameNode)
+	serviceName := util.GetReplicaName(cluster, v1alpha1.ReplicaTypeNameNode)
 	err = h.Get(
 		context.Background(),
-		client.ObjectKey{Name: util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeNameNode), Namespace: cluster.Namespace},
+		client.ObjectKey{Name: util.GetReplicaName(cluster, v1alpha1.ReplicaTypeNameNode), Namespace: cluster.Namespace},
 		&corev1.Service{},
 	)
 	if err != nil {
 		if !errors.IsNotFound(err) {
 			return err
 		}
-		if err = h.buildNameNodeService(cluster, labels); err != nil {
+		if err = h.buildNameNodeService(cluster); err != nil {
 			return err
 		}
 	}
 
-	if cluster.Spec.HDFS.NameNode.ServiceType == corev1.ServiceTypeNodePort {
+	if isServiceNodePortExpose(cluster.Spec.HDFS.NameNode.Expose) {
 		serviceNodePortName := fmt.Sprintf("%s-nodeport", serviceName)
 		err = h.Get(context.Background(), client.ObjectKey{Name: serviceNodePortName, Namespace: cluster.Namespace}, &corev1.Service{})
-		if err != nil {
-			if !errors.IsNotFound(err) {
-				return err
-			}
-			if err = h.buildNameNodeNodePortService(cluster, labels, serviceNodePortName); err != nil {
+		if err != nil && errors.IsNotFound(err) {
+			if err = h.buildNameNodeNodePortService(
+				cluster,
+				serviceNodePortName,
+				cluster.Spec.HDFS.NameNode.Expose.HttpNodePort,
+			); err != nil {
 				return err
 			}
 		}
@@ -129,33 +126,24 @@ func (h *HdfsBuilder) buildNameNode(cluster *hadoopclusterorgv1alpha1.HadoopClus
 	return nil
 }
 
-func (h *HdfsBuilder) buildNameNodeService(cluster *hadoopclusterorgv1alpha1.HadoopCluster, labels map[string]string) error {
-	nameNodeService := &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeNameNode),
-			Namespace: cluster.Namespace,
-			Labels:    labels,
-		},
-		Spec: corev1.ServiceSpec{
-			ClusterIP: "None",
-			Selector:  labels,
-		},
-	}
+func (h *HdfsBuilder) buildNameNodeService(cluster *v1alpha1.HadoopCluster) error {
+	serviceName := util.GetReplicaName(cluster, v1alpha1.ReplicaTypeNameNode)
+	nameNodeService := getHeadLessNodeServiceSpec(cluster, serviceName, v1alpha1.ReplicaTypeNameNode)
 
-	ownerRef := util.GenOwnerReference(cluster, hadoopclusterorgv1alpha1.GroupVersion.WithKind(hadoopclusterorgv1alpha1.HadoopClusterKind).Kind)
+	ownerRef := util.GenOwnerReference(cluster, v1alpha1.GroupVersion.WithKind(v1alpha1.HadoopClusterKind).Kind)
 	if err := h.ServiceControl.CreateServicesWithControllerRef(cluster.GetNamespace(), nameNodeService, cluster, ownerRef); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (h *HdfsBuilder) buildNameNodePod(cluster *hadoopclusterorgv1alpha1.HadoopCluster, labels map[string]string) error {
-	podSpec, err := h.genNameNodePodSpec(cluster, &cluster.Spec.HDFS.NameNode, labels)
+func (h *HdfsBuilder) buildNameNodePod(cluster *v1alpha1.HadoopCluster) error {
+	podSpec, err := getPodSpec(cluster, v1alpha1.ReplicaTypeNameNode)
 	if err != nil {
 		return err
 	}
 
-	ownerRef := util.GenOwnerReference(cluster, hadoopclusterorgv1alpha1.GroupVersion.WithKind(hadoopclusterorgv1alpha1.HadoopClusterKind).Kind)
+	ownerRef := util.GenOwnerReference(cluster, v1alpha1.GroupVersion.WithKind(v1alpha1.HadoopClusterKind).Kind)
 	if err = h.PodControl.CreatePodsWithControllerRef(cluster.GetNamespace(), podSpec, cluster, ownerRef); err != nil {
 		return err
 	}
@@ -163,14 +151,11 @@ func (h *HdfsBuilder) buildNameNodePod(cluster *hadoopclusterorgv1alpha1.HadoopC
 }
 
 func (h *HdfsBuilder) buildDataNode(
-	cluster *hadoopclusterorgv1alpha1.HadoopCluster,
-	status *hadoopclusterorgv1alpha1.HadoopClusterStatus,
+	cluster *v1alpha1.HadoopCluster,
+	status *v1alpha1.HadoopClusterStatus,
 ) error {
-	labels := utillabels.GenLabels(cluster.GetName(), hadoopclusterorgv1alpha1.ReplicaTypeDataNode)
-	util.MergeMap(labels, cluster.Labels)
-
 	dataNodeStatefulSet := &appv1.StatefulSet{}
-	dataNodeName := util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeDataNode)
+	dataNodeName := util.GetReplicaName(cluster, v1alpha1.ReplicaTypeDataNode)
 	err := h.Get(
 		context.Background(),
 		client.ObjectKey{Name: dataNodeName, Namespace: cluster.Namespace},
@@ -180,28 +165,28 @@ func (h *HdfsBuilder) buildDataNode(
 		if !errors.IsNotFound(err) {
 			return err
 		}
-		if err = h.buildDataNodeStatefulSet(cluster, dataNodeName, labels); err != nil {
+		if err = h.buildDataNodeStatefulSet(cluster, dataNodeName); err != nil {
 			return err
 		}
-	}
-	if h.isNeedReconcileDataNodeHPA(cluster, dataNodeStatefulSet) {
-		if err = h.reconcileDataNodeHPA(cluster, dataNodeStatefulSet, status); err != nil {
+	} else {
+		if h.isNeedReconcileDataNodeHPA(cluster, dataNodeStatefulSet) {
+			if err = h.reconcileDataNodeHPA(cluster, dataNodeStatefulSet, status); err != nil {
+				return err
+			}
+		}
+		if err = h.updateDataNodeStatus(cluster, status, dataNodeStatefulSet.Spec.Selector.MatchLabels); err != nil {
 			return err
 		}
 	}
 
-	if err = h.updateDataNodeStatus(cluster, status, labels); err != nil {
-		return err
-	}
-
-	if err = h.buildDataNodeServices(cluster, labels); err != nil {
+	if err = h.buildDataNodeServices(cluster); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (h *HdfsBuilder) isNeedReconcileDataNodeHPA(
-	cluster *hadoopclusterorgv1alpha1.HadoopCluster,
+	cluster *v1alpha1.HadoopCluster,
 	dataNodeStatefulSet *appv1.StatefulSet,
 ) bool {
 	if cluster.Spec.HDFS.DataNode.Replicas == nil && dataNodeStatefulSet.Spec.Replicas == nil {
@@ -217,8 +202,8 @@ func (h *HdfsBuilder) isNeedReconcileDataNodeHPA(
 }
 
 func (h *HdfsBuilder) updateDataNodeStatus(
-	cluster *hadoopclusterorgv1alpha1.HadoopCluster,
-	status *hadoopclusterorgv1alpha1.HadoopClusterStatus,
+	cluster *v1alpha1.HadoopCluster,
+	status *v1alpha1.HadoopClusterStatus,
 	labels map[string]string,
 ) error {
 	// Create selector.
@@ -246,152 +231,51 @@ func (h *HdfsBuilder) updateDataNodeStatus(
 	filterPods := util.ConvertPodListWithFilter(podList.Items, filter)
 
 	for _, pod := range filterPods {
-		util.UpdateClusterReplicaStatuses(status, hadoopclusterorgv1alpha1.ReplicaTypeDataNode, pod)
+		util.UpdateClusterReplicaStatuses(status, v1alpha1.ReplicaTypeDataNode, pod)
 	}
-	status.ReplicaStatuses[hadoopclusterorgv1alpha1.ReplicaTypeDataNode].Expect = cluster.Spec.HDFS.DataNode.Replicas
+	status.ReplicaStatuses[v1alpha1.ReplicaTypeDataNode].Expect = cluster.Spec.HDFS.DataNode.Replicas
 	return nil
 }
 
 func (h *HdfsBuilder) buildDataNodeStatefulSet(
-	cluster *hadoopclusterorgv1alpha1.HadoopCluster,
+	cluster *v1alpha1.HadoopCluster,
 	name string,
-	labels map[string]string,
 ) error {
 	dataNodeStatulSet := &appv1.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: cluster.Namespace,
-			Labels:    labels,
 		},
 	}
-	statefulSetSpec, err := h.genDataNodeStatefulSetSpec(cluster, labels)
+	statefulSetSpec, err := h.genDataNodeStatefulSetSpec(cluster)
 	if err != nil {
 		return err
 	}
 	dataNodeStatulSet.Spec = *statefulSetSpec
+	dataNodeStatulSet.Labels = statefulSetSpec.Selector.MatchLabels
 
-	ownerRef := util.GenOwnerReference(cluster, hadoopclusterorgv1alpha1.GroupVersion.WithKind(hadoopclusterorgv1alpha1.HadoopClusterKind).Kind)
+	ownerRef := util.GenOwnerReference(cluster, v1alpha1.GroupVersion.WithKind(v1alpha1.HadoopClusterKind).Kind)
 	if err = h.StatefulSetControl.CreateStatefulSetsWithControllerRef(cluster.GetNamespace(), dataNodeStatulSet, cluster, ownerRef); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (h *HdfsBuilder) genNameNodePodSpec(
-	cluster *hadoopclusterorgv1alpha1.HadoopCluster,
-	nameNodeSpec *hadoopclusterorgv1alpha1.HDFSNameNodeSpecTemplate,
-	labels map[string]string,
-) (*corev1.PodTemplateSpec, error) {
-	podTemplateSpec := &corev1.PodTemplateSpec{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:   util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeNameNode),
-			Labels: labels,
-		},
-		Spec: corev1.PodSpec{
-			Volumes:          nameNodeSpec.Volumes,
-			RestartPolicy:    corev1.RestartPolicyAlways,
-			DNSPolicy:        corev1.DNSClusterFirstWithHostNet,
-			ImagePullSecrets: nameNodeSpec.ImagePullSecrets,
-			HostNetwork:      nameNodeSpec.HostNetwork,
-		},
-	}
-
-	podTemplateSpec.Spec.Volumes = appendHadoopConfigMapVolume(podTemplateSpec.Spec.Volumes, util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeConfigMap))
-
-	volumeMounts := nameNodeSpec.VolumeMounts
-	volumeMounts = appendHadoopConfigMapVolumeMount(volumeMounts)
-
-	nameNodeCmd := []string{"sh", "-c", entrypointCmd}
-	containers := []corev1.Container{{
-		Name:            string(hadoopclusterorgv1alpha1.ReplicaTypeNameNode),
-		Image:           nameNodeSpec.Image,
-		Command:         nameNodeCmd,
-		Resources:       nameNodeSpec.Resources,
-		VolumeMounts:    volumeMounts,
-		Env:             cluster.Spec.HDFS.NameNode.Env,
-		ImagePullPolicy: nameNodeSpec.ImagePullPolicy,
-		SecurityContext: nameNodeSpec.SecurityContext,
-	}}
-
-	podTemplateSpec.Spec.Containers = containers
-	setPodEnv(cluster, podTemplateSpec, hadoopclusterorgv1alpha1.ReplicaTypeNameNode)
-
-	if nameNodeSpec.Format {
-		for i := range podTemplateSpec.Spec.Containers {
-			podTemplateSpec.Spec.Containers[i].Env = append(podTemplateSpec.Spec.Containers[i].Env, corev1.EnvVar{
-				Name:  EnvNameNodeFormat,
-				Value: "true",
-			})
-		}
-	}
-	return podTemplateSpec, nil
-}
-
-func (h *HdfsBuilder) genDataNodeStatefulSetSpec(
-	cluster *hadoopclusterorgv1alpha1.HadoopCluster,
-	labels map[string]string,
-) (*appv1.StatefulSetSpec, error) {
-	podTemplate, err := h.genDataNodePodSpec(cluster, &cluster.Spec.HDFS.DataNode, labels)
+func (h *HdfsBuilder) genDataNodeStatefulSetSpec(cluster *v1alpha1.HadoopCluster) (*appv1.StatefulSetSpec, error) {
+	podTemplate, err := getPodSpec(cluster, v1alpha1.ReplicaTypeDataNode)
 	if err != nil {
 		return nil, err
 	}
 
 	statefulSetSpec := &appv1.StatefulSetSpec{
 		Replicas: cluster.Spec.HDFS.NameNode.Replicas,
-		Selector: &metav1.LabelSelector{MatchLabels: labels},
+		Selector: &metav1.LabelSelector{MatchLabels: podTemplate.Labels},
 		Template: *podTemplate,
 	}
 	return statefulSetSpec, nil
 }
 
-func (h *HdfsBuilder) genDataNodePodSpec(
-	cluster *hadoopclusterorgv1alpha1.HadoopCluster,
-	dataNodeSpec *hadoopclusterorgv1alpha1.HDFSDataNodeSpecTemplate,
-	labels map[string]string,
-) (*corev1.PodTemplateSpec, error) {
-	podTemplateSpec := &corev1.PodTemplateSpec{
-		ObjectMeta: metav1.ObjectMeta{
-			Labels: labels,
-		},
-		Spec: corev1.PodSpec{
-			Volumes:          dataNodeSpec.Volumes,
-			RestartPolicy:    corev1.RestartPolicyAlways,
-			DNSPolicy:        corev1.DNSClusterFirstWithHostNet,
-			ImagePullSecrets: dataNodeSpec.ImagePullSecrets,
-			HostNetwork:      dataNodeSpec.HostNetwork,
-		},
-	}
-
-	podTemplateSpec.Spec.Volumes = appendHadoopConfigMapVolume(
-		podTemplateSpec.Spec.Volumes,
-		util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeConfigMap),
-	)
-
-	volumeMounts := cluster.Spec.HDFS.NameNode.VolumeMounts
-	volumeMounts = appendHadoopConfigMapVolumeMount(volumeMounts)
-
-	nameNodeCmd := []string{"sh", "-c", entrypointCmd}
-
-	containers := []corev1.Container{{
-		Name:            string(hadoopclusterorgv1alpha1.ReplicaTypeDataNode),
-		Image:           dataNodeSpec.Image,
-		Command:         nameNodeCmd,
-		Resources:       dataNodeSpec.Resources,
-		VolumeMounts:    volumeMounts,
-		Env:             cluster.Spec.HDFS.DataNode.Env,
-		ImagePullPolicy: dataNodeSpec.ImagePullPolicy,
-		SecurityContext: dataNodeSpec.SecurityContext,
-	}}
-
-	podTemplateSpec.Spec.Containers = containers
-	setPodEnv(cluster, podTemplateSpec, hadoopclusterorgv1alpha1.ReplicaTypeDataNode)
-	if err := setInitContainer(cluster, hadoopclusterorgv1alpha1.ReplicaTypeDataNode, podTemplateSpec); err != nil {
-		return nil, err
-	}
-	return podTemplateSpec, nil
-}
-
-func (h *HdfsBuilder) buildDataNodeServices(cluster *hadoopclusterorgv1alpha1.HadoopCluster, labels map[string]string) error {
+func (h *HdfsBuilder) buildDataNodeServices(cluster *v1alpha1.HadoopCluster) error {
 	replicas := cluster.Spec.HDFS.DataNode.Replicas
 	if replicas == nil {
 		return nil
@@ -399,52 +283,42 @@ func (h *HdfsBuilder) buildDataNodeServices(cluster *hadoopclusterorgv1alpha1.Ha
 
 	for i := 0; i < int(*replicas); i++ {
 		serviceName := util.GetDataNodeServiceName(cluster, i)
-		if err := h.buildDataNodeService(cluster, serviceName, labels); err != nil {
+		if err := h.buildDataNodeService(cluster, serviceName); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (h *HdfsBuilder) buildDataNodeService(cluster *hadoopclusterorgv1alpha1.HadoopCluster, name string, labels map[string]string) error {
+func (h *HdfsBuilder) buildDataNodeService(cluster *v1alpha1.HadoopCluster, name string) error {
 	err := h.Get(context.Background(), client.ObjectKey{Name: name, Namespace: cluster.Namespace}, &corev1.Service{})
 	if err == nil || !errors.IsNotFound(err) {
 		return err
 	}
 
-	nameNodeService := &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: cluster.Namespace,
-			Labels:    labels,
-		},
-		Spec: corev1.ServiceSpec{
-			ClusterIP: "None",
-			Selector:  labels,
-		},
-	}
+	nameNodeService := getHeadLessNodeServiceSpec(cluster, name, v1alpha1.ReplicaTypeDataNode)
 
-	ownerRef := util.GenOwnerReference(cluster, hadoopclusterorgv1alpha1.GroupVersion.WithKind(hadoopclusterorgv1alpha1.HadoopClusterKind).Kind)
+	ownerRef := util.GenOwnerReference(cluster, v1alpha1.GroupVersion.WithKind(v1alpha1.HadoopClusterKind).Kind)
 	if err = h.ServiceControl.CreateServicesWithControllerRef(cluster.GetNamespace(), nameNodeService, cluster, ownerRef); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (h *HdfsBuilder) cleanNameNode(cluster *hadoopclusterorgv1alpha1.HadoopCluster) error {
-	nameNodeName := util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeNameNode)
+func (h *HdfsBuilder) cleanNameNode(cluster *v1alpha1.HadoopCluster) error {
+	nameNodeName := util.GetReplicaName(cluster, v1alpha1.ReplicaTypeNameNode)
 	err := h.PodControl.DeletePod(cluster.GetNamespace(), nameNodeName, &corev1.Pod{})
 	if err != nil {
 		return err
 	}
 
-	serviceName := util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeNameNode)
+	serviceName := util.GetReplicaName(cluster, v1alpha1.ReplicaTypeNameNode)
 	err = h.ServiceControl.DeleteService(cluster.GetNamespace(), serviceName, &corev1.Service{})
 	if err != nil {
 		return err
 	}
 
-	if cluster.Spec.HDFS.NameNode.ServiceType == corev1.ServiceTypeNodePort {
+	if isServiceNodePortExpose(cluster.Spec.HDFS.NameNode.Expose) {
 		serviceNodePortName := fmt.Sprintf("%s-nodeport", serviceName)
 		err = h.ServiceControl.DeleteService(cluster.GetNamespace(), serviceNodePortName, &corev1.Service{})
 		if err != nil {
@@ -454,8 +328,8 @@ func (h *HdfsBuilder) cleanNameNode(cluster *hadoopclusterorgv1alpha1.HadoopClus
 	return nil
 }
 
-func (h *HdfsBuilder) cleanDataNode(cluster *hadoopclusterorgv1alpha1.HadoopCluster) error {
-	dataNodeName := util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeDataNode)
+func (h *HdfsBuilder) cleanDataNode(cluster *v1alpha1.HadoopCluster) error {
+	dataNodeName := util.GetReplicaName(cluster, v1alpha1.ReplicaTypeDataNode)
 	err := h.StatefulSetControl.DeleteStatefulSet(cluster.GetNamespace(), dataNodeName, &appv1.StatefulSet{})
 	if err != nil {
 		return err
@@ -476,9 +350,9 @@ func (h *HdfsBuilder) cleanDataNode(cluster *hadoopclusterorgv1alpha1.HadoopClus
 }
 
 func (h *HdfsBuilder) reconcileDataNodeHPA(
-	cluster *hadoopclusterorgv1alpha1.HadoopCluster,
+	cluster *v1alpha1.HadoopCluster,
 	statefulSet *appv1.StatefulSet,
-	status *hadoopclusterorgv1alpha1.HadoopClusterStatus,
+	status *v1alpha1.HadoopClusterStatus,
 ) error {
 	statefulSet.Spec.Replicas = cluster.Spec.HDFS.DataNode.Replicas
 	if statefulSet.Spec.Replicas == nil {
@@ -491,7 +365,7 @@ func (h *HdfsBuilder) reconcileDataNodeHPA(
 	}
 
 	msg := fmt.Sprintf("HadoopCluster %s/%s is reconfiguraing datanodes replicas.", cluster.Namespace, cluster.Name)
-	err = util.UpdateClusterConditions(status, hadoopclusterorgv1alpha1.ClusterReconfiguring, util.HadoopclusterReconfiguringReason, msg)
+	err = util.UpdateClusterConditions(status, v1alpha1.ClusterReconfiguring, util.HadoopclusterReconfiguringReason, msg)
 	if err != nil {
 		return err
 	}
@@ -501,10 +375,11 @@ func (h *HdfsBuilder) reconcileDataNodeHPA(
 }
 
 func (h *HdfsBuilder) buildNameNodeNodePortService(
-	cluster *hadoopclusterorgv1alpha1.HadoopCluster,
-	labels map[string]string,
+	cluster *v1alpha1.HadoopCluster,
 	name string,
+	nodePort int32,
 ) error {
+	labels := getLabels(cluster, v1alpha1.ReplicaTypeNameNode)
 	nameNodeService := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -516,14 +391,15 @@ func (h *HdfsBuilder) buildNameNodeNodePortService(
 			Selector: labels,
 			Ports: []corev1.ServicePort{
 				{
-					Name: "http",
-					Port: 9870,
+					Name:     "http",
+					Port:     9870,
+					NodePort: nodePort,
 				},
 			},
 		},
 	}
 
-	ownerRef := util.GenOwnerReference(cluster, hadoopclusterorgv1alpha1.GroupVersion.WithKind(hadoopclusterorgv1alpha1.HadoopClusterKind).Kind)
+	ownerRef := util.GenOwnerReference(cluster, v1alpha1.GroupVersion.WithKind(v1alpha1.HadoopClusterKind).Kind)
 	if err := h.ServiceControl.CreateServicesWithControllerRef(cluster.GetNamespace(), nameNodeService, cluster, ownerRef); err != nil {
 		return err
 	}

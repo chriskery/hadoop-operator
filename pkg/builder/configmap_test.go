@@ -2,9 +2,9 @@ package builder
 
 import (
 	"encoding/xml"
-	hadoopclusterorgv1alpha1 "github.com/chriskery/hadoop-cluster-operator/pkg/apis/kubecluster.org/v1alpha1"
-	"github.com/chriskery/hadoop-cluster-operator/pkg/util"
-	"github.com/chriskery/hadoop-cluster-operator/pkg/util/testutil"
+	hadoopclusterorgv1alpha1 "github.com/chriskery/hadoop-operator/pkg/apis/kubecluster.org/v1alpha1"
+	"github.com/chriskery/hadoop-operator/pkg/util"
+	"github.com/chriskery/hadoop-operator/pkg/util/testutil"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
