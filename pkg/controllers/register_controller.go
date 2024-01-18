@@ -3,8 +3,8 @@ package controllers
 import (
 	"fmt"
 	"github.com/chriskery/hadoop-operator/pkg/apis/kubecluster.org/v1alpha1"
+	"github.com/chriskery/hadoop-operator/pkg/controllers/hadoopapplication"
 	"github.com/chriskery/hadoop-operator/pkg/controllers/hadoopcluster"
-	"github.com/chriskery/hadoop-operator/pkg/controllers/hadoopjob"
 	"strings"
 
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -25,12 +25,12 @@ var SupportedSchemeReconciler = map[string]ReconcilerSetupFunc{
 		}
 		return nil
 	},
-	v1alpha1.HadoopJobPlural: func(mgr manager.Manager) error {
-		if err := hadoopjob.NewReconciler(mgr).SetupWithManager(mgr); err != nil {
+	v1alpha1.HadoopApplicationPlural: func(mgr manager.Manager) error {
+		if err := hadoopapplication.NewReconciler(mgr).SetupWithManager(mgr); err != nil {
 			return err
 		}
 
-		if err := (&v1alpha1.HadoopJob{}).SetupWebhookWithManager(mgr); err != nil {
+		if err := (&v1alpha1.HadoopApplication{}).SetupWebhookWithManager(mgr); err != nil {
 			return err
 		}
 		return nil

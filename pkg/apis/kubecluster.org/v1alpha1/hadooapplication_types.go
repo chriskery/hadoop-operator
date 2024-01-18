@@ -22,31 +22,33 @@ import (
 )
 
 const (
-	// HadoopJobKind is the kind name.
-	HadoopJobKind = "HadoopJob"
-	// HadoopJobPlural is the TensorflowPlural for HadoopJob.
-	HadoopJobPlural = "HadoopJobs"
-	// HadoopJobSingular is the singular for HadoopJob.
-	HadoopJobSingular = "HadoopJob"
+	// HadoopApplicationKind is the kind name.
+	HadoopApplicationKind = "HadoopApplication"
+	// HadoopApplicationPlural is the TensorflowPlural for HadoopApplication.
+	HadoopApplicationPlural = "HadoopApplications"
+	// HadoopApplicationSingular is the singular for HadoopApplication.
+	HadoopApplicationSingular = "HadoopApplication"
 
-	// JobNameLabel represents the label key for the cluster name, the value is the cluster name.
-	JobNameLabel = "kubeclusetr.org/job-name"
+	// ApplicationNameLabel represents the label key for the cluster name, the value is the cluster name.
+	ApplicationNameLabel = "kubeclusetr.org/application-name"
 )
 
-// SparkApplicationType describes the type of a Spark application.
-type SparkApplicationType string
+// HdoopApplicationType describes the type of a Spark application.
+type HdoopApplicationType string
 
 // Different types of Spark applications.
 const (
-	JavaApplicationType   SparkApplicationType = "Java"
-	ScalaApplicationType  SparkApplicationType = "Scala"
-	PythonApplicationType SparkApplicationType = "Python"
-	RApplicationType      SparkApplicationType = "R"
+	JavaApplicationType   HdoopApplicationType = "Java"
+	ScalaApplicationType  HdoopApplicationType = "Scala"
+	PythonApplicationType HdoopApplicationType = "Python"
+	RApplicationType      HdoopApplicationType = "R"
 )
 
-// HadoopJobSpec defines the desired state of HadoopJob
+type DataLoaderSpec corev1.PodSpec
+
+// HadoopApplicationSpec defines the desired state of HadoopApplication
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-type HadoopJobSpec struct {
+type HadoopApplicationSpec struct {
 	// MainFile is the path to a bundled JAR, Python, or R file of the application.
 	MainApplicationFile string `json:"mainApplicationFile"`
 
@@ -58,6 +60,8 @@ type HadoopJobSpec struct {
 
 	NameNodeDirFormat bool `json:"nameNodeDirFormat,omitempty"`
 
+	DataLoaderSpec *DataLoaderSpec `json:"dataLoaderSpec,omitempty"`
+
 	// List of environment variables to set in the container.
 	// Cannot be updated.
 	// +optional
@@ -68,10 +72,10 @@ type HadoopJobSpec struct {
 
 // +k8s:openapi-gen=true
 // +k8s:deepcopy-gen=true
-// JobCondition describes current state of a cluster
-type JobCondition struct {
-	// Type of job condition.
-	Type JobConditionType `json:"type"`
+// ApplicationCondition describes current state of a cluster
+type ApplicationCondition struct {
+	// Type of application condition.
+	Type ApplicationConditionType `json:"type"`
 	// Status of the condition, one of True, False, Unknown.
 	Status corev1.ConditionStatus `json:"status"`
 	// The reason for the condition's last transition.
@@ -84,49 +88,53 @@ type JobCondition struct {
 	LastTransitionTime metav1.Time `json:"lastTransitionTime,omitempty"`
 }
 
-type JobConditionType string
+type ApplicationConditionType string
 
 const (
-	// JobCreated means the job has been accepted by the system,
+	// ApplicationCreated means the application has been accepted by the system,
 	// but one or more of the pods/services has not been started.
 	// This includes time before pods being scheduled and launched.
-	JobCreated JobConditionType = "Created"
+	ApplicationCreated ApplicationConditionType = "Created"
 
-	// JobSubmitted means all sub-resources (e.g. services/pods) of this job
+	// ApplicationDataLoading means all sub-resources (e.g. services/pods) of this application
 	// have been successfully submitted.
-	JobSubmitted JobConditionType = "Submitted"
+	ApplicationDataLoading ApplicationConditionType = "DataLoading"
 
-	// JobRunning means all sub-resources (e.g. services/pods) of this job
+	// ApplicationSubmitted means all sub-resources (e.g. services/pods) of this application
+	// have been successfully submitted.
+	ApplicationSubmitted ApplicationConditionType = "Submitted"
+
+	// ApplicationRunning means all sub-resources (e.g. services/pods) of this application
 	// have been successfully scheduled and launched.
 	// The training is running without error.
-	JobRunning JobConditionType = "Running"
+	ApplicationRunning ApplicationConditionType = "Running"
 
-	// JobSucceeded means all sub-resources (e.g. services/pods) of this job
+	// ApplicationSucceeded means all sub-resources (e.g. services/pods) of this application
 	// reached phase have terminated in success.
 	// The training is complete without error.
-	JobSucceeded JobConditionType = "Succeeded"
+	ApplicationSucceeded ApplicationConditionType = "Succeeded"
 
-	// JobFailed means one or more sub-resources (e.g. services/pods) of this job
+	// ApplicationFailed means one or more sub-resources (e.g. services/pods) of this application
 	// reached phase failed with no restarting.
 	// The training has failed its execution.
-	JobFailed JobConditionType = "Failed"
+	ApplicationFailed ApplicationConditionType = "Failed"
 )
 
 // +k8s:openapi-gen=true
 // +k8s:deepcopy-gen=true
-// HadoopJobStatus defines the observed state of HadoopJob
-type HadoopJobStatus struct {
+// HadoopApplicationStatus defines the observed state of HadoopApplication
+type HadoopApplicationStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	// Conditions is an array of current observed job conditions.
-	Conditions []JobCondition `json:"conditions"`
+	// Conditions is an array of current observed application conditions.
+	Conditions []ApplicationCondition `json:"conditions"`
 
-	// Represents time when the job was acknowledged by the job controller.
+	// Represents time when the application was acknowledged by the application controller.
 	// It is not guaranteed to be set in happens-before order across separate operations.
 	// It is represented in RFC3339 form and is in UTC.
 	StartTime *metav1.Time `json:"startTime,omitempty"`
 
-	// Represents time when the job was completed. It is not guaranteed to
+	// Represents time when the application was completed. It is not guaranteed to
 	// be set in happens-before order across separate operations.
 	// It is represented in RFC3339 form and is in UTC.
 	CompletionTime *metav1.Time `json:"completionTime,omitempty"`
@@ -134,32 +142,32 @@ type HadoopJobStatus struct {
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +resource:path=hadoopjobs
+// +resource:path=hadoopapplications
 // +kubebuilder:object:root=true
 // +kubebuilder:printcolumn:JSONPath=`.metadata.creationTimestamp`,name="Age",type=date
 // +kubebuilder:printcolumn:JSONPath=`.status.conditions[-1:].type`,name="State",type=string
 // +kubebuilder:subresource:status
-// +kubebuilder:resource:scope=Namespaced,path=hadoopjobs,shortName={"hdj","hdjs"}
-// HadoopJob is the Schema for the hadoopjobs API
-type HadoopJob struct {
+// +kubebuilder:resource:scope=Namespaced,path=hadoopapplications,shortName={"hda","hdas"}
+// HadoopApplication is the Schema for the hadoopapplications API
+type HadoopApplication struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   HadoopJobSpec   `json:"spec,omitempty"`
-	Status HadoopJobStatus `json:"status,omitempty"`
+	Spec   HadoopApplicationSpec   `json:"spec,omitempty"`
+	Status HadoopApplicationStatus `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimzxachinery/pkg/runtime.Object
-// +resource:path=hadoopjobs
+// +resource:path=hadoopapplications
 
-// HadoopJobList contains a list of HadoopJob
-type HadoopJobList struct {
+// HadoopApplicationList contains a list of HadoopApplication
+type HadoopApplicationList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []HadoopJob `json:"items"`
+	Items           []HadoopApplication `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&HadoopJob{}, &HadoopJobList{})
+	SchemeBuilder.Register(&HadoopApplication{}, &HadoopApplicationList{})
 }

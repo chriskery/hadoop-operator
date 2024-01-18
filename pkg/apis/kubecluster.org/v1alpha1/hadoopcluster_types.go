@@ -187,7 +187,7 @@ type HadoopClusterSpec struct {
 // +k8s:deepcopy-gen=true
 // ClusterCondition describes current state of a cluster
 type ClusterCondition struct {
-	// Type of job condition.
+	// Type of application condition.
 	Type ClusterConditionType `json:"type"`
 	// Status of the condition, one of True, False, Unknown.
 	Status corev1.ConditionStatus `json:"status"`
@@ -204,12 +204,12 @@ type ClusterCondition struct {
 type ClusterConditionType string
 
 const (
-	// ClusterCreated means the job has been accepted by the system,
+	// ClusterCreated means the application has been accepted by the system,
 	// but one or more of the pods/services has not been started.
 	// This includes time before pods being scheduled and launched.
 	ClusterCreated ClusterConditionType = "Created"
 
-	// ClusterRunning means all sub-resources (e.g. services/pods) of this job
+	// ClusterRunning means all sub-resources (e.g. services/pods) of this application
 	// have been successfully scheduled and launched.
 	// The training is running without error.
 	ClusterRunning ClusterConditionType = "Running"
@@ -234,14 +234,14 @@ type ReplicaStatus struct {
 type HadoopClusterStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	// Conditions is an array of current observed job conditions.
+	// Conditions is an array of current observed application conditions.
 	Conditions []ClusterCondition `json:"conditions"`
 
 	// ReplicaStatuses is map of ReplicaType and ReplicaStatus,
 	// specifies the status of each replica.
 	ReplicaStatuses map[ReplicaType]*ReplicaStatus `json:"replicaStatuses"`
 
-	// Represents time when the job was acknowledged by the job controller.
+	// Represents time when the application was acknowledged by the application controller.
 	// It is not guaranteed to be set in happens-before order across separate operations.
 	// It is represented in RFC3339 form and is in UTC.
 	StartTime *metav1.Time `json:"startTime,omitempty"`

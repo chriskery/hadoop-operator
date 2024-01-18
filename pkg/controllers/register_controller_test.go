@@ -31,7 +31,7 @@ func TestEnabledSchemes(t *testing.T) {
 	}
 
 	if testES.Set(v1alpha1.HadoopClusterKind) != nil {
-		t.Error("failed to restore TFJob")
+		t.Error("failed to restore TFApplication")
 	} else {
 		stored := false
 		for _, kind := range testES {
@@ -44,9 +44,9 @@ func TestEnabledSchemes(t *testing.T) {
 		}
 	}
 
-	dummyJob := "dummyjob"
-	if testES.Set(dummyJob) == nil {
-		t.Errorf("successfully registered non-supported job %s", dummyJob)
+	dummyApplication := "dummyapplication"
+	if testES.Set(dummyApplication) == nil {
+		t.Errorf("successfully registered non-supported application %s", dummyApplication)
 	}
 
 	if testES.Empty() {

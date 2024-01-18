@@ -15,7 +15,7 @@ const (
 	HadoopclusterReconfiguringReason = "HadoopclusterReconfiguring"
 )
 
-// InitializeClusterStatuses initializes the ReplicaStatuses for MPIJob.
+// InitializeClusterStatuses initializes the ReplicaStatuses for MPIApplication.
 func InitializeClusterStatuses(status *v1alpha1.HadoopClusterStatus, replicaType v1alpha1.ReplicaType) {
 	if status.ReplicaStatuses == nil {
 		status.ReplicaStatuses = make(map[v1alpha1.ReplicaType]*v1alpha1.ReplicaStatus)
@@ -24,9 +24,12 @@ func InitializeClusterStatuses(status *v1alpha1.HadoopClusterStatus, replicaType
 	status.ReplicaStatuses[replicaType] = &v1alpha1.ReplicaStatus{}
 }
 
-// UpdateClusterReplicaStatuses updates the JobReplicaStatuses according to the pod.
+// UpdateClusterReplicaStatuses updates the ApplicationReplicaStatuses according to the pod.
 // originally from pkg/controller.v1/tensorflow/status.go (deleted)
 func UpdateClusterReplicaStatuses(status *v1alpha1.HadoopClusterStatus, replicaType v1alpha1.ReplicaType, pod *corev1.Pod) {
+	if !pod.DeletionTimestamp.IsZero() {
+		return
+	}
 	switch pod.Status.Phase {
 	case corev1.PodRunning:
 		for _, condition := range pod.Status.Conditions {

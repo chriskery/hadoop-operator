@@ -7,28 +7,28 @@ import (
 )
 
 const (
-	// HadoopJobCreatedReason is added in a mpijob when it is created.
-	HadoopJobCreatedReason = "HadoopJobCreated"
-	// HadoopJobSubmittedReason is added in a mpijob when it is created.
-	HadoopJobSubmittedReason = "HadoopJobSubmittedReason"
-	// HadoopJobRunningReason is added in a mpijob when it is running.
-	HadoopJobRunningReason = "HadoopJobRunning"
-	// HadoopJobSucceededReason is added in a mpijob when it is succeeded.
-	HadoopJobSucceededReason = "HadoopJobSucceeded"
-	// HadoopJobFailedReason is added in a mpijob when it is failed.
-	HadoopJobFailedReason = "HadoopJobFailed"
+	// HadoopApplicationCreatedReason is added in a mpiapplication when it is created.
+	HadoopApplicationCreatedReason = "HadoopApplicationCreated"
+	// HadoopApplicationSubmittedReason is added in a mpiapplication when it is created.
+	HadoopApplicationSubmittedReason = "HadoopApplicationSubmittedReason"
+	// HadoopApplicationRunningReason is added in a mpiapplication when it is running.
+	HadoopApplicationRunningReason = "HadoopApplicationRunning"
+	// HadoopApplicationSucceededReason is added in a mpiapplication when it is succeeded.
+	HadoopApplicationSucceededReason = "HadoopApplicationSucceeded"
+	// HadoopApplicationFailedReason is added in a mpiapplication when it is failed.
+	HadoopApplicationFailedReason = "HadoopApplicationFailed"
 )
 
-// UpdateJobConditions updates the conditions of the given HadoopJob.
-func UpdateJobConditions(status *v1alpha1.HadoopJobStatus, conditionType v1alpha1.JobConditionType, reason, message string) error {
-	condition := newJobCondition(conditionType, reason, message)
+// UpdateApplicationConditions updates the conditions of the given HadoopApplication.
+func UpdateApplicationConditions(status *v1alpha1.HadoopApplicationStatus, conditionType v1alpha1.ApplicationConditionType, reason, message string) error {
+	condition := newApplicationCondition(conditionType, reason, message)
 	setCondition(status, condition)
 	return nil
 }
 
-// newJobCondition creates a new HadoopJob condition.
-func newJobCondition(conditionType v1alpha1.JobConditionType, reason, message string) v1alpha1.JobCondition {
-	return v1alpha1.JobCondition{
+// newApplicationCondition creates a new HadoopApplication condition.
+func newApplicationCondition(conditionType v1alpha1.ApplicationConditionType, reason, message string) v1alpha1.ApplicationCondition {
+	return v1alpha1.ApplicationCondition{
 		Type:               conditionType,
 		Status:             corev1.ConditionTrue,
 		LastUpdateTime:     metav1.Now(),
@@ -38,8 +38,8 @@ func newJobCondition(conditionType v1alpha1.JobConditionType, reason, message st
 	}
 }
 
-// getJobCondition returns the condition with the provided type.
-func getJobCondition(status v1alpha1.HadoopJobStatus, condType v1alpha1.JobConditionType) *v1alpha1.JobCondition {
+// getApplicationCondition returns the condition with the provided type.
+func getApplicationCondition(status v1alpha1.HadoopApplicationStatus, condType v1alpha1.ApplicationConditionType) *v1alpha1.ApplicationCondition {
 	for _, condition := range status.Conditions {
 		if condition.Type == condType {
 			return &condition
@@ -48,12 +48,12 @@ func getJobCondition(status v1alpha1.HadoopJobStatus, condType v1alpha1.JobCondi
 	return nil
 }
 
-// setClusterCondition updates the HadoopJob to include the provided condition.
+// setClusterCondition updates the HadoopApplication to include the provided condition.
 // If the condition that we are about to add already exists
 // and has the same status and reason then we are not going to update.
-func setCondition(status *v1alpha1.HadoopJobStatus, condition v1alpha1.JobCondition) {
+func setCondition(status *v1alpha1.HadoopApplicationStatus, condition v1alpha1.ApplicationCondition) {
 
-	currentCond := getJobCondition(*status, condition.Type)
+	currentCond := getApplicationCondition(*status, condition.Type)
 
 	// Do nothing if condition doesn't change
 	if currentCond != nil && currentCond.Status == condition.Status && currentCond.Reason == condition.Reason {
@@ -66,13 +66,13 @@ func setCondition(status *v1alpha1.HadoopJobStatus, condition v1alpha1.JobCondit
 	}
 
 	// Append the updated condition
-	newConditions := filterOutJobCondition(status.Conditions, condition.Type)
+	newConditions := filterOutApplicationCondition(status.Conditions, condition.Type)
 	status.Conditions = append(newConditions, condition)
 }
 
-// filterOutJobCondition returns a new slice of HadoopJob conditions without conditions with the provided type.
-func filterOutJobCondition(conditions []v1alpha1.JobCondition, condType v1alpha1.JobConditionType) []v1alpha1.JobCondition {
-	var newConditions []v1alpha1.JobCondition
+// filterOutApplicationCondition returns a new slice of HadoopApplication conditions without conditions with the provided type.
+func filterOutApplicationCondition(conditions []v1alpha1.ApplicationCondition, condType v1alpha1.ApplicationConditionType) []v1alpha1.ApplicationCondition {
+	var newConditions []v1alpha1.ApplicationCondition
 	for _, c := range conditions {
 		if c.Type == condType {
 			continue

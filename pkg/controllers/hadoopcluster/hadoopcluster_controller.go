@@ -69,10 +69,10 @@ type HadoopClusterReconciler struct {
 }
 
 // +kubebuilder:rbac:groups="",resources=pods/exec,verbs=create
-// +kubebuilder:rbac:groups="",resources=pods,verbs=update;get;list;watch;create
-// +kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;update
-// +kubebuilder:rbac:groups=apps,resources=statefulsets,verbs=get;list;watch;create;update;delete
-// +kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list;watch;create;update
+// +kubebuilder:rbac:groups="",resources=pods,verbs=update;get;list;watch;create;delete
+// +kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;update;delete
+// +kubebuilder:rbac:groups=apps,resources=statefulsets,verbs=get;list;watch;create;update;delete;delete
+// +kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list;watch;create;update;delete
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;update
 // +kubebuilder:rbac:groups="",resources=events,verbs=get;create;patch
 // +kubebuilder:rbac:groups=kubecluster.org,resources=hadoopclusters,verbs=get;list;watch;create;update;patch;delete
@@ -125,7 +125,7 @@ func (r *HadoopClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	return ctrl.Result{}, nil
 }
 
-// UpdateClusterStatusInApiServer updates the status of the given MXJob.
+// UpdateClusterStatusInApiServer updates the status of the given MXApplication.
 func (r *HadoopClusterReconciler) UpdateClusterStatusInApiServer(cluster *v1alpha1.HadoopCluster, status *v1alpha1.HadoopClusterStatus) error {
 	if status.ReplicaStatuses == nil {
 		status.ReplicaStatuses = map[v1alpha1.ReplicaType]*v1alpha1.ReplicaStatus{}
@@ -159,7 +159,7 @@ func (r *HadoopClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		return err
 	}
 
-	// inject watching for job related pod
+	// inject watching for application related pod
 	if err = c.Watch(
 		source.Kind(mgr.GetCache(), &corev1.Pod{}),
 		handler.EnqueueRequestForOwner(mgr.GetScheme(), mgr.GetRESTMapper(), &v1alpha1.HadoopCluster{}, handler.OnlyControllerOwner()),
@@ -172,7 +172,7 @@ func (r *HadoopClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		return err
 	}
 
-	// inject watching for job related service
+	// inject watching for application related service
 	if err = c.Watch(
 		source.Kind(mgr.GetCache(), &corev1.Service{}),
 		handler.EnqueueRequestForOwner(mgr.GetScheme(), mgr.GetRESTMapper(), &v1alpha1.HadoopCluster{}, handler.OnlyControllerOwner()),
@@ -185,7 +185,7 @@ func (r *HadoopClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		return err
 	}
 
-	// inject watching for job related service
+	// inject watching for application related service
 	if err = c.Watch(
 		source.Kind(mgr.GetCache(), &corev1.ConfigMap{}),
 		handler.EnqueueRequestForOwner(mgr.GetScheme(), mgr.GetRESTMapper(), &v1alpha1.HadoopCluster{}, handler.OnlyControllerOwner()),
@@ -198,7 +198,7 @@ func (r *HadoopClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		return err
 	}
 
-	// inject watching for job related service
+	// inject watching for application related service
 	if err = c.Watch(
 		source.Kind(mgr.GetCache(), &appv1.StatefulSet{}),
 		handler.EnqueueRequestForOwner(mgr.GetScheme(), mgr.GetRESTMapper(), &v1alpha1.HadoopCluster{}, handler.OnlyControllerOwner()),

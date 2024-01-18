@@ -27,12 +27,12 @@ type FakeKubeclusterV1alpha1 struct {
 	*testing.Fake
 }
 
-func (c *FakeKubeclusterV1alpha1) HadoopClusters(namespace string) v1alpha1.HadoopClusterInterface {
-	return &FakeHadoopClusters{c, namespace}
+func (c *FakeKubeclusterV1alpha1) HadoopApplications(namespace string) v1alpha1.HadoopApplicationInterface {
+	return &FakeHadoopApplications{c, namespace}
 }
 
-func (c *FakeKubeclusterV1alpha1) HadoopJobs(namespace string) v1alpha1.HadoopJobInterface {
-	return &FakeHadoopJobs{c, namespace}
+func (c *FakeKubeclusterV1alpha1) HadoopClusters(namespace string) v1alpha1.HadoopClusterInterface {
+	return &FakeHadoopClusters{c, namespace}
 }
 
 // RESTClient returns a RESTClient that is used to communicate

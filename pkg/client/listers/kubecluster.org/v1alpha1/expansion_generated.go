@@ -17,6 +17,14 @@ limitations under the License.
 
 package v1alpha1
 
+// HadoopApplicationListerExpansion allows custom methods to be added to
+// HadoopApplicationLister.
+type HadoopApplicationListerExpansion interface{}
+
+// HadoopApplicationNamespaceListerExpansion allows custom methods to be added to
+// HadoopApplicationNamespaceLister.
+type HadoopApplicationNamespaceListerExpansion interface{}
+
 // HadoopClusterListerExpansion allows custom methods to be added to
 // HadoopClusterLister.
 type HadoopClusterListerExpansion interface{}
@@ -24,11 +32,3 @@ type HadoopClusterListerExpansion interface{}
 // HadoopClusterNamespaceListerExpansion allows custom methods to be added to
 // HadoopClusterNamespaceLister.
 type HadoopClusterNamespaceListerExpansion interface{}
-
-// HadoopJobListerExpansion allows custom methods to be added to
-// HadoopJobLister.
-type HadoopJobListerExpansion interface{}
-
-// HadoopJobNamespaceListerExpansion allows custom methods to be added to
-// HadoopJobNamespaceLister.
-type HadoopJobNamespaceListerExpansion interface{}

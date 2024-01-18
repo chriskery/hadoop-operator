@@ -20,23 +20,43 @@ func IsClusterRunning(cluster *v1alpha1.HadoopCluster) bool {
 	return false
 }
 
-// IsJobFinished checks whether the cluster is finished.
-func IsJobFinished(job *v1alpha1.HadoopJob) bool {
-	for _, condition := range job.Status.Conditions {
-		if condition.Type == v1alpha1.JobFailed && condition.Status == corev1.ConditionTrue {
+// IsApplicationFinished checks whether the cluster is finished.
+func IsApplicationFinished(application *v1alpha1.HadoopApplication) bool {
+	for _, condition := range application.Status.Conditions {
+		if condition.Type == v1alpha1.ApplicationFailed && condition.Status == corev1.ConditionTrue {
 			return true
 		}
-		if condition.Type == v1alpha1.JobSucceeded && condition.Status == corev1.ConditionTrue {
+		if condition.Type == v1alpha1.ApplicationSucceeded && condition.Status == corev1.ConditionTrue {
 			return true
 		}
 	}
 	return false
 }
 
-// IsJobRunning checks whether the job is running.
-func IsJobRunning(job *v1alpha1.HadoopJob) bool {
-	for _, condition := range job.Status.Conditions {
-		if condition.Type == v1alpha1.JobRunning && condition.Status == corev1.ConditionTrue {
+// IsApplicationRunning checks whether the application is running.
+func IsApplicationRunning(application *v1alpha1.HadoopApplication) bool {
+	for _, condition := range application.Status.Conditions {
+		if condition.Type == v1alpha1.ApplicationRunning && condition.Status == corev1.ConditionTrue {
+			return true
+		}
+	}
+	return false
+}
+
+// IsApplicationCreated checks whether the application is running.
+func IsApplicationCreated(application *v1alpha1.HadoopApplication) bool {
+	for _, condition := range application.Status.Conditions {
+		if condition.Type == v1alpha1.ApplicationCreated && condition.Status == corev1.ConditionTrue {
+			return true
+		}
+	}
+	return false
+}
+
+// IsApplicationSubmitted checks whether the application is running.
+func IsApplicationSubmitted(application *v1alpha1.HadoopApplication) bool {
+	for _, condition := range application.Status.Conditions {
+		if condition.Type == v1alpha1.ApplicationSubmitted && condition.Status == corev1.ConditionTrue {
 			return true
 		}
 	}

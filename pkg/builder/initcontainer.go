@@ -7,6 +7,7 @@ import (
 	"github.com/chriskery/hadoop-operator/pkg/util"
 	"html/template"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"os"
 	"sync"
@@ -79,15 +80,15 @@ func getInitContainerTemplateOrDefault(file string) string {
 	return initContainerTemplate
 }
 
-func setInitContainer(cluster *v1alpha1.HadoopCluster, replicaType v1alpha1.ReplicaType, podTemplate *corev1.PodTemplateSpec) error {
+func setInitContainer(hadoopCluster metav1.Object, replicaType v1alpha1.ReplicaType, podTemplate *corev1.PodTemplateSpec) error {
 	g := getInitContainerGenerator()
 
 	masterAddr := ""
 	switch replicaType {
-	case v1alpha1.ReplicaTypeDataNode, v1alpha1.ReplicaTypeResourcemanager:
-		masterAddr = util.GetReplicaName(cluster, v1alpha1.ReplicaTypeNameNode)
+	case v1alpha1.ReplicaTypeDataNode, v1alpha1.ReplicaTypeResourcemanager, v1alpha1.ReplicaTypeDataloader, v1alpha1.ReplicaTypeDriver:
+		masterAddr = util.GetReplicaName(hadoopCluster, v1alpha1.ReplicaTypeNameNode)
 	case v1alpha1.ReplicaTypeNodemanager:
-		masterAddr = util.GetReplicaName(cluster, v1alpha1.ReplicaTypeResourcemanager)
+		masterAddr = util.GetReplicaName(hadoopCluster, v1alpha1.ReplicaTypeResourcemanager)
 	default:
 		return nil
 	}
