@@ -28,6 +28,7 @@ import (
 
 const (
 	DefaultImage                       = "apache/hadoop:3"
+	DefaultHbaseImage                  = "harisekhon/hbase"
 	DefaultLogAggregationRetainSeconds = 604800
 )
 
@@ -49,6 +50,10 @@ func (r *HadoopCluster) Default() {
 	hadoopclusterlog.Info("default", "name", r.Name)
 	setDefaultsHDFS(&r.Spec.HDFS)
 	setDefaultsYarn(&r.Spec.Yarn)
+
+	if r.Spec.Hbase != nil && r.Spec.Hbase.Image == "" {
+		r.Spec.Hbase.Image = DefaultHbaseImage
+	}
 }
 
 func setDefaultsYarn(r *YarnSpec) {

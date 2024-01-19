@@ -33,6 +33,22 @@ type HdfsBuilder struct {
 	PodControl control.PodControlInterface
 }
 
+func (h *HdfsBuilder) IsBuildCompleted(obj interface{}, objStatus interface{}) bool {
+	cluster := obj.(*v1alpha1.HadoopCluster)
+	status := objStatus.(*v1alpha1.HadoopClusterStatus)
+
+	nameNodeStatus, ok := status.ReplicaStatuses[v1alpha1.ReplicaTypeNameNode]
+	if !ok || !util.ReplicaReady(cluster.Spec.HDFS.NameNode.Replicas, 1, nameNodeStatus.Active) {
+		return false
+	}
+	dataNodeStatus, ok := status.ReplicaStatuses[v1alpha1.ReplicaTypeDataNode]
+	if !ok || !util.ReplicaReady(cluster.Spec.HDFS.DataNode.Replicas, 1, dataNodeStatus.Active) {
+		return false
+	}
+
+	return true
+}
+
 func (h *HdfsBuilder) SetupWithManager(mgr manager.Manager, recorder record.EventRecorder) {
 	cfg := mgr.GetConfig()
 
@@ -44,20 +60,20 @@ func (h *HdfsBuilder) SetupWithManager(mgr manager.Manager, recorder record.Even
 	h.PodControl = control.RealPodControl{KubeClient: kubeClientSet, Recorder: recorder}
 }
 
-func (h *HdfsBuilder) Build(obj interface{}, objStatus interface{}) error {
+func (h *HdfsBuilder) Build(obj interface{}, objStatus interface{}) (bool, error) {
 	cluster := obj.(*v1alpha1.HadoopCluster)
 	status := objStatus.(*v1alpha1.HadoopClusterStatus)
 
 	util.InitializeClusterStatuses(status, v1alpha1.ReplicaTypeNameNode)
 	if err := h.buildNameNode(cluster, status); err != nil {
-		return err
+		return false, err
 	}
 
 	util.InitializeClusterStatuses(status, v1alpha1.ReplicaTypeDataNode)
 	if err := h.buildDataNode(cluster, status); err != nil {
-		return err
+		return false, err
 	}
-	return nil
+	return true, nil
 }
 
 func (h *HdfsBuilder) Clean(obj interface{}) error {

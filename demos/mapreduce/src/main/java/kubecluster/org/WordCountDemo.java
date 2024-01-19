@@ -4,7 +4,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapreduce.job;
+import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.GenericOptionsParser;
@@ -18,7 +18,7 @@ public class WordCountDemo {
             System.err.println("Usage: wordcount <in> [<in>...] <out>");
             System.exit(2);
         }
-        Application application = Application.getInstance(conf, "word count");
+        Job application = Job.getInstance(conf, "word count");
         application.setJarByClass(WordCountDemo.class);
         application.setMapperClass(WordCountMapper.class);
         application.setCombinerClass(WordCountReducer.class);

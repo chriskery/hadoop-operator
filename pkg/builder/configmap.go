@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/xml"
 	"fmt"
-	hadoopclusterorgv1alpha1 "github.com/chriskery/hadoop-operator/pkg/apis/kubecluster.org/v1alpha1"
+	"github.com/chriskery/hadoop-operator/pkg/apis/kubecluster.org/v1alpha1"
 	"github.com/chriskery/hadoop-operator/pkg/control"
 	"github.com/chriskery/hadoop-operator/pkg/util"
 	corev1 "k8s.io/api/core/v1"
@@ -19,6 +19,35 @@ import (
 	"text/template"
 )
 
+/*
+ Hbase configuration for distribute, currently not use
+
+ sed -i 's/zookeeper:2181/localhost:2181/' "$HBASE_HOME/conf/hbase-site.xml"
+    echo "Starting Zookeeper..."
+    "hbase" zookeeper &>"/tmp/zookeeper.log" &
+
+    echo "Starting HBase Master..."
+    "hbase-daemon.sh" start master
+
+    echo "Starting HBase RegionServer..."
+    # HBase versions < 1.0 fail to start RegionServer without SSH being installed
+    if [ "$(echo /hbase-* | sed 's,/hbase-,,' | cut -c 1)" = 0 ]; then
+        "local-regionservers.sh" start 1
+    else
+        "hbase-daemon.sh" start regionserver
+    fi
+
+    # kill any pre-existing rest instances before starting new ones
+    pgrep -f proc_rest && pkill -9 -f proc_rest
+    echo "Starting HBase Stargate Rest API server..."
+    "hbase-daemon.sh" start rest
+
+    # kill any pre-existing thrift instances before starting new ones
+    pgrep -f proc_thrift && pkill -9 -f proc_thrift
+    echo "Starting HBase Thrift API server..."
+    "hbase-daemon.sh" start thrift
+*/
+
 const (
 	templatePrefix = `<?xml version="1.0" encoding="UTF-8"?>
 <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
@@ -29,67 +58,118 @@ HADOOP_CONF_DIR="${HADOOP_CONF_DIR:-/opt/hadoop/etc/hadoop}"
 echo "The value of HADOOP_CONF_DIR is: $HADOOP_CONF_DIR"
 
 HADOOP_OPERATOR_DIR="${HADOOP_OPERATOR_DIR:-/etc/hadoop-operator}"
-if [ -d "$HADOOP_OPERATOR_DIR" ]; then
-    cp $HADOOP_OPERATOR_DIR/hdfs-site.xml $HADOOP_CONF_DIR
-    cp $HADOOP_OPERATOR_DIR/core-site.xml $HADOOP_CONF_DIR
-    cp $HADOOP_OPERATOR_DIR/mapred-site.xml $HADOOP_CONF_DIR
-    cp $HADOOP_OPERATOR_DIR/yarn-site.xml $HADOOP_CONF_DIR
-else
-    echo "Directory does not exist: $HADOOP_OPERATOR_DIR"
-fi
 
-mkdir -p  /tmp/hadoop-hadoop/dfs/name
+mkdir -p /tmp/hadoop-hadoop/dfs/name
 
 HDFS_PATH="hdfs"
-if command -v "hdfs" &> /dev/null
-then
-    echo "Command hdfs exists."
-else
-	HDFS_PATH=$HADOOP_HOME/bin/hdfs
+if ! command -v "hdfs" &> /dev/null; then
+    HDFS_PATH=$HADOOP_HOME/bin/hdfs
     echo "Command 'hdfs'' not found. Setting default value: $HDFS_PATH'"
 fi
 
 YARN_PATH="yarn"
-if command -v "yarn" &> /dev/null
-then
-    echo "Command yarn exists."
-else
-	YARN_PATH=$HADOOP_HOME/bin/yarn
+if ! command -v "yarn" &> /dev/null; then
+    YARN_PATH=$HADOOP_HOME/bin/yarn
     echo "Command 'yarn'' not found. Setting default value: $YARN_PATH'"
 fi
 
-case "$HADOOP_ROLE" in
-    resourcemanager)
-        echo "Environment variable is set to resourcemanager"
-        $YARN_PATH --config $HADOOP_CONF_DIR resourcemanager 
-        ;;
-    nodemanager)
-        echo "Environment variable is set to nodemanager"
-        $YARN_PATH --config $HADOOP_CONF_DIR nodemanager 
-        ;;
-    namenode)
-        echo "Environment variable is set to namenode"
-        if [ "$NAME_NODE_FORMAT" = "true" ]; then
-           $HDFS_PATH namenode -format
-        fi
-        $HDFS_PATH --daemon start datanode
-        $HDFS_PATH namenode
-        ;;
-    datanode)
-        echo "Environment variable is set to datanode"
-        $HDFS_PATH datanode
-        ;;
-    *)
-        echo "Environment variable is set to an other value: $HADOOP_ROLE, will exit normally"
-        exit 0
-        ;;
-esac
+copyHadoopConfig() {
+    echo "Copying configuration files..."
+    cp $HADOOP_OPERATOR_DIR/hdfs-site.xml $HADOOP_CONF_DIR
+    cp $HADOOP_OPERATOR_DIR/core-site.xml $HADOOP_CONF_DIR
+    cp $HADOOP_OPERATOR_DIR/mapred-site.xml $HADOOP_CONF_DIR
+    cp $HADOOP_OPERATOR_DIR/yarn-site.xml $HADOOP_CONF_DIR
+}
+
+HBASE_CONF_DIR="${HBASE_CONF_DIR:-/hbase/conf}"
+
+copyHbaseConfig() {
+    echo "Copying configuration files..."
+    cp $HADOOP_OPERATOR_DIR/hbase-site.xml $HBASE_CONF_DIR
+}
+
+startHbase() {
+    HBASE_HOME="$(dirname $(which hbase))/.."
+    sed -i 's/zookeeper:2181/localhost:2181/' "$HBASE_HOME/conf/hbase-site.xml"
+    echo "Starting Zookeeper..."
+    "hbase" zookeeper &>"/tmp/zookeeper.log" &
+
+    echo "Starting HBase Master..."
+    "hbase-daemon.sh" start master
+
+    echo "Starting HBase RegionServer..."
+    # HBase versions < 1.0 fail to start RegionServer without SSH being installed
+    if [ "$(echo /hbase-* | sed 's,/hbase-,,' | cut -c 1)" = 0 ]; then
+        "local-regionservers.sh" start 1
+    else
+        "hbase-daemon.sh" start regionserver
+    fi
+
+    # kill any pre-existing rest instances before starting new ones
+    pgrep -f proc_rest && pkill -9 -f proc_rest
+    echo "Starting HBase Stargate Rest API server..."
+    "hbase-daemon.sh" start rest
+
+    # kill any pre-existing thrift instances before starting new ones
+    pgrep -f proc_thrift && pkill -9 -f proc_thrift
+    echo "Starting HBase Thrift API server..."
+    "hbase-daemon.sh" start thrift
+
+    while true; do tail -f $HBASE_LOG_DIR/hbase--master-$(hostname).log; done
+}
+
+startService() {
+    case "$HADOOP_ROLE" in
+        resourcemanager)
+            echo "Environment variable is set to resourcemanager"
+            copyHadoopConfig
+            $YARN_PATH --config $HADOOP_CONF_DIR resourcemanager 
+            ;;
+        nodemanager)
+            echo "Environment variable is set to nodemanager"
+            copyHadoopConfig
+            $YARN_PATH --config $HADOOP_CONF_DIR nodemanager 
+            ;;
+        namenode)
+            echo "Environment variable is set to namenode"
+            copyHadoopConfig
+            if [ "$NAME_NODE_FORMAT" = "true" ]; then
+                $HDFS_PATH namenode -format
+            fi
+            $HDFS_PATH --daemon start datanode
+            $HDFS_PATH namenode
+            ;;
+        datanode)
+            echo "Environment variable is set to datanode"
+            copyHadoopConfig
+            $HDFS_PATH datanode
+            ;;
+        hbase)
+            echo "Environment variable is set to hbase"
+            copyHbaseConfig
+            startHbase
+            ;;
+        *)
+            echo "Environment variable HADOOP_ROLE is not set to a recognized value: $HADOOP_ROLE"
+            exit 0
+            ;;
+    esac
+}
+
+# Check if HADOOP_OPERATOR_DIR exists before proceeding with any role-specific operations
+if [ -d "$HADOOP_OPERATOR_DIR" ]; then
+    startService
+else
+    echo "Directory does not exist: $HADOOP_OPERATOR_DIR"
+    exit 1
+fi
 `
 
 	coreSiteXmlKey   = "core-site.xml"
 	hdfsSiteXmlKey   = "hdfs-site.xml"
 	mapredSiteXmlKey = "mapred-site.xml"
 	yarnSiteXmlKey   = "yarn-site.xml"
+	hbaseSiteXmlKey  = "hbase-site.xml"
 
 	entrypointKey = "entrypoint"
 
@@ -122,7 +202,7 @@ func (c Properties) Less(i, j int) bool {
 func (c Properties) Swap(i, j int) { c[i], c[j] = c[j], c[i] }
 
 type XMLTemplateGetter interface {
-	GetXMLTemplate(cluster *hadoopclusterorgv1alpha1.HadoopCluster) Properties
+	GetXMLTemplate(cluster *v1alpha1.HadoopCluster) Properties
 	GetKey() string
 	Default()
 }
@@ -174,7 +254,7 @@ func (c *coreSiteXMLTemplateGetter) Default() {
 	}
 }
 
-func (c *coreSiteXMLTemplateGetter) GetXMLTemplate(cluster *hadoopclusterorgv1alpha1.HadoopCluster) Properties {
+func (c *coreSiteXMLTemplateGetter) GetXMLTemplate(cluster *v1alpha1.HadoopCluster) Properties {
 	return c.defaultProperties
 }
 
@@ -446,7 +526,7 @@ func (h *hdfsSiteXMLTemplateGetter) Default() {
 	}
 }
 
-func (h *hdfsSiteXMLTemplateGetter) GetXMLTemplate(cluster *hadoopclusterorgv1alpha1.HadoopCluster) Properties {
+func (h *hdfsSiteXMLTemplateGetter) GetXMLTemplate(cluster *v1alpha1.HadoopCluster) Properties {
 	hdfsSiteProperties := h.defaultProperties
 	if cluster.Spec.HDFS.NameNode.LogAggregationEnable {
 		hdfsSiteProperties = append(hdfsSiteProperties,
@@ -541,7 +621,7 @@ func (m *mapredSiteXMLTemplateGetter) Default() {
 	}
 }
 
-func (m *mapredSiteXMLTemplateGetter) GetXMLTemplate(cluster *hadoopclusterorgv1alpha1.HadoopCluster) Properties {
+func (m *mapredSiteXMLTemplateGetter) GetXMLTemplate(cluster *v1alpha1.HadoopCluster) Properties {
 	return m.defaultProperties
 }
 
@@ -669,6 +749,29 @@ func (y *yarnSiteXMLTemplateGetter) Default() {
 	}
 }
 
+var _ XMLTemplateGetter = &hbaseSiteXMLTemplateGetter{}
+
+type hbaseSiteXMLTemplateGetter struct {
+	defaultProperties []Property
+}
+
+func (m *hbaseSiteXMLTemplateGetter) Default() {
+	nameNodeRpcAddr := fmt.Sprintf("%s%s:%d", hdfsProtocol, NameNodeURIKey, defaultNameNodeRPCPort)
+	m.defaultProperties = []Property{
+		{"hbase.rootdir", fmt.Sprintf("%s/hbase", nameNodeRpcAddr)},
+		{"hbase.cluster.distributed", "true"},
+		{"hbase.unsafe.stream.capability.enforce", "false"},
+	}
+}
+
+func (m *hbaseSiteXMLTemplateGetter) GetXMLTemplate(cluster *v1alpha1.HadoopCluster) Properties {
+	return m.defaultProperties
+}
+
+func (m *hbaseSiteXMLTemplateGetter) GetKey() string {
+	return hbaseSiteXmlKey
+}
+
 // SI Sizes.
 const (
 	IByte = 1
@@ -676,7 +779,7 @@ const (
 	MByte = KByte * 1000
 )
 
-func (y *yarnSiteXMLTemplateGetter) GetXMLTemplate(cluster *hadoopclusterorgv1alpha1.HadoopCluster) Properties {
+func (y *yarnSiteXMLTemplateGetter) GetXMLTemplate(cluster *v1alpha1.HadoopCluster) Properties {
 	yarnProperties := y.defaultProperties
 	requests := cluster.Spec.Yarn.NodeManager.Resources.Requests
 	cpuQuantity := requests.Cpu()
@@ -747,6 +850,16 @@ type ConfigMapBuilder struct {
 	XmlGetters []XMLTemplateGetter
 }
 
+func (h *ConfigMapBuilder) IsBuildCompleted(obj interface{}, _ interface{}) bool {
+	cluster := obj.(*v1alpha1.HadoopCluster)
+	err := h.Get(
+		context.Background(),
+		client.ObjectKey{Name: util.GetReplicaName(cluster, v1alpha1.ReplicaTypeConfigMap), Namespace: cluster.Namespace},
+		&corev1.ConfigMap{},
+	)
+	return err == nil
+}
+
 func (h *ConfigMapBuilder) SetupWithManager(mgr manager.Manager, recorder record.EventRecorder) {
 	cfg := mgr.GetConfig()
 	kubeClientSet := kubeclientset.NewForConfigOrDie(cfg)
@@ -759,35 +872,36 @@ func (h *ConfigMapBuilder) SetupWithManager(mgr manager.Manager, recorder record
 		&hdfsSiteXMLTemplateGetter{},
 		&mapredSiteXMLTemplateGetter{},
 		&yarnSiteXMLTemplateGetter{},
+		&hbaseSiteXMLTemplateGetter{},
 	}
 	for _, xmlGetter := range h.XmlGetters {
 		xmlGetter.Default()
 	}
 }
 
-func (h *ConfigMapBuilder) Build(obj interface{}, _ interface{}) error {
-	cluster := obj.(*hadoopclusterorgv1alpha1.HadoopCluster)
+func (h *ConfigMapBuilder) Build(obj interface{}, _ interface{}) (bool, error) {
+	cluster := obj.(*v1alpha1.HadoopCluster)
 	err := h.Get(
 		context.Background(),
-		client.ObjectKey{Name: util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeConfigMap), Namespace: cluster.Namespace},
+		client.ObjectKey{Name: util.GetReplicaName(cluster, v1alpha1.ReplicaTypeConfigMap), Namespace: cluster.Namespace},
 		&corev1.ConfigMap{},
 	)
 	if err == nil || !errors.IsNotFound(err) {
-		return err
+		return err == nil, err
 	}
 
 	configMap, err := h.buildHadoopConfigMap(cluster)
 	if err != nil {
-		return err
+		return false, err
 	}
-	ownerRef := util.GenOwnerReference(cluster, hadoopclusterorgv1alpha1.GroupVersion.WithKind(hadoopclusterorgv1alpha1.HadoopClusterKind).Kind)
-	return h.ConfigMapControl.CreateConfigMapWithControllerRef(cluster.GetNamespace(), configMap, cluster, ownerRef)
+	ownerRef := util.GenOwnerReference(cluster, v1alpha1.GroupVersion.WithKind(v1alpha1.HadoopClusterKind).Kind)
+	return true, h.ConfigMapControl.CreateConfigMapWithControllerRef(cluster.GetNamespace(), configMap, cluster, ownerRef)
 }
 
 func (h *ConfigMapBuilder) Clean(obj interface{}) error {
-	cluster := obj.(*hadoopclusterorgv1alpha1.HadoopCluster)
+	cluster := obj.(*v1alpha1.HadoopCluster)
 
-	configMapName := util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeConfigMap)
+	configMapName := util.GetReplicaName(cluster, v1alpha1.ReplicaTypeConfigMap)
 	err := h.ConfigMapControl.DeleteConfigMap(cluster.GetNamespace(), configMapName, &corev1.ConfigMap{})
 	if err != nil {
 		return err
@@ -796,10 +910,10 @@ func (h *ConfigMapBuilder) Clean(obj interface{}) error {
 	return nil
 }
 
-func (h *ConfigMapBuilder) buildHadoopConfigMap(cluster *hadoopclusterorgv1alpha1.HadoopCluster) (*corev1.ConfigMap, error) {
+func (h *ConfigMapBuilder) buildHadoopConfigMap(cluster *v1alpha1.HadoopCluster) (*corev1.ConfigMap, error) {
 	hadoopConfig := HadoopConfig{
-		NameNodeURI:             util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeNameNode),
-		ResourceManagerHostname: util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeResourcemanager),
+		NameNodeURI:             util.GetReplicaName(cluster, v1alpha1.ReplicaTypeNameNode),
+		ResourceManagerHostname: util.GetReplicaName(cluster, v1alpha1.ReplicaTypeResourcemanager),
 	}
 
 	configMapData := map[string]string{entrypointKey: entrypointTemplate}
@@ -820,7 +934,7 @@ func (h *ConfigMapBuilder) buildHadoopConfigMap(cluster *hadoopclusterorgv1alpha
 
 	configMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      util.GetReplicaName(cluster, hadoopclusterorgv1alpha1.ReplicaTypeConfigMap),
+			Name:      util.GetReplicaName(cluster, v1alpha1.ReplicaTypeConfigMap),
 			Namespace: cluster.Namespace,
 		},
 		Data: configMapData,

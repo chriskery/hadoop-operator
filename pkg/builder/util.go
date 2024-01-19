@@ -5,9 +5,11 @@ import (
 	"github.com/chriskery/hadoop-operator/pkg/apis/kubecluster.org/v1alpha1"
 	"github.com/chriskery/hadoop-operator/pkg/control"
 	"github.com/chriskery/hadoop-operator/pkg/util"
+	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/json"
+	"regexp"
 	"strconv"
 )
 
@@ -21,6 +23,8 @@ const (
 	EnvNameNodeFormat      = "NAME_NODE_FORMAT"
 	EnvNameNodeAddr        = "HADOOP_NAME_NODE_ADDR"
 	EnvResourceManagerAddr = "HADOOP_RESOURCE_MANAGER_ADDR"
+	EnvHbaseManagerZK      = "HBASE_MANAGES_ZK"
+	EnvHbaseLogPath        = "HBASE_LOG_DIR"
 )
 
 var entrypointCmd = fmt.Sprintf("cp %s /tmp/entrypoint && chmod +x /tmp/entrypoint && /tmp/entrypoint", entrypointPath)
@@ -87,6 +91,17 @@ func setPodEnv(hadoopCluster *v1alpha1.HadoopCluster, containers []corev1.Contai
 				Value: strconv.FormatBool(hadoopCluster.Spec.HDFS.NameNode.Format),
 			})
 		}
+
+		if replicaType == v1alpha1.ReplicaTypeHbase {
+			containers[i].Env = append(containers[i].Env, corev1.EnvVar{
+				Name:  EnvHbaseManagerZK,
+				Value: strconv.FormatBool(true),
+			})
+			containers[i].Env = append(containers[i].Env, corev1.EnvVar{
+				Name:  EnvHbaseLogPath,
+				Value: "/tmp",
+			})
+		}
 	}
 }
 
@@ -112,4 +127,39 @@ func isServiceNodePortExpose(expose v1alpha1.ExposeSpec) bool {
 
 func isIngressExpose(expose v1alpha1.ExposeSpec) bool {
 	return expose.ExposeType == v1alpha1.ExposeTypeIngress
+}
+
+func IsHDFSReady(cluster *v1alpha1.HadoopCluster, podControl control.PodControlInterface) (hdfsRunning bool) {
+	defer func() {
+		if !hdfsRunning {
+			logrus.Infof("%s/%s HDFS is not running, skip driver pod creation, waiting for HDFS to start...",
+				cluster.GetNamespace(), cluster.GetName())
+		}
+	}()
+	nameNodeName := util.GetReplicaName(cluster, v1alpha1.ReplicaTypeNameNode)
+	stdout, stderr, err := podControl.ExecInPod(
+		cluster.GetNamespace(),
+		nameNodeName,
+		string(v1alpha1.ReplicaTypeNameNode),
+		"hdfs", "dfsadmin", "-report",
+	)
+	if err != nil {
+		logrus.Errorf("Failed to check HDFS if running: %s", err)
+		return
+	}
+
+	if stderr != "" {
+		logrus.Warningf("StdErr output when check HDFS if running: %s", stderr)
+	}
+	// 使用正则表达式找到活跃的DataNode数量
+	re := regexp.MustCompile(`Live datanodes \((\d+)\):`)
+	matches := re.FindStringSubmatch(stdout)
+
+	if len(matches) < 2 {
+		logrus.Infof("%s/%s Failed to find live datanodes count in the output", cluster.GetNamespace(), cluster.GetName())
+	} else {
+		hdfsRunning = matches[1] > "0"
+	}
+
+	return
 }

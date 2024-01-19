@@ -1,0 +1,60 @@
+apiVersion: kubecluster.org/v1alpha1
+kind: HadoopCluster
+metadata:
+  name: hadoopcluster-sample
+spec:
+  hdfs:
+    nameNode:
+      nodeSpec:
+        image: apache/hadoop:3
+        replicas: 1
+      format: true
+      nameDir: /tmp/hadoop
+      exposeSpec:
+        type: nodePort
+    dataNode:
+      nodeSpec:
+        image: apache/hadoop:3
+        replicas: 1
+  yarn:
+    resourceManager:
+      nodeSpec:
+        image: apache/hadoop:3
+        replicas: 1
+        volumes:
+          - name: demos
+            hostPath:
+              path: /root/demos
+        volumeMounts:
+          - name: demos
+            mountPath: /root/demos
+      exposeSpec:
+        type: nodePort
+    nodeManager:
+      nodeSpec:
+        image: apache/hadoop:3
+        replicas: 1
+        resources:
+          requests:
+            cpu: 2
+            memory: 4Gi
+          limits:
+            cpu: 2
+            memory: 4Gi
+  hbase:
+    nodeSpec:
+      image: harisekhon/hbase
+      replicas: 1
+      volumes:
+        - name: demos
+          hostPath:
+            path: /root/demos
+      volumeMounts:
+        - name: demos
+          mountPath: /root/demos
+    exposeSpec:
+      type: nodePort
+
+
+
+

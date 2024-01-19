@@ -34,6 +34,22 @@ type YarnBuilder struct {
 	PodControl control.PodControlInterface
 }
 
+func (h *YarnBuilder) IsBuildCompleted(obj interface{}, objStatus interface{}) bool {
+	cluster := obj.(*v1alpha1.HadoopCluster)
+	status := objStatus.(*v1alpha1.HadoopClusterStatus)
+
+	nodeManagerStatus, ok := status.ReplicaStatuses[v1alpha1.ReplicaTypeNodemanager]
+	if !ok || !util.ReplicaReady(cluster.Spec.Yarn.NodeManager.Replicas, 1, nodeManagerStatus.Active) {
+		return false
+	}
+	resourceManagerStatus, ok := status.ReplicaStatuses[v1alpha1.ReplicaTypeResourcemanager]
+	if !ok || !util.ReplicaReady(cluster.Spec.Yarn.ResourceManager.Replicas, 1, resourceManagerStatus.Active) {
+		return false
+	}
+
+	return true
+}
+
 func (h *YarnBuilder) SetupWithManager(mgr manager.Manager, recorder record.EventRecorder) {
 	cfg := mgr.GetConfig()
 	kubeClientSet := kubeclientset.NewForConfigOrDie(cfg)
@@ -45,20 +61,20 @@ func (h *YarnBuilder) SetupWithManager(mgr manager.Manager, recorder record.Even
 	h.PodControl = control.RealPodControl{KubeClient: kubeClientSet, Recorder: recorder}
 }
 
-func (h *YarnBuilder) Build(obj interface{}, objStatus interface{}) error {
+func (h *YarnBuilder) Build(obj interface{}, objStatus interface{}) (bool, error) {
 	cluster := obj.(*v1alpha1.HadoopCluster)
 	status := objStatus.(*v1alpha1.HadoopClusterStatus)
 
 	util.InitializeClusterStatuses(status, v1alpha1.ReplicaTypeResourcemanager)
 	if err := h.buildResourceManager(cluster, status); err != nil {
-		return err
+		return false, err
 	}
 
 	util.InitializeClusterStatuses(status, v1alpha1.ReplicaTypeNodemanager)
 	if err := h.buildNodeManager(cluster, status); err != nil {
-		return err
+		return false, err
 	}
-	return nil
+	return true, nil
 }
 
 func (h *YarnBuilder) Clean(obj interface{}) error {

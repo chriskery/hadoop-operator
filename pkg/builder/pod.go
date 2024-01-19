@@ -35,6 +35,9 @@ func getPodSpec(cluster *v1alpha1.HadoopCluster, replicaType v1alpha1.ReplicaTyp
 	case v1alpha1.ReplicaTypeNodemanager:
 		hadoopNodeSpec = &cluster.Spec.Yarn.NodeManager.HadoopNodeSpec
 		volumeMounts = cluster.Spec.Yarn.NodeManager.VolumeMounts
+	case v1alpha1.ReplicaTypeHbase:
+		hadoopNodeSpec = &cluster.Spec.Hbase.HadoopNodeSpec
+		volumeMounts = cluster.Spec.Hbase.VolumeMounts
 	default:
 		return nil, fmt.Errorf("unknown replica type %s", replicaType)
 	}

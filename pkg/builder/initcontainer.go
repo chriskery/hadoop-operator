@@ -85,7 +85,7 @@ func setInitContainer(hadoopCluster metav1.Object, replicaType v1alpha1.ReplicaT
 
 	masterAddr := ""
 	switch replicaType {
-	case v1alpha1.ReplicaTypeDataNode, v1alpha1.ReplicaTypeResourcemanager, v1alpha1.ReplicaTypeDataloader, v1alpha1.ReplicaTypeDriver:
+	case v1alpha1.ReplicaTypeDataNode, v1alpha1.ReplicaTypeResourcemanager, v1alpha1.ReplicaTypeHbase:
 		masterAddr = util.GetReplicaName(hadoopCluster, v1alpha1.ReplicaTypeNameNode)
 	case v1alpha1.ReplicaTypeNodemanager:
 		masterAddr = util.GetReplicaName(hadoopCluster, v1alpha1.ReplicaTypeResourcemanager)

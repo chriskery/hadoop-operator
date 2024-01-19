@@ -106,9 +106,12 @@ func (r *HadoopClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 	oldStatus := hadoopCluster.Status.DeepCopy()
 	for _, builder := range r.builders {
-		if err = builder.Build(hadoopCluster, oldStatus); err != nil {
+		if continueBuild, err := builder.Build(hadoopCluster, oldStatus); err != nil {
 			logrus.Warningf("Reconcile Hadoop Cluster error %v", err)
 			return ctrl.Result{}, err
+		} else if !continueBuild {
+			logrus.Warningf("Reconcile Hadoop Cluster stop build")
+			break
 		}
 	}
 
@@ -226,25 +229,15 @@ func (r *HadoopClusterReconciler) UpdateClusterStatus(cluster *v1alpha1.HadoopCl
 		}
 	}
 
-	clusetrRunning := true
-	nameNodeStatus, ok := status.ReplicaStatuses[v1alpha1.ReplicaTypeNameNode]
-	if ok && !util.ReplicaReady(cluster.Spec.HDFS.NameNode.Replicas, 1, nameNodeStatus.Active) {
-		clusetrRunning = false
-	}
-	dataNodeStatus, ok := status.ReplicaStatuses[v1alpha1.ReplicaTypeDataNode]
-	if ok && !util.ReplicaReady(cluster.Spec.HDFS.DataNode.Replicas, 1, dataNodeStatus.Active) {
-		clusetrRunning = false
-	}
-	resourcemanagerStatus, ok := status.ReplicaStatuses[v1alpha1.ReplicaTypeResourcemanager]
-	if ok && !util.ReplicaReady(cluster.Spec.Yarn.ResourceManager.Replicas, 1, resourcemanagerStatus.Active) {
-		clusetrRunning = false
-	}
-	nodemanagerStatus, ok := status.ReplicaStatuses[v1alpha1.ReplicaTypeNodemanager]
-	if ok && !util.ReplicaReady(cluster.Spec.Yarn.NodeManager.Replicas, 1, nodemanagerStatus.Active) {
-		clusetrRunning = false
+	clusterRunning := true
+	for _, builder := range r.builders {
+		if !builder.IsBuildCompleted(cluster, status) {
+			clusterRunning = false
+			break
+		}
 	}
 
-	if clusetrRunning {
+	if clusterRunning {
 		msg := fmt.Sprintf("HadoopCluster %s/%s is running.", cluster.Namespace, cluster.Name)
 		err := util.UpdateClusterConditions(status, v1alpha1.ClusterRunning, util.HadoopclusterRunningReason, msg)
 		if err != nil {
