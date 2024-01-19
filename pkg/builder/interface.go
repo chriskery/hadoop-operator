@@ -7,8 +7,16 @@ import (
 
 type Builder interface {
 	SetupWithManager(mgr manager.Manager, recorder record.EventRecorder)
-	Build(obj interface{}, objStatus interface{}) error
+	Build(obj interface{}, objStatus interface{}) (bool, error)
 	Clean(obj interface{}) error
+	IsBuildCompleted(obj interface{}, objStatus interface{}) bool
+}
+
+type AlwaysBuildCompletedBuilder struct {
+}
+
+func (builder *AlwaysBuildCompletedBuilder) IsBuildCompleted(obj interface{}, objStatus interface{}) bool {
+	return true
 }
 
 func ResourceBuilders(mgr manager.Manager, recorder record.EventRecorder) []Builder {
@@ -16,6 +24,7 @@ func ResourceBuilders(mgr manager.Manager, recorder record.EventRecorder) []Buil
 		&ConfigMapBuilder{},
 		&HdfsBuilder{},
 		&YarnBuilder{},
+		&HbaseBuilder{},
 	}
 	for _, builder := range builders {
 		builder.SetupWithManager(mgr, recorder)

@@ -12,4 +12,6 @@ const (
 
 	ReplicaTypeDriver     ReplicaType = "driver"
 	ReplicaTypeDataloader ReplicaType = "dataloader"
+
+	ReplicaTypeHbase ReplicaType = "hbase"
 )

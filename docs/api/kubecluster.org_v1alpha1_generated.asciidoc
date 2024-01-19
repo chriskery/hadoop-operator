@@ -159,6 +159,7 @@ ClusterCondition describes current state of a cluster
 .Appears In:
 ****
 - xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hdfsnamenodespectemplate[$$HDFSNameNodeSpecTemplate$$]
+- xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hbasespec[$$HbaseSpec$$]
 - xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-yarnnodemanagerspectemplate[$$YarnNodeManagerSpecTemplate$$]
 - xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-yarnresourcemanagerspectemplate[$$YarnResourceManagerSpecTemplate$$]
 ****
@@ -371,6 +372,7 @@ HadoopClusterSpec defines the desired state of HadoopCluster NOTE: json tags are
 | Field | Description
 | *`hdfs`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hdfsspec[$$HDFSSpec$$]__ | INSERT ADDITIONAL SPEC FIELDS - desired state of cluster Important: Run "make" to regenerate code after modifying this file
 | *`yarn`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-yarnspec[$$YarnSpec$$]__ | 
+| *`hbase`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hbasespec[$$HbaseSpec$$]__ | 
 |===
 
 
@@ -403,6 +405,7 @@ HadoopClusterStatus defines the observed state of HadoopCluster
 - xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hdfsdatanodespectemplate[$$HDFSDataNodeSpecTemplate$$]
 - xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hdfsnamenodespectemplate[$$HDFSNameNodeSpecTemplate$$]
 - xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopapplicationspec[$$HadoopApplicationSpec$$]
+- xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hbasespec[$$HbaseSpec$$]
 - xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-yarnnodemanagerspectemplate[$$YarnNodeManagerSpecTemplate$$]
 - xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-yarnresourcemanagerspectemplate[$$YarnResourceManagerSpecTemplate$$]
 ****
@@ -439,6 +442,24 @@ HadoopClusterStatus defines the observed state of HadoopCluster
 | *`hostNetwork`* __boolean__ | Host networking requested for this pod. Use the host's network namespace. If this option is set, the ports that will be used must be specified. Default to false.
 | *`imagePullSecrets`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#localobjectreference-v1-core[$$LocalObjectReference$$] array__ | 
 | *`volumes`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#volume-v1-core[$$Volume$$] array__ | List of volumes that can be mounted by containers belonging to the pod. More info: https://kubernetes.io/docs/concepts/storage/volumes
+|===
+
+
+[id="{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hbasespec"]
+==== HbaseSpec 
+
+
+
+.Appears In:
+****
+- xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopclusterspec[$$HadoopClusterSpec$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`nodeSpec`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-hadoopnodespec[$$HadoopNodeSpec$$]__ | 
+| *`exposeSpec`* __xref:{anchor_prefix}-github-com-chriskery-hadoop-operator-pkg-apis-kubecluster-org-v1alpha1-exposespec[$$ExposeSpec$$]__ | 
 |===
 
 

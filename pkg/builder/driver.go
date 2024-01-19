@@ -3,6 +3,8 @@ package builder
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	"github.com/chriskery/hadoop-operator/pkg/apis/kubecluster.org/v1alpha1"
 	"github.com/chriskery/hadoop-operator/pkg/control"
 	"github.com/chriskery/hadoop-operator/pkg/util"
@@ -14,13 +16,16 @@ import (
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-	"strings"
 )
 
 var _ Builder = &DriverBuilder{}
 
 type DriverBuilder struct {
+	AlwaysBuildCompletedBuilder
+
 	client.Client
+
+	Recorder record.EventRecorder
 
 	PodControl control.PodControlInterface
 }
@@ -30,36 +35,45 @@ func (driverBuilder *DriverBuilder) SetupWithManager(mgr manager.Manager, record
 
 	kubeClientSet := kubeclientset.NewForConfigOrDie(cfg)
 	driverBuilder.Client = mgr.GetClient()
-	driverBuilder.PodControl = control.RealPodControl{KubeClient: kubeClientSet, Recorder: recorder}
+	driverBuilder.Recorder = recorder
+	driverBuilder.PodControl = control.RealPodControl{KubeClient: kubeClientSet, Recorder: recorder, ClusterConfig: cfg}
 }
 
 // Build creates driver pod for hadoop application
-func (driverBuilder *DriverBuilder) Build(obj interface{}, objStatus interface{}) error {
+func (driverBuilder *DriverBuilder) Build(obj interface{}, objStatus interface{}) (bool, error) {
 	application := obj.(*v1alpha1.HadoopApplication)
-
 	driverPod := &corev1.Pod{ObjectMeta: metav1.ObjectMeta{
 		Name:      util.GetReplicaName(application, v1alpha1.ReplicaTypeDriver),
 		Namespace: application.GetNamespace(),
 	}}
 	err := driverBuilder.Get(context.Background(), types.NamespacedName{Namespace: driverPod.GetNamespace(), Name: driverPod.GetName()}, driverPod)
 	if err == nil || !errors.IsNotFound(err) {
-		return err
+		return false, err
+	}
+
+	if !IsHDFSReady(&v1alpha1.HadoopCluster{ObjectMeta: metav1.ObjectMeta{
+		Name:      application.GetName(),
+		Namespace: application.GetNamespace(),
+	}}, driverBuilder.PodControl) {
+		msg := fmt.Sprintf("HDFS is not ready, waiting for driver application running %s", driverPod.GetName())
+		driverBuilder.Recorder.Eventf(application, corev1.EventTypeWarning, "HDFSNotReady", msg)
+		return false, fmt.Errorf(msg)
 	}
 
 	podTemplateSpec := driverBuilder.genDriverPodSpec(application, driverPod.GetName())
 	ownerRef := util.GenOwnerReference(application, v1alpha1.GroupVersion.WithKind(v1alpha1.HadoopApplicationKind).Kind)
 	if err = driverBuilder.PodControl.CreatePodsWithControllerRef(application.GetNamespace(), podTemplateSpec, application, ownerRef); err != nil {
-		return err
+		return false, err
 	}
 
 	applicationStatus := objStatus.(*v1alpha1.HadoopApplicationStatus)
 	msg := fmt.Sprintf("Driver application %s submitted", driverPod.GetName())
 	err = util.UpdateApplicationConditions(applicationStatus, v1alpha1.ApplicationSubmitted, util.HadoopApplicationSubmittedReason, msg)
 	if err != nil {
-		return err
+		return false, err
 	}
 
-	return nil
+	return true, nil
 }
 
 // genDriverPodSpec generates driver pod spec for hadoop application
@@ -113,11 +127,6 @@ func (driverBuilder *DriverBuilder) genDriverPodSpec(application *v1alpha1.Hadoo
 		&v1alpha1.HadoopCluster{ObjectMeta: *application.ObjectMeta.DeepCopy()},
 		podTemplateSpec.Spec.Containers,
 		v1alpha1.ReplicaTypeDriver,
-	)
-	setInitContainer(
-		&v1alpha1.HadoopCluster{ObjectMeta: *application.ObjectMeta.DeepCopy()},
-		v1alpha1.ReplicaTypeDriver,
-		podTemplateSpec,
 	)
 	return podTemplateSpec
 }

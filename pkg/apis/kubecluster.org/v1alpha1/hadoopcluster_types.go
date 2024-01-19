@@ -174,13 +174,20 @@ type YarnResourceManagerSpecTemplate struct {
 	Expose ExposeSpec `json:"exposeSpec,omitempty"`
 }
 
+type HbaseSpec struct {
+	HadoopNodeSpec `json:"nodeSpec,omitempty"`
+
+	Expose ExposeSpec `json:"exposeSpec,omitempty"`
+}
+
 // HadoopClusterSpec defines the desired state of HadoopCluster
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 type HadoopClusterSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	HDFS HDFSSpec `json:"hdfs,omitempty"`
-	Yarn YarnSpec `json:"yarn,omitempty"`
+	HDFS  HDFSSpec   `json:"hdfs,omitempty"`
+	Yarn  YarnSpec   `json:"yarn,omitempty"`
+	Hbase *HbaseSpec `json:"hbase,omitempty"`
 }
 
 // +k8s:openapi-gen=true

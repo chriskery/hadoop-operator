@@ -2,15 +2,16 @@ package builder
 
 import (
 	"bytes"
+	"html/template"
+	"os"
+	"sync"
+
 	"github.com/chriskery/hadoop-operator/pkg/apis/kubecluster.org/v1alpha1"
 	"github.com/chriskery/hadoop-operator/pkg/config"
 	"github.com/chriskery/hadoop-operator/pkg/util"
-	"html/template"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/yaml"
-	"os"
-	"sync"
 )
 
 var (
@@ -85,7 +86,7 @@ func setInitContainer(hadoopCluster metav1.Object, replicaType v1alpha1.ReplicaT
 
 	masterAddr := ""
 	switch replicaType {
-	case v1alpha1.ReplicaTypeDataNode, v1alpha1.ReplicaTypeResourcemanager, v1alpha1.ReplicaTypeDataloader, v1alpha1.ReplicaTypeDriver:
+	case v1alpha1.ReplicaTypeDataNode, v1alpha1.ReplicaTypeResourcemanager, v1alpha1.ReplicaTypeHbase:
 		masterAddr = util.GetReplicaName(hadoopCluster, v1alpha1.ReplicaTypeNameNode)
 	case v1alpha1.ReplicaTypeNodemanager:
 		masterAddr = util.GetReplicaName(hadoopCluster, v1alpha1.ReplicaTypeResourcemanager)

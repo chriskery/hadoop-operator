@@ -3,6 +3,8 @@ package builder
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	"github.com/chriskery/hadoop-operator/pkg/apis/kubecluster.org/v1alpha1"
 	"github.com/chriskery/hadoop-operator/pkg/control"
 	"github.com/chriskery/hadoop-operator/pkg/util"
@@ -14,13 +16,16 @@ import (
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-	"strings"
 )
 
 var _ Builder = &DataloaderBuilder{}
 
 type DataloaderBuilder struct {
+	AlwaysBuildCompletedBuilder
+
 	client.Client
+
+	Recorder record.EventRecorder
 
 	PodControl control.PodControlInterface
 }
@@ -30,14 +35,15 @@ func (dataloaderBuilder *DataloaderBuilder) SetupWithManager(mgr manager.Manager
 
 	kubeClientSet := kubeclientset.NewForConfigOrDie(cfg)
 	dataloaderBuilder.Client = mgr.GetClient()
-	dataloaderBuilder.PodControl = control.RealPodControl{KubeClient: kubeClientSet, Recorder: recorder}
+	dataloaderBuilder.Recorder = recorder
+	dataloaderBuilder.PodControl = control.RealPodControl{KubeClient: kubeClientSet, Recorder: recorder, ClusterConfig: cfg}
 }
 
 // Build creates dataloader pod for hadoop application
-func (dataloaderBuilder *DataloaderBuilder) Build(obj interface{}, objStatus interface{}) error {
+func (dataloaderBuilder *DataloaderBuilder) Build(obj interface{}, objStatus interface{}) (bool, error) {
 	application := obj.(*v1alpha1.HadoopApplication)
 	if application.Spec.DataLoaderSpec == nil {
-		return fmt.Errorf("DataloaderSpec is nil")
+		return false, fmt.Errorf("DataloaderSpec is nil")
 	}
 
 	dataloaderPod := &corev1.Pod{ObjectMeta: metav1.ObjectMeta{
@@ -46,7 +52,16 @@ func (dataloaderBuilder *DataloaderBuilder) Build(obj interface{}, objStatus int
 	}}
 	err := dataloaderBuilder.Get(context.Background(), types.NamespacedName{Namespace: dataloaderPod.GetNamespace(), Name: dataloaderPod.GetName()}, dataloaderPod)
 	if err == nil || !errors.IsNotFound(err) {
-		return err
+		return false, err
+	}
+
+	if !IsHDFSReady(&v1alpha1.HadoopCluster{ObjectMeta: metav1.ObjectMeta{
+		Name:      application.GetName(),
+		Namespace: application.GetNamespace(),
+	}}, dataloaderBuilder.PodControl) {
+		msg := fmt.Sprintf("HDFS is not ready, waiting for dataloader running %s", dataloaderPod.GetName())
+		dataloaderBuilder.Recorder.Eventf(application, corev1.EventTypeWarning, "HDFSNotReady", msg)
+		return false, fmt.Errorf(msg)
 	}
 
 	podTemplateSpec := dataloaderBuilder.genDataloaderPodSpec(application, dataloaderPod.GetName())
@@ -54,17 +69,17 @@ func (dataloaderBuilder *DataloaderBuilder) Build(obj interface{}, objStatus int
 
 	ownerRef := util.GenOwnerReference(application, v1alpha1.GroupVersion.WithKind(v1alpha1.HadoopApplicationKind).Kind)
 	if err = dataloaderBuilder.PodControl.CreatePodsWithControllerRef(application.GetNamespace(), podTemplateSpec, application, ownerRef); err != nil {
-		return err
+		return false, err
 	}
 
 	applicationStatus := objStatus.(*v1alpha1.HadoopApplicationStatus)
 	msg := fmt.Sprintf("Hadoop application %s dataloading", dataloaderPod.GetName())
 	err = util.UpdateApplicationConditions(applicationStatus, v1alpha1.ApplicationDataLoading, util.HadoopApplicationSubmittedReason, msg)
 	if err != nil {
-		return err
+		return false, err
 	}
 
-	return nil
+	return true, nil
 }
 
 // Clean deletes dataloader pod
@@ -124,11 +139,6 @@ func (dataloaderBuilder *DataloaderBuilder) genDataloaderPodSpec(
 		&v1alpha1.HadoopCluster{ObjectMeta: *application.ObjectMeta.DeepCopy()},
 		podTemplateSpec.Spec.Containers,
 		v1alpha1.ReplicaTypeDataloader,
-	)
-	setInitContainer(
-		&v1alpha1.HadoopCluster{ObjectMeta: *application.ObjectMeta.DeepCopy()},
-		v1alpha1.ReplicaTypeDataloader,
-		podTemplateSpec,
 	)
 	return podTemplateSpec
 }

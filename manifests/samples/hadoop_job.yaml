@@ -4,7 +4,7 @@ metadata:
   name: hadoopapplication-sample
 spec:
   mainApplicationFile: /opt/hadoop/share/hadoop/mapreduce/hadoop-mapreduce-examples-3.3.1.jar
-  arguments: ["pi","10","1000"]
+  arguments: ["pi","20","10000000000"]
   nameNodeDirFormat: true
   executorSpec:
       image: apache/hadoop:3

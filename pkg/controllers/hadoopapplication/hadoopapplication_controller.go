@@ -19,6 +19,8 @@ package hadoopapplication
 import (
 	"context"
 	"fmt"
+	"reflect"
+
 	"github.com/chriskery/hadoop-operator/pkg/apis/kubecluster.org/v1alpha1"
 	"github.com/chriskery/hadoop-operator/pkg/builder"
 	"github.com/chriskery/hadoop-operator/pkg/util"
@@ -30,11 +32,9 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/ptr"
-	"reflect"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -147,9 +147,7 @@ func (r *HadoopApplicationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	// using onOwnerCreateFunc is easier to set defaults
-	if err = c.Watch(source.Kind(mgr.GetCache(), &v1alpha1.HadoopApplication{}), &handler.EnqueueRequestForObject{},
-		predicate.Funcs{CreateFunc: r.onOwnerCreateFunc()},
-	); err != nil {
+	if err = c.Watch(source.Kind(mgr.GetCache(), &v1alpha1.HadoopApplication{}), &handler.EnqueueRequestForObject{}); err != nil {
 		return err
 	}
 
@@ -180,23 +178,6 @@ func (r *HadoopApplicationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	return nil
-}
-
-// onOwnerCreateFunc modify creation condition.
-func (r *HadoopApplicationReconciler) onOwnerCreateFunc() func(event.CreateEvent) bool {
-	return func(e event.CreateEvent) bool {
-		application, ok := e.Object.(*v1alpha1.HadoopApplication)
-		if !ok {
-			return true
-		}
-		msg := fmt.Sprintf("HadoopApplication application %s created", application.GetName())
-		logrus.Info(msg)
-		err := util.UpdateApplicationConditions(&application.Status, v1alpha1.ApplicationCreated, util.HadoopApplicationCreatedReason, msg)
-		if err != nil {
-			return false
-		}
-		return true
-	}
 }
 
 // ReconcileApplications reconciles the application
@@ -327,8 +308,8 @@ func (r *HadoopApplicationReconciler) CreateHadoopCluster(application *v1alpha1.
 }
 
 func (r *HadoopApplicationReconciler) ReconcileDriver(application *v1alpha1.HadoopApplication, status *v1alpha1.HadoopApplicationStatus, cluster *v1alpha1.HadoopCluster) error {
-	err := r.driverBuilder.Build(application, status)
-	if err != nil {
+	continuerBuild, err := r.driverBuilder.Build(application, status)
+	if err != nil || continuerBuild {
 		return err
 	}
 
@@ -336,7 +317,7 @@ func (r *HadoopApplicationReconciler) ReconcileDriver(application *v1alpha1.Hado
 	driverPod := &corev1.Pod{}
 	err = r.Get(context.Background(), types.NamespacedName{Namespace: application.GetNamespace(), Name: driverPodName}, driverPod)
 	if err != nil {
-		return err
+		return client.IgnoreNotFound(err)
 	}
 
 	if isPodReady(driverPod) && !util.IsApplicationRunning(application) {
@@ -389,9 +370,9 @@ func (r *HadoopApplicationReconciler) ReconcileDataLoader(
 	application *v1alpha1.HadoopApplication,
 	status *v1alpha1.HadoopApplicationStatus,
 ) (bool, error) {
-	err := r.dataLoaderBuilder.Build(application, status)
-	if err != nil {
-		return false, err
+	continuerBuild, err := r.dataLoaderBuilder.Build(application, status)
+	if err != nil || !continuerBuild {
+		return continuerBuild, err
 	}
 
 	dataLoaderPod := &corev1.Pod{ObjectMeta: metav1.ObjectMeta{
