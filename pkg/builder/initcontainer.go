@@ -2,15 +2,16 @@ package builder
 
 import (
 	"bytes"
+	"html/template"
+	"os"
+	"sync"
+
 	"github.com/chriskery/hadoop-operator/pkg/apis/kubecluster.org/v1alpha1"
 	"github.com/chriskery/hadoop-operator/pkg/config"
 	"github.com/chriskery/hadoop-operator/pkg/util"
-	"html/template"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/yaml"
-	"os"
-	"sync"
 )
 
 var (

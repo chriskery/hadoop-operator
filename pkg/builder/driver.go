@@ -3,6 +3,8 @@ package builder
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	"github.com/chriskery/hadoop-operator/pkg/apis/kubecluster.org/v1alpha1"
 	"github.com/chriskery/hadoop-operator/pkg/control"
 	"github.com/chriskery/hadoop-operator/pkg/util"
@@ -14,7 +16,6 @@ import (
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-	"strings"
 )
 
 var _ Builder = &DriverBuilder{}
